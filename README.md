@@ -2,7 +2,7 @@
 
 **Claude jumps straight to code, skips design, leaves half-done plans, and forgets to validate. Cadence enforces the phases.**
 
-Cadence is a Claude Code plugin that turns "I want to build X" into a working, validated implementation through eight slash commands: six core-flow (`/c-brainstorm` → `/c-design` → `/c-plan` → `/c-execute` → `/c-audit` → `/c-validate`) plus two diagnostic (`/c-check`, `/c-find-bugs`). Each phase produces a tangible artifact. Each gate is explicit. No atomic chains. No silent drift. No deferred TODOs in code.
+Cadence is a Claude Code plugin that turns "I want to build X" into a working, validated implementation through nine slash commands: six core-flow (`/c-brainstorm` → `/c-design` → `/c-plan` → `/c-execute` → `/c-audit` → `/c-validate`) plus three diagnostic (`/c-check`, `/c-find-bugs`, `/c-explain`). Each phase produces a tangible artifact. Each gate is explicit. No atomic chains. No silent drift. No deferred TODOs in code.
 
 Built for users who are strong on operations and ideation but can't verify code by reading diffs — Cadence's audit and validation layers carry that load.
 
@@ -13,7 +13,7 @@ Built for users who are strong on operations and ideation but can't verify code 
 /plugin install cadence@cadence
 ```
 
-After session restart, all eight `/c-*` commands work in every repo on your machine. First time you run `/c-brainstorm` in a fresh repo, Cadence detects there's no config and offers to scaffold one with three questions — no separate setup step.
+After session restart, all nine `/c-*` commands work in every repo on your machine. First time you run `/c-brainstorm` in a fresh repo, Cadence detects there's no config and offers to scaffold one with three questions — no separate setup step.
 
 ## Demo
 
@@ -70,15 +70,17 @@ You then run `/c-design` (writes child docs one at a time, with "look good?" pau
 |---|---|
 | `/c-check <path>` | Substance review of a design or plan: accuracy, completeness, gaps. Asks: "is this good?" |
 | `/c-find-bugs <target>` | Concrete defect hunting. Targets: design, plan, branch, file, or `--repo`. |
+| `/c-explain <path>` | Interactive discussion of an existing design or plan. Orientation + open Q&A, grounded in doc and code. Asks: "what does it say & how does it work?" |
 
 ## When to use which diagnostic
 
-`/c-check` and `/c-find-bugs` both produce findings on documents — different lenses:
+The three diagnostics produce different shapes of output:
 
 | Skill | Answers | Typical moment |
 |---|---|---|
 | `/c-check` | Is this design or plan good — accurate, consistent, complete? | Before flipping a design to `approved`; before running `/c-plan`. |
 | `/c-find-bugs` | What specific defects exist in this thing? | When you want a concrete fix list. Also runs on code (branch, file, repo). |
+| `/c-explain` | What does this say and how does it actually work? | When you want to understand a design you didn't write, or refresh on one you haven't touched in a while. |
 
 ## Worked example
 

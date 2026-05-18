@@ -88,24 +88,38 @@ Same shape as `/c-find-bugs` and `/c-audit` (consistency is load-bearing).
 
 ## Severity tiers
 
-- **Critical** — would prevent the design from being implementable or the plan from executing correctly.
-- **Important** — gaps or inconsistencies that would surface during build but aren't fatal.
-- **Minor** — polish, clarity, redundancy.
+Apply conservatively. **Default to Important when uncertain** — `Critical` is reserved for things that block the next phase outright. Sub-agent prompts dispatched by this skill must include this calibration verbatim so individual lenses don't drift upward.
+
+- **Critical** — the doc **cannot move forward** as written; the user has to stop and resolve before approval or execution. Examples: a required decision is missing entirely (not "two docs disagree" — that's Important); a plan's `Files:` list contradicts the change description; a plan task is impossible to execute as specified; a contradiction inside the same doc with no obvious resolution.
+- **Important** — gaps or inconsistencies the build will hit, but the work isn't blocked. A developer can pick one interpretation, note the choice, and move on. Cross-doc inconsistencies, undefined-but-recoverable terms, missing failure modes for non-critical paths, hidden assumptions that need surfacing.
+- **Minor** — polish, clarity, redundancy. The build won't notice; future readers might.
+
+**Sub-agent heuristic:** if a thoughtful developer could finish the task by picking one interpretation and noting the choice in the PR, it's **Important**. If they'd have to stop and ask the user, it's **Critical**. When in doubt between two tiers, pick the lower one.
 
 ## Interactive finding application (optional follow-up)
 
-After the report is printed, ask via `AskUserQuestion` whether to enter apply mode. Default is report-only; apply mode is opt-in. Per [[designs/2026-05-17-cadence/00-overview#Decisions log]] TUI decision.
+After the report is printed, ask via `AskUserQuestion` how to handle findings. Default is report-only; any application path is opt-in. Per [[designs/2026-05-17-cadence/00-overview#Decisions log]] TUI decision.
 
 **All questions in this section follow `skills/_shared/ask-user-question.md`** — plain-English framing, exactly one `(Recommended)` option per question, trade-off in each option's description. This is load-bearing when there are many findings: by question 14/17 the user no longer has the report in view, so the question text is their only context.
 
 **Entry question (single AskUserQuestion):**
 
-- *"Enter apply mode to walk findings one at a time?"*
-  - **Apply mode (critical only)** *(Recommended when ≥1 critical)* — walk only Critical-severity findings.
-  - **Apply mode (all)** — walk Critical + Important + Minor.
+- *"How should we handle the findings?"*
+  - **Walk one at a time** *(Recommended when ≥1 critical)* — Apply/Skip/Mark-as-decided per finding; you see each one.
+  - **Walk Critical, auto-apply Important + Minor** — eyes on the blocking items, batch the rest. Auto-applied findings use the report's Fix direction (and the `(Recommended)` option when the fix is a direction-style choice).
+  - **Auto-apply everything** — fix all findings per the report's Fix direction without per-finding prompts. Best for small reports where directions look unambiguous.
   - **No, leave the report as-is** *(Recommended when zero critical)* — exit; user applies fixes manually later.
 
-### Per-finding question structure
+### Auto-apply semantics
+
+When a tier is being auto-applied (no per-finding prompt):
+
+- If the report's Fix is a **one-liner**, apply it directly.
+- If the report's Fix is a **direction** (would normally surface Question 2 with 2–4 concrete options), pick the `(Recommended)` option silently and apply it.
+- Print a one-line audit summary per auto-applied finding (`Auto-applied: <section>:<line> — <what was changed>`) so the user can scan the batch and revert anything that looks wrong.
+- After the batch, print a one-line rollup: `Auto-applied N findings (M one-liner, K direction-with-recommended). Walked X findings.` so the user knows what to spot-check.
+
+### Per-finding question structure (walk mode)
 
 For each finding in severity order, ask two questions back-to-back (skipping question 2 when the fix is one-liner-obvious).
 

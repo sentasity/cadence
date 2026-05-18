@@ -2,6 +2,30 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.3.0 (2026-05-18)
+
+### Added
+
+- **`/c-explain`** — interactive discussion of an existing design or plan. Opens with a one-screen orientation (section list + plain-English summaries + grounded example questions), then drops into open user-driven Q&A. Answers lead with plain English and cite both design sections and code locations when implementation comes up. Doc gaps trigger an investigation chain (design → code → git → related designs); unresolved gaps surface as `[INFERRED]` with the inference chain shown. Artifact-free by default; on exit offers to save a future note or append a Q&A appendix to the design.
+  - Targets: design folder, plan folder, single child doc, or sub-section anchor (`<path>#<heading>`).
+  - `--any` flag bypasses the Cadence-managed-location structure check for imported / external docs.
+  - Distinct from sister diagnostics: `/c-check` reviews substance, `/c-find-bugs` enumerates defects, `/c-explain` explains. The skill redirects to its siblings when the user's question crosses into critique or defect-hunting.
+
+### Changed
+
+- README and skill count updates: nine `/c-*` commands now (six core-flow + three diagnostic).
+- **`/c-check` severity calibration.** Tightened the `Critical` tier from "would prevent the design from being implementable or the plan from executing correctly" to "the doc cannot move forward as written; user must stop and resolve before approval or execution." Added explicit examples per tier and a sub-agent heuristic ("if a thoughtful developer could finish the task by picking one interpretation and noting the choice in the PR, it's Important, not Critical"). The skill prompt now includes a "default to Important when uncertain" rule that flows into every sub-agent dispatch, so cross-doc inconsistencies no longer drift into Critical by default.
+- **`/c-check` apply-mode entry question.** Replaced three options (walk-critical-only / walk-all / exit) with four: *walk one at a time*, *walk Critical, auto-apply Important + Minor*, *auto-apply everything*, *exit*. Auto-apply uses the report's Fix direction for one-liner fixes and silently picks the `(Recommended)` option for direction-style fixes; prints a per-finding audit line and a batch rollup at the end so the user can spot-check the work.
+
+### Why (c-check changes)
+
+Feedback after running `/c-check` on a real multi-doc design: too many findings landed in the Critical tier (cross-doc inconsistencies a developer could resolve mid-build were flagged as blocking), and the only post-report options were one-at-a-time walks of 20+ findings. Calibration tightening keeps Critical scarce and meaningful; batch apply makes the apply-mode useful on the long tail of clearly-actionable findings without forcing per-finding prompts.
+
+### Compatibility
+
+- No breaking changes. All shipped guarantees from v0.1.0 and v0.2.0 remain.
+- Existing eight skills unchanged in invocation contract; `/c-check` behavioral changes are visible inside the report (fewer Critical-tier items) and in the apply-mode entry question (four options instead of three).
+
 ## v0.2.0 (2026-05-18)
 
 ### Added
