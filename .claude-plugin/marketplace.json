@@ -1,6 +1,10 @@
 {
   "name": "cadence",
   "description": "Cadence — agentic design/plan/execute system",
+  "owner": {
+    "name": "sentasity",
+    "url": "https://github.com/sentasity"
+  },
   "plugins": [
     {
       "name": "cadence",
