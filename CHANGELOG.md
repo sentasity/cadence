@@ -2,6 +2,28 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.3.1 (2026-05-18)
+
+### Fixed
+
+- **`/c-execute` resume protocol was silently broken since v0.1.0.** The framework specified that the PM checks off plan-file steps after both reviews pass, and the resume protocol declared *"plan file's checkbox state is the only source of truth"* — but `/c-execute`'s PM-responsibilities list never told the PM to actually edit the plan file. As a result, no task was ever marked `- [x]`, re-invoking `/c-execute` always started from Task 1.1, and the completion-time audit gate (which checks for `- [x]`) could never let a plan flip to `implemented`.
+
+### Added
+
+- **`## Marking task complete` section in `skills/c-execute/SKILL.md`.** Explicit, mandatory step: after spec ✓ + code ✓ + commit-in-`git log` + Invariant 3 grep clean, the PM edits the phase file to flip every `- [ ]` step under `### Task N.M` to `- [x]`. In-file parallel tasks update checkboxes as each lands, not in a batch.
+- **Two-stream commit model in the `## Commits` section.** Code commits remain per-task (driven by the implementer's last step). Plan-file edits (checkbox flips + final status flip) accumulate as dirty working-tree state during execution and commit ONCE at the end, after the audit gate passes — message default `chore: mark plan implemented`. Per-task plan-file commits are forbidden; they double commit count without adding information the working tree doesn't already carry.
+- **Resume-protocol clarification:** dirty tree with ONLY plan-file edits on the plan being resumed is expected mid-execution state; the PM continues. Any other dirty files (code, tests, other plans) still surface and stop. Mirrored in `designs/2026-05-17-cadence/04-execute.md`.
+
+### Why
+
+Surfaced when a user noticed `/c-execute` left every plan task at `- [ ]` after running, breaking the resume contract entirely. The fix is a documentation gap in the skill spec, not a logic change — the PM behavior described elsewhere in the doc was simply never linked to a concrete action.
+
+### Compatibility
+
+- No breaking changes. Skill names, agent names, config keys, frontmatter contracts, and the `/c-audit` dispatch path are all unchanged.
+- Plans created or resumed under v0.3.1 will now correctly mark steps complete and resume from the first unchecked task.
+- Plans previously stuck at every-step-unchecked under v0.1.0–v0.3.0 will continue to start from Task 1.1 on `/c-execute` re-invocation. To recover an in-flight plan, either manually check off the steps for tasks whose commits are visible in `git log`, or use `--restart` and re-run from scratch.
+
 ## v0.3.0 (2026-05-18)
 
 ### Added

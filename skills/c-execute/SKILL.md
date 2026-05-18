@@ -33,10 +33,11 @@ SHA-based pinning is robust against rebases, merges, and unrelated commits that 
 2. Build an internal task list — every `### Task N.M` becomes a tracked item with its `Parallel:` marker and full step block extracted.
 3. Walk files in order (`01` → `02` → …). NEVER start file `N+1` until file `N` is fully complete.
 4. Within a file, dispatch per parallel grain (below).
-5. Surface blockers to user — never work around silently.
-6. Run `/c-audit` at the end; gate `implemented` flip on its report.
+5. **After each task lands** (spec ✓ + code ✓ + Invariant 3 clean), edit the phase file to flip every `- [ ]` step under `### Task N.M` to `- [x]`. See [Marking task complete](#marking-task-complete-mandatory--required-for-resume).
+6. Surface blockers to user — never work around silently.
+7. Run audit gate at the end; on pass, commit accumulated plan-file changes (status flip + all checkbox flips) in one commit, then mark `implemented`.
 
-**The PM never reads the whole repo, never runs sub-agents on its own session context, never aggregates commits, never amends commits, never skips hooks.**
+**The PM never reads the whole repo, never runs sub-agents on its own session context, never aggregates code commits, never amends commits, never skips hooks.**
 
 ## Parallel grain (in-file)
 
@@ -51,8 +52,10 @@ Next file does not start until every task in the current file has landed.
 
 - Status `in-progress` = resumable. `/c-execute <plan-path>` on an `in-progress` plan resumes; does not restart.
 - On resume, re-read the plan, identify the first unchecked `- [ ]` step, continue from there. Already-checked tasks are not re-dispatched.
-- The PM does NOT trust in-memory state across sessions. Plan file's checkbox state is the only source of truth.
-- If working tree is dirty on resume, surface and ask user to commit/stash/abort. Never silently resume on a dirty tree.
+- The PM does NOT trust in-memory state across sessions. Plan file's checkbox state on disk (committed or not) is the only source of truth.
+- **Dirty tree handling on resume:**
+  - Dirty with ONLY plan-file edits (checkbox flips on the plan being resumed) → expected mid-execution state; continue.
+  - Dirty with any other files → surface and ask user to commit/stash/abort. Never silently resume on a dirty tree that contains code changes.
 
 ## Sub-agent dispatch
 
@@ -107,6 +110,20 @@ Code review NEVER starts before spec review ✓. If spec review finds issues, im
 
 **On reviewer-finding conflicts: spec wins.** If `cadence-code-reviewer` flags an issue that contradicts something `cadence-spec-reviewer` already approved (e.g. "function name violates repo convention" when the task block specified that exact name), DROP the code-review finding. Spec review establishes WHAT the change is; code review only checks quality of execution. Code review never overturns spec approval. (Per [[designs/2026-05-17-cadence/04-execute#Review loops]] decision.)
 
+## Marking task complete (mandatory — required for resume)
+
+After spec ✓ + code ✓ + commit-in-`git log` + Invariant 3 grep clean, the PM **must** edit the plan's phase file:
+
+1. Open the phase file containing the just-landed task.
+2. Flip every `- [ ]` step under `### Task N.M` to `- [x]`.
+3. Save. **Do NOT commit the plan-file edit per task.**
+
+This is the ONLY mechanism for tracking progress across sessions. Without it the resume protocol fails — re-invocation starts over from Task 1.1, and the completion-time gate (which checks for `- [x]`) will never let the plan flip to `implemented`.
+
+**In-file parallel tasks:** edit checkboxes as each task lands, not in a batch. Two tasks landing simultaneously = two separate plan-file edits. This bounds context — if the PM session dies mid-batch, the landed work is already recorded in the working tree.
+
+**Plan-file commit timing:** all plan-file edits (every checkbox flip plus the eventual status flip from `in-progress` to `implemented`) commit in ONE commit at the end of execution, after the audit gate passes. The dirty plan file IS the in-flight session state during execution. Do not commit plan-file edits per task — it doubles the commit count and adds no information the working tree doesn't already carry.
+
 ## Invariant 3 enforcement (no deferred code comments)
 
 Before marking any task complete, grep the task's diff:
@@ -124,7 +141,8 @@ grep -Ei "TODO|FIXME|XXX|// will|// later|# stub" <diff-range>
 
 ## Commits
 
-- **Cadence: per task.** Configurable via `config.plan.commit_cadence`.
+- **Code commits — cadence: per task.** Configurable via `config.plan.commit_cadence`. Driven by the implementer's final step.
+- **Plan-file commit — once, at end of execution.** Status flip from `in-progress` to `implemented` + every accumulated checkbox flip lands in one commit (default message: `chore: mark plan implemented`). Do NOT commit plan-file edits per task.
 - No `--amend` unless user explicitly asks.
 - No `--no-verify`, no `--no-gpg-sign` unless user explicitly asks.
 - Hook failures → fix root cause → new commit (NOT amend).
