@@ -1,0 +1,69 @@
+# Cadence plugin defaults. Per-repo .cadence/config.yaml overrides only what differs.
+# No assumption of obsidian or any specific repo layout.
+
+paths:
+  designs: docs/designs
+  plans:   docs/plans
+  future:  docs/future
+  config:  .cadence
+
+naming:
+  date_format: "YYYY-MM-DD"
+  slug_case: kebab
+
+status:
+  design: [draft, in-review, approved, completed, superseded, on-hold]
+  plan:   [draft, in-progress, implemented, completed, superseded, on-hold]
+
+frontmatter:
+  required: [title, created, updated, status, tags]
+
+plan:
+  tdd: true
+  commit_cadence: per-task
+  parallel_grain: in-file
+  # No split_thresholds — split decisions are judgment-based in /c-plan,
+  # not threshold-based. See designs/2026-05-17-cadence/03-plan.md.
+
+execute:
+  branch_check: true
+  auto_resolve_drift: false
+  max_parallel: 5
+  resume_on_dirty_tree: false
+
+audits:
+  default:
+    - checkbox-completeness
+    - oos-justification
+    - deferred-comment-scan
+    - code-behind-checkbox
+    - design-intent-alignment
+    - build-validator
+  warnings:
+    - file-map-honesty
+    - design-plan-consistency
+    - validation-doc-presence
+  optional: []
+  build_validator:
+    command: null
+    expect_zero_exit: true
+
+advisors:
+  enabled: false
+  roster: []
+
+plain_english:
+  section_callout: true
+  always_write_00a: true
+  length_target: "400-700"
+
+oos:
+  require_rationale: true
+  require_wikilink: true
+
+validate:
+  reset_checkboxes_on_rerun: true
+
+find_bugs:
+  default_baseline: main
+  exclude: [node_modules, dist, build, __pycache__, target, .next, vendor]
