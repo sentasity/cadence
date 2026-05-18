@@ -1,0 +1,18 @@
+# Hello-Cadence example config. Overrides plugin defaults only where the
+# example needs to differ. Everything else inherits from
+# defaults/config.default.yaml.
+
+paths:
+  designs: designs
+  plans:   plans
+
+plan:
+  tdd: true   # The example demonstrates TDD-shaped tasks
+
+audits:
+  build_validator:
+    command: "python -m pytest"
+    expect_zero_exit: true
+
+advisors:
+  enabled: false
