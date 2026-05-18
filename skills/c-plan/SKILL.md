@@ -117,6 +117,24 @@ No "Background," "Why," or plain-English. Those live in the design.
 
 **TDD default; opt-out in config.** `config.plan.tdd: true` → test → fail → impl → pass → commit. `false` → impl → run → commit (test steps omitted).
 
+## Codebase verification (mandatory)
+
+Every file path, line range, symbol, and import a plan cites must be ground-truthed against the current code BEFORE it lands in the plan. Imagined APIs are the single biggest cost in `/c-execute` — implementers burn ~30-40% of each dispatch rediscovering what the planner could have grepped for once. Pay it here.
+
+**What to verify, how:**
+
+- **`Modify` and `Test` file paths** — `ls` or Read each. If a file doesn't exist, fix the path or move the entry to `Create`.
+- **Line ranges (`file.py:120-145`)** — Read that range. Confirm it contains what the task assumes; stale ranges drift fast.
+- **Symbols in code snippets** — function names, class names, methods, attributes, properties. Grep for each. If the design says `cost_query_function` but the real form is `self.api_construct.cost_query_function`, cite the real form.
+- **Import paths** — every `from X import Y` resolves to a real module. Grep `X` to confirm the module exists; check `Y` is exported.
+- **Codebase conventions** — when introducing an import or pattern, check how the codebase already does it (`lambda_` vs `_lambda`, `Column` vs `Mapped`, etc.). Follow the existing convention.
+
+**When in doubt, Read the file.** A planner guess is worse than a planner question.
+
+**What this isn't:** type-checking your snippets. You're not verifying the new code compiles — that's the implementer's job. You're verifying that the names, paths, and imports you hand the implementer correspond to things that already exist.
+
+**Defense in depth:** `/c-audit`'s `code-behind-checkbox` audit still runs at completion as a backstop. This upstream verification is primary; the audit catches anything that slipped through.
+
 ## `96-validation.md` — three explicit categories
 
 Walked by `/c-validate` only after the plan is `implemented` and the user has deployed. Three required sections:
@@ -141,7 +159,7 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 2. Ask the one judgment question (plan-splitting check).
 3. Confirm phase decomposition: *"Plan files will be `01-schema`, `02-pipeline`, `03-api`, `04-frontend`. Sound right?"*
 4. Write `00-overview.md` (index + file map + design link + frontmatter with `base_sha: null`).
-5. Write each phase doc one at a time. Pause after each.
+5. Write each phase doc one at a time. Before finalizing each phase doc, run the codebase verification pass (above) on every path, symbol, and import it cites. Fix inline. Pause after each.
 6. **Invariant 2 in reverse.** If a phase reveals a gap or inconsistency in the design, surface it. Apply drift policy (default: update plan only; user-elective: update plan + design).
 7. Write `96-validation.md`.
 8. Write `97`/`98` shells.
@@ -156,7 +174,7 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 2. **Task shape** — every task has Files block, `Parallel:` marker, ≥3 steps, final commit step.
 3. **Code completeness** — every code step has actual code, not a stub.
 4. **Command completeness** — every run-command step has exact command + expected output.
-5. **Type/name consistency** — function names, types, properties referenced in later tasks match earlier tasks. (Intra-plan only. Cross-codebase symbol existence is checked by `/c-audit`'s `code-behind-checkbox` audit at completion.)
+5. **Symbol/path/import verification** — every cited file path, line range, symbol, and import was ground-truthed against the current code per "Codebase verification" rules. Intra-plan consistency also holds: names referenced across later tasks match earlier ones. (`/c-audit`'s `code-behind-checkbox` audit remains a backstop at completion.)
 6. **File Map honesty** — every file in tasks appears in File Map; nothing in File Map is missing from tasks.
 7. **Wikilink integrity** — every `[[…]]` resolves.
 
