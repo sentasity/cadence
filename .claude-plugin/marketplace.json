@@ -1,0 +1,11 @@
+{
+  "name": "cadence",
+  "description": "Cadence — agentic design/plan/execute system",
+  "plugins": [
+    {
+      "name": "cadence",
+      "source": "./",
+      "description": "Phase-aware, sub-agent-driven design/plan/execute system."
+    }
+  ]
+}

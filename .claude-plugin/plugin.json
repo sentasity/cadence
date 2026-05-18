@@ -1,0 +1,12 @@
+{
+  "name": "cadence",
+  "version": "0.1.0",
+  "description": "Phase-aware, sub-agent-driven design/plan/execute system with explicit OOS discipline and post-deploy validation.",
+  "author": {
+    "name": "sentasity",
+    "url": "https://github.com/sentasity"
+  },
+  "homepage": "https://github.com/sentasity/cadence",
+  "repository": "https://github.com/sentasity/cadence",
+  "license": "MIT"
+}
