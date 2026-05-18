@@ -2,7 +2,7 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
-## v0.1.0 (2026-05-XX)
+## v0.1.0 (2026-05-17)
 
 Initial release. Bootstrap shipped via `superpowers:writing-plans` and `superpowers:subagent-driven-development` across five sibling plans:
 
