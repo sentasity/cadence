@@ -97,6 +97,8 @@ Same shape as `/c-check` and `/c-audit`.
 
 After the report, ask via `AskUserQuestion` whether to enter fix mode. Default is report-only. Per [[designs/2026-05-17-cadence/00-overview#Decisions log]] TUI decision.
 
+**All questions in this section follow `skills/_shared/ask-user-question.md`** — plain-English framing, exactly one `(Recommended)` option per question, trade-off in each option's description. Per-defect questions must include a rolling progress line (`Defect 14/17 — 8 fixed, 5 skipped so far`) and a plain-English TL;DR of what's wrong and why it matters; the bare `<file>:<line>` cite is not enough context by question 14.
+
 **Entry question (single AskUserQuestion):**
 
 - *"Enter fix mode to walk defects one at a time?"*
@@ -104,10 +106,10 @@ After the report, ask via `AskUserQuestion` whether to enter fix mode. Default i
   - **Fix mode (all)** — walk every severity, including Low.
   - **No, leave the report as-is** *(Recommended when only Low/Medium)* — exit; user handles defects manually later.
 
-**Per-defect question** (only in fix mode), for each defect in severity order:
+**Per-defect question** (only in fix mode), for each defect in severity order. Question text leads with the progress line + plain-English TL;DR; the `<file>:<line>` cite anchors back to the report for users who want detail.
 
-- *"Defect: `<file>:<line>` — `<description>`. Action?"*
-  - **Fix now** *(Recommended for code targets at file scope)* — apply the suggested fix inline. NOT available for `--repo` scope without explicit per-file confirmation (too many implicit edits in one batch).
+- Options:
+  - **Fix now** *(Recommended for code targets at file scope when the fix is unambiguous)* — apply the suggested fix inline. NOT available for `--repo` scope without explicit per-file confirmation (too many implicit edits in one batch).
   - **Track** — print the defect in a format ready to paste into an issue tracker (`gh issue create` template, Linear body, etc.); skill moves on.
   - **Mark as decided** — record that the user accepts this as not-a-bug; future runs against the same target can be told to ignore it.
   - **Skip** — leave as-is; no record.
@@ -134,4 +136,5 @@ When `--repo`:
 ## References
 
 - Design source: [[designs/2026-05-17-cadence/08-find-bugs]].
+- Shared question/option formatting: `skills/_shared/ask-user-question.md`.
 - Sister diagnostic: `/c-check` (substance/quality vs. this skill's concrete-defects framing).

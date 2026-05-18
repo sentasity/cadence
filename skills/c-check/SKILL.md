@@ -96,6 +96,8 @@ Same shape as `/c-find-bugs` and `/c-audit` (consistency is load-bearing).
 
 After the report is printed, ask via `AskUserQuestion` whether to enter apply mode. Default is report-only; apply mode is opt-in. Per [[designs/2026-05-17-cadence/00-overview#Decisions log]] TUI decision.
 
+**All questions in this section follow `skills/_shared/ask-user-question.md`** — plain-English framing, exactly one `(Recommended)` option per question, trade-off in each option's description. This is load-bearing when there are many findings: by question 14/17 the user no longer has the report in view, so the question text is their only context.
+
 **Entry question (single AskUserQuestion):**
 
 - *"Enter apply mode to walk findings one at a time?"*
@@ -103,12 +105,29 @@ After the report is printed, ask via `AskUserQuestion` whether to enter apply mo
   - **Apply mode (all)** — walk Critical + Important + Minor.
   - **No, leave the report as-is** *(Recommended when zero critical)* — exit; user applies fixes manually later.
 
-**Per-finding question** (only in apply mode), for each finding in severity order:
+### Per-finding question structure
 
-- *"Finding: `<section>:<line>` — `<summary>`. Apply?"*
-  - **Apply** — make the fix inline. For substantive findings (where "Fix:" is a direction not a one-liner), surface a follow-up sub-question with concrete options.
-  - **Skip** — leave as-is; do nothing.
-  - **Mark as decided** — add a clarifying note to the doc explaining the user accepted the current behavior; re-runs won't re-flag it.
+For each finding in severity order, ask two questions back-to-back (skipping question 2 when the fix is one-liner-obvious).
+
+**Question 1 — Apply / Skip / Mark as decided.**
+
+Question text must include, in this order:
+1. **Progress line:** `Finding 14/17 — 8 applied, 5 skipped so far` (rolling counters across the walk).
+2. **Plain-English TL;DR (one sentence):** what's wrong and why it matters, in language that doesn't require re-reading the report.
+3. **Cite:** `<section>:<line>` — the bare finding text, last (anchors back to the report for users who want detail).
+
+Options:
+- **Apply** *(Recommended when severity is Critical, or the fix direction is unambiguous)* — make the fix; if Fix is a direction not a one-liner, surface Question 2.
+- **Skip** *(Recommended when severity is Minor and the gap is debatable)* — leave as-is; do nothing.
+- **Mark as decided** — add a clarifying note to the doc explaining the user accepted the current behavior; re-runs won't re-flag it.
+
+**Question 2 — concrete option pick** (only when applying a substantive finding).
+
+When the report's Fix is a direction (not a one-liner), surface 2–4 concrete options. Question text must include:
+1. **Plain-English framing:** what we're deciding and the central trade-off (one sentence each). Not just the finding's title.
+2. **Options:** each with a one-sentence trade-off description; mark exactly one `(Recommended)` — usually the report's preferred direction or the lowest-cost option that resolves the finding.
+
+A bare option list like "A. Schema-version stamp / B. Re-stamp at runtime / C. Document drift" is not acceptable — see the worked example in `skills/_shared/ask-user-question.md`.
 
 ## When to run /c-check
 
@@ -130,4 +149,5 @@ After the report is printed, ask via `AskUserQuestion` whether to enter apply mo
 
 - Design source: [[designs/2026-05-17-cadence/07-check]].
 - Shared format spec: `skills/_shared/obsidian-format.md`.
+- Shared question/option formatting: `skills/_shared/ask-user-question.md`.
 - Sister diagnostic: `/c-find-bugs` (concrete defects vs. this skill's "is it good?" framing).

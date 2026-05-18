@@ -131,7 +131,7 @@ grep -Ei "TODO|FIXME|XXX|// will|// later|# stub" <diff-range>
 
 ## Drift handling
 
-**All drift response paths are presented via `AskUserQuestion` (TUI multi-choice), not a prose "type one of:" prompt.** Per [[designs/2026-05-17-cadence/00-overview#Decisions log]]. Each option's `description` is the corresponding "What happens next" cell (one sentence). The recommended pick depends on the trigger:
+**All drift response paths are presented via `AskUserQuestion` (TUI multi-choice), not a prose "type one of:" prompt.** Per [[designs/2026-05-17-cadence/00-overview#Decisions log]]. Question text and options follow `skills/_shared/ask-user-question.md` — plain-English framing of what we're deciding and why (the user may have been heads-down on the task for hours and lost the bigger plan context), exactly one `(Recommended)` per question, trade-off in each option's description. Each option's `description` is the corresponding "What happens next" cell (one sentence). The recommended pick depends on the trigger:
 - **Plan ambiguity** → "Clarify" is `(Recommended)`.
 - **Design contradiction** → "Update plan only" is `(Recommended)` (matches the default drift policy).
 - **Scope overflow** → "Fix (expand task in place)" is `(Recommended)` when overflow is small; "Mark out of scope" when significant.

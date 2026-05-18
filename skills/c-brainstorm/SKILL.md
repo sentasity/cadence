@@ -1,16 +1,35 @@
 ---
 name: c-brainstorm
-description: Interactive Q&A that ends with enough clarity to write a design. Writes one file — a `00-overview.md` stub under `<paths.designs>/{yyyy-mm-dd-slug}/`. Detects missing `.cadence/config.yaml` on first run in a fresh repo and offers to scaffold defaults inline (no separate /c-init). Never auto-chains into /c-design.
+description: Interactive Q&A — works in two modes. Thought-partner mode explores an idea conversationally with no artifact required. Design-brainstorm mode converges on an approach and writes a `00-overview.md` stub under `<paths.designs>/{yyyy-mm-dd-slug}/`. Same Q&A discipline in both modes (one question, options with a Recommended pick, advisor opt-in). Detects missing `.cadence/config.yaml` on first run in a fresh repo and offers to scaffold defaults inline. Never auto-chains into /c-design.
 ---
 
 # `/c-brainstorm`
 
-You drive an interactive brainstorming Q&A and produce a single `00-overview.md` stub. You never write child docs, plans, or code. You never auto-promote into /c-design.
+You drive an interactive brainstorming Q&A. The session runs in one of two modes:
+
+- **Thought-partner mode** — exploratory; helps the user think through an idea or small question; ends when the user is satisfied; writes nothing unless they ask.
+- **Design-brainstorm mode** — converges on a concrete approach; ends by writing a single `00-overview.md` stub.
+
+You never write child docs, plans, or code. You never auto-promote into `/c-design`.
 
 ## Invocation forms
 
-- `/c-brainstorm <idea text>` — start fresh with the user's idea.
+- `/c-brainstorm <idea text>` — start fresh with the user's idea. Detect mode from phrasing (see "Mode detection" below).
 - `/c-brainstorm` (no args) — ask: *"What are we tackling?"* before entering Q&A.
+- `/c-brainstorm --explore <topic>` — force thought-partner mode.
+- `/c-brainstorm --design <topic>` — force design-brainstorm mode.
+
+## Mode detection
+
+After hearing the topic (and before any deep Q&A), pick a mode:
+
+- **Phrasing suggests thought-partner:** "help me think about", "thoughts on", "what about", "is X a good idea", "I'm wondering", "exploring", "should I", "what's the trade-off between".
+- **Phrasing suggests design-brainstorm:** "design", "build", "implement", "spec out", "let's build", "I want to add", "we need to make".
+- **Ambiguous** → ask once via `AskUserQuestion`: *"Is this a thought-partner session (no artifact) or a design brainstorm (ends with a stub)?"* — mark the option matching the phrasing pattern as `(Recommended)`.
+
+**Switching mid-session:**
+- User says "let's capture this as a design" → switch to design-brainstorm; start steering toward convergence.
+- User says "this is just exploration" or "I'm not building this yet" → drop convergence pressure; switch to thought-partner.
 
 ## Detect-and-offer: missing `.cadence/config.yaml`
 
@@ -39,15 +58,15 @@ The scan is invisible — its job is to sharpen the first question, not produce 
 
 **Step 3 — Question discipline:**
 - One question per turn. A tightly-coupled cluster of 2-3 sharing an option set is acceptable; broad dumps are not.
-- Prefer `AskUserQuestion` (multiple-choice) wherever options enumerable. Each option includes a `description` explaining the trade-off and, where it helps, a `preview` showing concrete artifacts (folder structures, code, layouts).
-- Mark exactly one option `(Recommended)` per question and explain why in the description. User nods or redirects — never draft from scratch.
+- Prefer `AskUserQuestion` (multiple-choice) wherever options are enumerable. Question text and option formatting follow `skills/_shared/ask-user-question.md` — plain-English framing, one `(Recommended)` pick with rationale in the description, trade-offs spelled out, previews for visual comparisons.
+- User nods or redirects — never draft from scratch.
 - Free-text fallback only when the option space is genuinely open.
 
 **Step 4 — Advisor consultation (opt-in).** When a question is genuinely architectural ("does this approach scale," "is this the right boundary"), offer: *"Want me to consult `<advisor1>`, `<advisor2>`? Token-heavy."* User opts in case-by-case. Off by default. Dispatch in parallel; opinions feed back into Q&A, never directly into the artifact. User adjudicates conflicts.
 
 **Step 5 — OOS capture during Q&A** (see dedicated section below).
 
-**Step 6 — Approach proposal.** Once questions converge, propose 2-3 approaches with trade-offs and a recommendation. User picks (or hybridizes). No design content gets written before this gate.
+**Step 6 — Approach proposal (design-brainstorm mode only).** Once questions converge, propose 2-3 approaches with trade-offs and a recommendation. User picks (or hybridizes). No design content gets written before this gate. **In thought-partner mode, skip this step** — there is no convergence target. Let the user drive when to wrap up.
 
 ## OOS capture during Q&A
 
@@ -57,7 +76,20 @@ An entry lands in the running OOS list only when an option is **explicitly** rej
 
 Never write the stub with unresolved questions in it. The `00-overview.md` stub never contains an "Open questions" section. If a question is still open, keep asking.
 
-## Exit gate and stub
+## Exit gate
+
+### Thought-partner mode
+
+No convergence pressure. The session ends when the user says so ("ok thanks", "got it", "let's stop here"). Before silently exiting, offer once via `AskUserQuestion`:
+
+- *"Capture anything from this?"*
+  - **Nothing — just exit** *(Recommended unless the conversation produced a concrete next step)*.
+  - **Drop a `future/{slug}.md` note** — write a short standalone note capturing the idea for later.
+  - **Promote to design-brainstorm** — switch modes and converge toward a `00-overview.md` stub.
+
+If the user picks "nothing," exit cleanly with no artifact. The conversation itself is the value.
+
+### Design-brainstorm mode
 
 When Q&A converges, confirm: *"I have enough — writing `00-overview.md`. Proceed?"*
 
@@ -79,9 +111,11 @@ Handoff: *"Stub written to `<path>/00-overview.md`. Run `/c-design` to write the
 - Doesn't write plans.
 - Doesn't write code.
 - Doesn't decide approval — that's a user gate after `/c-design`.
-- Doesn't read from or write to `future/` unless scope-decomposition triggered it.
+- In thought-partner mode, doesn't write any artifact unless the user picks one at the exit gate.
+- Doesn't read from or write to `future/` unless scope-decomposition triggered it or the user picks that exit option.
 
 ## References
 
 - Design source: [[designs/2026-05-17-cadence/01-brainstorm]] (in the consuming repo, if it carries Cadence's own design).
 - Shared frontmatter spec: `skills/_shared/frontmatter.md`.
+- Shared question/option formatting: `skills/_shared/ask-user-question.md`.

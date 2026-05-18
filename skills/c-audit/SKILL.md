@@ -72,7 +72,7 @@ Repo-configurable add-ons (declared in `.cadence/config.yaml` → `audits.option
 
 > Note: the right column describes `/c-execute`'s behavior for completeness — those outcomes are produced by `/c-execute` dispatching the same agent this skill dispatches. The agent is identical; only the caller's reaction differs.
 
-**Three response paths on failure** (consistent with `/c-execute`'s drift handling). Presented via `AskUserQuestion` (TUI multi-choice) with "Fix" marked `(Recommended)` in most cases — per [[designs/2026-05-17-cadence/00-overview#Decisions log]].
+**Three response paths on failure** (consistent with `/c-execute`'s drift handling). Presented via `AskUserQuestion` (TUI multi-choice) with "Fix" marked `(Recommended)` in most cases — per [[designs/2026-05-17-cadence/00-overview#Decisions log]]. Question text and options follow `skills/_shared/ask-user-question.md` — lead with a plain-English summary of *which* audit failed and what's at stake (the user has been waiting through a long execution and may not remember which audit covers what); one `(Recommended)` option with rationale in its description.
 
 - **Fix** *(Recommended)* — re-dispatch the implementer (or relevant sub-agent) with the failing audit's report; re-run `/c-audit`.
 - **Mark out of scope** — work moved to plan-side 99-OOS with rationale + wikilink; the blocking item now justified; re-run `/c-audit` (usually passes). Internally an OOS entry; user-facing label is "mark out of scope."
