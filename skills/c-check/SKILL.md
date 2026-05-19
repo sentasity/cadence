@@ -1,11 +1,11 @@
 ---
 name: c-check
-description: Substance review of an existing design or plan. Reads doc(s); reports on accuracy, internal consistency, completeness, hidden assumptions, contradictions, scope creep. Does NOT read code — that's /c-find-bugs. Default: substance only. --format flag adds Cadence compliance checks for hand-imported or hand-edited artifacts. Output never modifies the reviewed doc; report stays in chat.
+description: Substance review of an existing design or plan. Reads doc(s); reports on accuracy, internal consistency, completeness, hidden assumptions, contradictions, scope creep. Does NOT review code quality (that's /c-find-bugs) but narrowly verifies plan-cited paths/symbols/imports exist in the codebase. Default: substance only. --format flag adds Cadence compliance checks for hand-imported or hand-edited artifacts. Output never modifies the reviewed doc; report stays in chat.
 ---
 
 # `/c-check`
 
-You review designs and plans for substance — does this make sense, does it hang together, are there gaps, are there silent assumptions that won't survive contact with reality. You do NOT touch code; that's `/c-find-bugs`'s job.
+You review designs and plans for substance — does this make sense, does it hang together, are there gaps, are there silent assumptions that won't survive contact with reality. You do NOT review code quality (that's `/c-find-bugs`). One exception: when the target is a plan, you narrowly read code to verify cited paths/symbols/imports exist — enforcing `/c-plan`'s "Codebase verification" rule from the outside.
 
 ## Invocation forms
 
@@ -25,13 +25,14 @@ Each check runs as its own sub-agent in parallel (via `Task` tool). Each receive
 
 | Check | What it asks |
 |---|---|
-| **Accuracy** | Do the claims in this doc match related artifacts (linked design ↔ plan, existing code referenced in File Map, etc.)? |
+| **Accuracy** | Do the claims in this doc match related artifacts (linked design ↔ plan, internal cross-references)? |
 | **Internal consistency** | Do sections contradict each other? Do decisions in the overview match what children actually say? |
 | **Completeness** | Are there obvious gaps — missing failure modes, undefined terms, untouched concerns (security, observability, perf)? |
 | **Hidden assumptions** | What is the doc taking for granted that won't be true? (e.g. "user is logged in" without saying when login happens.) |
 | **Scope discipline** | Does the design/plan stay within brainstormed scope, or has it crept? |
 | **Internal logic** | Logical errors in proposed flow — race conditions, infinite loops, ordering violations. |
 | **Open-questions check (Invariant 1)** | Any callouts that read like open questions ("should we…", "we might…", "TBD")? |
+| **Codebase verification** *(plans only)* | Do the file paths, line ranges, symbols, and imports cited in the plan exist in the current code? Per `/c-plan`'s "Codebase verification" rule: `ls`/Read every `Modify` and `Test` path; Read cited line ranges; grep every symbol and import path; check codebase conventions match. Citation that doesn't resolve = **Critical** (plan unexecutable as written). Range drift that still points at the right function = **Important**. Convention mismatch (`_lambda` vs `lambda_`, etc.) = **Important**. Skipped for designs. |
 
 ## `--format` mode (Cadence compliance)
 
@@ -153,7 +154,7 @@ A bare option list like "A. Schema-version stamp / B. Re-stamp at runtime / C. D
 
 ## What `/c-check` doesn't do
 
-- Doesn't read code (that's `/c-find-bugs`).
+- Doesn't review code quality (that's `/c-find-bugs`). Narrowly reads code in plan mode to verify cited paths/symbols/imports exist — that's it.
 - Doesn't modify the reviewed doc — only reports.
 - Doesn't flip status — that's the user's call after reading the report.
 - Doesn't write follow-up artifacts (no review-result file). Report stays in chat.
