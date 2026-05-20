@@ -149,7 +149,11 @@ grep -Ei "TODO|FIXME|XXX|// will|// later|# stub" <diff-range>
 
 ## Drift handling
 
-**All drift response paths are presented via `AskUserQuestion` (TUI multi-choice), not a prose "type one of:" prompt.** Per [[designs/2026-05-17-cadence/00-overview#Decisions log]]. Question text and options follow `skills/_shared/ask-user-question.md` — plain-English framing of what we're deciding and why (the user may have been heads-down on the task for hours and lost the bigger plan context), exactly one `(Recommended)` per question, trade-off in each option's description. Each option's `description` is the corresponding "What happens next" cell (one sentence). The recommended pick depends on the trigger:
+**All drift response paths are presented via `AskUserQuestion` (TUI multi-choice), not a prose "type one of:" prompt.** Per [[designs/2026-05-17-cadence/00-overview#Decisions log]].
+
+> **Hard gate — every `AskUserQuestion`, no exceptions:** (1) the `question` opens with a plain-English lead a newcomer could follow — what's being decided and why it matters now (the user may have been heads-down on the task for hours and lost the bigger plan context); (2) exactly one option is marked `(Recommended)` and listed **first** — triage / "which next?" menus included ("your call" is a non-answer); (3) each option's `description` gives the one-sentence trade-off. Full spec: `skills/_shared/ask-user-question.md`.
+
+Each option's `description` is the corresponding "What happens next" cell (one sentence). The recommended pick depends on the trigger:
 - **Plan ambiguity** → "Clarify" is `(Recommended)`.
 - **Design contradiction** → "Update plan only" is `(Recommended)` (matches the default drift policy).
 - **Scope overflow** → "Fix (expand task in place)" is `(Recommended)` when overflow is small; "Mark out of scope" when significant.

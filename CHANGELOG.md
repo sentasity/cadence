@@ -2,6 +2,21 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.3.2 (2026-05-19)
+
+### Fixed
+
+- **`AskUserQuestion` calls were skipping the `(Recommended)` pick and plain-English framing — especially on triage/exploration menus.** Observed in `/c-brainstorm` thought-partner mode: questions like *"What next?"* / *"which thread first?"* presented bare option lists with no recommendation and no top-level summary of what was being decided. The rule existed in `skills/_shared/ask-user-question.md`, but (a) it was framed only around trade-off decisions, so navigation menus read as exempt, (b) it never said the recommended option must be listed first, and (c) it lived in a referenced file that isn't auto-loaded into context at skill runtime, so the model rarely saw it.
+
+### Changed
+
+- **`skills/_shared/ask-user-question.md`:** recommendation is now required even for "which should we look at first?" triage/exploration menus ("your call" is a non-answer); the `(Recommended)` option must be **listed first**; triage menus added to the "When this rule applies" list; yes/no gates list the recommended answer first.
+- **Inlined a self-contained "Hard gate" block into all six interactive skills** (`c-brainstorm`, `c-check`, `c-find-bugs`, `c-execute`, `c-audit`, `c-explain`) instead of relying on the soft cross-reference. Each states the three non-negotiable checks (plain-English lead, one `(Recommended)` listed first, per-option trade-off) directly in the `SKILL.md` so the rule is in context at runtime. `/c-brainstorm` carries the fullest version near the top since its conversational flow is the highest drift risk.
+
+### Why
+
+A user reported that cleanup brainstorming (and likely other skills) presented items to consider without surfacing which one to pick first, and without a top-of-question summary to orient by. Soft prose references weren't enough; the fix is a prominent, in-context hard gate.
+
 ## v0.3.1 (2026-05-18)
 
 ### Fixed

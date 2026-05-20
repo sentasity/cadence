@@ -101,7 +101,9 @@ Apply conservatively. **Default to Important when uncertain** — `Critical` is 
 
 After the report is printed, ask via `AskUserQuestion` how to handle findings. Default is report-only; any application path is opt-in. Per [[designs/2026-05-17-cadence/00-overview#Decisions log]] TUI decision.
 
-**All questions in this section follow `skills/_shared/ask-user-question.md`** — plain-English framing, exactly one `(Recommended)` option per question, trade-off in each option's description. This is load-bearing when there are many findings: by question 14/17 the user no longer has the report in view, so the question text is their only context.
+> **Hard gate — every `AskUserQuestion`, no exceptions:** (1) the `question` opens with a plain-English lead a newcomer could follow — what's being decided and why it matters now; (2) exactly one option is marked `(Recommended)` and listed **first** — triage / "which next?" menus included ("your call" is a non-answer); (3) each option's `description` gives the one-sentence trade-off. Full spec: `skills/_shared/ask-user-question.md`.
+
+This is load-bearing when there are many findings: by question 14/17 the user no longer has the report in view, so the question text is their only context.
 
 **Entry question (single AskUserQuestion):**
 

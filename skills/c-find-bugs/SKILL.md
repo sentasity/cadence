@@ -97,7 +97,9 @@ Same shape as `/c-check` and `/c-audit`.
 
 After the report, ask via `AskUserQuestion` whether to enter fix mode. Default is report-only. Per [[designs/2026-05-17-cadence/00-overview#Decisions log]] TUI decision.
 
-**All questions in this section follow `skills/_shared/ask-user-question.md`** — plain-English framing, exactly one `(Recommended)` option per question, trade-off in each option's description. Per-defect questions must include a rolling progress line (`Defect 14/17 — 8 fixed, 5 skipped so far`) and a plain-English TL;DR of what's wrong and why it matters; the bare `<file>:<line>` cite is not enough context by question 14.
+> **Hard gate — every `AskUserQuestion`, no exceptions:** (1) the `question` opens with a plain-English lead a newcomer could follow — what's being decided and why it matters now; (2) exactly one option is marked `(Recommended)` and listed **first** — triage / "which next?" menus included ("your call" is a non-answer); (3) each option's `description` gives the one-sentence trade-off. Full spec: `skills/_shared/ask-user-question.md`.
+
+Per-defect questions must additionally include a rolling progress line (`Defect 14/17 — 8 fixed, 5 skipped so far`) and a plain-English TL;DR of what's wrong and why it matters; the bare `<file>:<line>` cite is not enough context by question 14.
 
 **Entry question (single AskUserQuestion):**
 

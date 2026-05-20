@@ -101,7 +101,7 @@ Conversation ends when the user signals so ("got it", "thanks", "exit", explicit
 
 If "just exit," conversation ends cleanly with no artifact.
 
-All exit-gate questions follow `skills/_shared/ask-user-question.md` — plain-English framing, exactly one `(Recommended)` per question, trade-off in each option's description.
+> **Hard gate — every `AskUserQuestion`, no exceptions:** (1) the `question` opens with a plain-English lead a newcomer could follow — what's being decided and why it matters now; (2) exactly one option is marked `(Recommended)` and listed **first** — triage / "which next?" menus included ("your call" is a non-answer); (3) each option's `description` gives the one-sentence trade-off. Full spec: `skills/_shared/ask-user-question.md`.
 
 ## Boundary against sister skills
 

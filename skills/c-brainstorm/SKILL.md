@@ -12,6 +12,16 @@ You drive an interactive brainstorming Q&A. The session runs in one of two modes
 
 You never write child docs, plans, or code. You never auto-promote into `/c-design`.
 
+## Hard gate: every `AskUserQuestion` (no exceptions)
+
+Before sending ANY question — including casual "what next?" / "which thread first?" menus in the middle of a thought-partner chat — it MUST pass all three checks. This is not optional and not relaxed by conversational flow. If a question can't pass, it is not ready to send.
+
+1. **Plain-English lead, at the top.** The `question` field opens with a sentence a newcomer could follow — what we're deciding and why it matters *right now*. A bare `"What next?"` or a terse label fails this gate. The user must understand what's going on from the question text alone.
+2. **Exactly one `(Recommended)` option, listed first.** Append `(Recommended)` to that option's label and put it in position 1. Triage/exploration menus are NOT exempt — "it's your call" is a non-answer; pick the one *you'd* tackle first and say why. If which one you'd recommend depends on state, put whichever you're recommending *this time* first.
+3. **Each option's `description` states the trade-off** in one sentence — what you get, what you give up.
+
+Full spec + worked bad→good example: `skills/_shared/ask-user-question.md`. Read it if you haven't this session.
+
 ## Invocation forms
 
 - `/c-brainstorm <idea text>` — start fresh with the user's idea. Detect mode from phrasing (see "Mode detection" below).
@@ -58,7 +68,7 @@ The scan is invisible — its job is to sharpen the first question, not produce 
 
 **Step 3 — Question discipline:**
 - One question per turn. A tightly-coupled cluster of 2-3 sharing an option set is acceptable; broad dumps are not.
-- Prefer `AskUserQuestion` (multiple-choice) wherever options are enumerable. Question text and option formatting follow `skills/_shared/ask-user-question.md` — plain-English framing, one `(Recommended)` pick with rationale in the description, trade-offs spelled out, previews for visual comparisons.
+- Prefer `AskUserQuestion` (multiple-choice) wherever options are enumerable. Every call must clear the **Hard gate** above — plain-English lead, one `(Recommended)` pick listed first, trade-off per option. Use previews for visual comparisons.
 - User nods or redirects — never draft from scratch.
 - Free-text fallback only when the option space is genuinely open.
 
