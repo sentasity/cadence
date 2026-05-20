@@ -20,6 +20,8 @@ A terse technical label ("Drift path") is not a substitute for any of these. It 
 
 - **2–4 options.** More than 4 means the question is poorly scoped — split it.
 - **Exactly one option marked `(Recommended)`.** Not "leaning toward," not "you might prefer." One pick, surfaced. The rationale lives in that option's `description` — not buried elsewhere.
+- **The `(Recommended)` option is listed first.** Position 1, always — matching `AskUserQuestion`'s own convention. The user should never have to scan the list to find your pick.
+- **A recommendation is required even when the question is "which should we look at first?"** Triage and exploration menus ("which thread do you want to dig into first?", "which finding next?") are not exempt just because every option is technically valid. The user is asking for your judgment on sequencing or priority — give it. "It's your call" is a non-answer; pick the one *you* would tackle first and say why in its description. If which option you'd recommend depends on runtime state (e.g. severity counts), place whichever you're recommending *this time* first.
 - **Each option's `description`** explains the trade-off in one sentence — what you get and what you give up. Not just what the option *is* (the label already says that).
 - **Use `preview`** for concrete artifacts the user needs to visually compare (folder structures, code diffs, layouts). Skip preview for preference questions where descriptions suffice.
 
@@ -35,9 +37,10 @@ The cost of one extra sentence of context per question is negligible. The cost o
 - Per-task drift handling (`/c-execute`).
 - Audit failure response paths (`/c-audit`).
 - Brainstorm Q&A (`/c-brainstorm`).
+- Triage / exploration menus — "which of these do you want to dig into first?", "which finding next?". These need a recommendation just as much as trade-off decisions: the user is asking for your sequencing judgment.
 - Anywhere `AskUserQuestion` is the primary interaction surface for a non-trivial decision.
 
-Simple yes/no gates ("Proceed?") don't need the full structure but should still include a one-line description per option and a recommendation when one option is clearly safer.
+Simple yes/no gates ("Proceed?") don't need the full structure but should still include a one-line description per option and a recommendation — list the recommended answer first.
 
 ## Worked example: bad → good
 
