@@ -77,7 +77,8 @@ Lane isolation and integration follow `skills/_shared/worktree-lifecycle.md`.
 ## Resume protocol
 
 - Status `in-progress` = resumable. `/c-execute <plan-path>` on an `in-progress` plan resumes; does not restart.
-- On resume, re-read the plan, identify the first unchecked `- [ ]` step, continue from there. Already-checked tasks are not re-dispatched.
+- On resume, rebuild the DAG from `Depends:` edges, run `git worktree prune` and remove any leftover `cadence/lane-*` worktrees and branches (per `skills/_shared/worktree-lifecycle.md`), compute the ready set from unchecked tasks, and continue scheduling.
+- **The lane is the resume unit.** A lane whose checkboxes were not all flipped to `- [x]` is considered incomplete and re-runs from scratch; any orphaned worktree work is discarded by the prune step.
 - The PM does NOT trust in-memory state across sessions. Plan file's checkbox state on disk (committed or not) is the only source of truth.
 - **Dirty tree handling on resume:**
   - Dirty with ONLY plan-file edits (checkbox flips on the plan being resumed) → expected mid-execution state; continue.
@@ -179,6 +180,10 @@ grep -Ei "TODO|FIXME|XXX|// will|// later|# stub" <diff-range>
 - Hook failures → fix root cause → new commit (NOT amend).
 
 ## Drift handling
+
+### Quiesce-on-block
+
+When a lane returns BLOCKED, hits unresolvable drift, or surfaces a review gap needing user input, enter **quiesce**: set a no-new-dispatch flag, let all in-flight lanes finish and land normally, preserve the blocking lane's worktree (its dependents stay unscheduled), then surface the blocker via the drift `AskUserQuestion` from a clean, fully-merged tree. Never halt in-flight lanes mid-work; never keep dispatching new lanes while a decision is pending.
 
 **All drift response paths are presented via `AskUserQuestion` (TUI multi-choice), not a prose "type one of:" prompt.** Per [[designs/2026-05-17-cadence/00-overview#Decisions log]].
 
