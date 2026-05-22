@@ -1,6 +1,6 @@
 ---
 name: c-validate
-description: Walks a plan's 96-validation.md post-deploy. Category C (prereqs) first, then A (automated), then B (manual workflow). Checks off items as it walks. Flips plan status to `completed` on full pass. For split designs (multiple linked plans), checks sibling-plan statuses via the design's `linked_plans:` array and only offers to flip the design when ALL siblings complete.
+description: Walks a plan's 96-validation.md post-deploy. Category C (prereqs) first, then A (automated), then B (manual workflow). Checks off items as it walks. Flips plan status to `completed` on full pass. Reads `linked_design:` and offers to flip the design to `completed` (user confirms).
 ---
 
 # `/c-validate`
@@ -50,20 +50,14 @@ Status NEVER advances to `completed` with any unchecked 96 item. No silent passe
 
 ## On full pass
 
-Walk the linked-plan graph to determine whether the design should also be offered for completion.
-
 1. Flip this plan's overview status to `completed`. Update `updated:`.
 2. Print: *"Validation walked clean. `<N>` automated, `<M>` manual workflows, `<P>` prereqs confirmed."*
 3. Read this plan's `linked_design:` frontmatter to find the parent design.
-4. Read the design's `linked_plans:` array.
-5. **Single-plan design** (linked_plans has one entry = this plan): prompt *"Flip design `[[...]]` to `completed` too?"* User picks. Default no — `approved` is the operational signal; `completed` is a formal close.
-6. **Split-plan design** (linked_plans has multiple entries): check each sibling's status by parsing `<paths.plans>/<sibling-slug>/00-overview.md` frontmatter directly (no caching, always fresh). Print: *"`<N>` of `<M>` linked plans complete."*
-   - If all `M` are `completed`: prompt to flip design.
-   - If not all done: don't prompt; print which siblings are still pending (status + path). User comes back after the others finish.
+4. Prompt: *"Flip design `[[...]]` to `completed` too?"* User picks. Default no — `approved` is the operational signal; `completed` is a formal close.
 
-**Linkage walk discipline:**
-- If a `linked_plans:` entry points to a folder that doesn't exist, surface as a warning ("plan slug X listed in design but folder missing") — don't silently drop. Catches stale linkage from deleted/renamed plans.
-- If a plan's `linked_design:` points to a design that doesn't exist, surface as a warning.
+**Linkage discipline:**
+- If `linked_design:` points to a design that doesn't exist, surface as a warning — don't silently drop.
+- A design has exactly one plan (`linked_plan:`); there is no sibling-plan graph to walk.
 
 ## What `/c-validate` doesn't do
 
