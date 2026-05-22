@@ -48,6 +48,7 @@ audits:
     - code-behind-checkbox
     - design-intent-alignment
     - build-validator
+    - merge-integrity
   warnings:
     - file-map-honesty
     - design-plan-consistency
