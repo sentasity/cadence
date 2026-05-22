@@ -138,15 +138,14 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 ## Writing flow
 
 1. Read approved design end-to-end (overview + every child + 99-OOS).
-2. Confirm the phase decomposition with the user (no split question — one plan always).
-3. Confirm phase decomposition: *"Plan files will be `01-schema`, `02-pipeline`, `03-api`, `04-frontend`. Sound right?"*
-4. Write `00-overview.md` first (frontmatter + phase index + File Map — generators need it).
-5. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`. Before each generator finalizes its doc, run the codebase verification pass (above) on every path, symbol, and import it cites. Fix inline.
-6. **Invariant 2 in reverse.** If a phase reveals a gap or inconsistency in the design, surface it. Apply drift policy (default: update plan only; user-elective: update plan + design).
-7. Dispatch `cadence-doc-consistency` once over the full set. Reconcile trivial wording; surface substantive contradictions to the user via `AskUserQuestion`. Re-dispatch only affected generators on resolution. The plan is not finalized until the sweep is clean.
-8. **Bidirectional linkage write.** Set design's `linked_plan:` to this plan's slug (singular). Bump design's `updated:`.
-9. **Self-review pass** (see below).
-10. Status stays `draft`. Print: *"Plan written. Run `/c-execute <path>` when ready."*
+2. Confirm phase decomposition (no split question — one plan always): *"Plan files will be `01-schema`, `02-pipeline`, `03-api`, `04-frontend`. Sound right?"*
+3. Write `00-overview.md` first (frontmatter + phase index + File Map — generators need it).
+4. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`. Before each generator finalizes its doc, run the codebase verification pass (above) on every path, symbol, and import it cites. Fix inline.
+5. **Invariant 2 in reverse.** If a phase reveals a gap or inconsistency in the design, surface it. Apply drift policy (default: update plan only; user-elective: update plan + design).
+6. Dispatch `cadence-doc-consistency` once over the full set. Reconcile trivial wording; surface substantive contradictions to the user via `AskUserQuestion`. Re-dispatch only affected generators on resolution. The plan is not finalized until the sweep is clean.
+7. **Bidirectional linkage write.** Set design's `linked_plan:` to this plan's slug (singular). Bump design's `updated:`.
+8. **Self-review pass** (see below).
+9. Status stays `draft`. Print: *"Plan written. Run `/c-execute <path>` when ready."*
 
 ## Generation (always batched)
 

@@ -1,6 +1,6 @@
 ---
 name: c-design
-description: Takes a `00-overview.md` stub from /c-brainstorm and materializes the full design folder (child docs in reading order, plain-English narrative, optional 97/98 sections, OOS shell). Sequential writes with explicit user review between each child doc. Self-review pass before flipping status to `in-review`. Never writes plans or code.
+description: Takes a `00-overview.md` stub from /c-brainstorm and materializes the full design folder (child docs in reading order, plain-English narrative, optional 97/98 sections, OOS shell). Parallel generation (all-at-once, the default) or sequential one-by-one writes with explicit user review per child doc. Self-review pass before flipping status to `in-review`. Never writes plans or code.
 ---
 
 # `/c-design`
