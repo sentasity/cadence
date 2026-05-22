@@ -4,8 +4,7 @@ created: 2026-01-15
 updated: 2026-01-15
 status: approved
 tags: [design, hello-cadence, example]
-linked_plans:
-  - 2026-01-15-hello-cadence
+linked_plan: 2026-01-15-hello-cadence
 ---
 
 # Hello-Cadence — Current Time Printer
