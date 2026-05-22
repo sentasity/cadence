@@ -1,6 +1,6 @@
 ---
 name: c-plan
-description: Takes an approved design and writes an AI-readable plan folder with the same slug. Plans are exact paths, exact diffs, exact commands — no narrative. One judgment question on plan-splitting (not threshold-based). Bidirectional linkage: writes `linked_design:` on the new plan and appends to `linked_plans:` on the design. Never writes code; never auto-executes.
+description: Takes an approved design and writes an AI-readable plan folder with the same slug. Plans are exact paths, exact diffs, exact commands — no narrative. One design always becomes one plan; phase docs handle decomposition. Bidirectional linkage: writes `linked_design:` on the new plan and `linked_plan:` (singular) on the design. Never writes code; never auto-executes.
 ---
 
 # `/c-plan`
@@ -13,32 +13,17 @@ You translate an approved design into an execution-ordered plan folder. Plans ar
 
 **Refuses when:** design status is `draft` or `in-review` (tell user to finish/approve the design first); or when a plan folder with the same slug already exists at non-draft status (would overwrite).
 
-## When to split a plan (judgment-based, NOT threshold-based)
+## One design → one plan
 
-Plans are bite-sized by default. If a design produces an unwieldy plan, that's a signal the design covered too many concerns — fix it upstream rather than rubber-stamping a large plan.
+A design always becomes exactly **one** plan folder. Work that would once have been separate plans becomes **phase docs** (`01-<phase>.md`, `02-<phase>.md`, …) inside that one plan. There is no split question and no `linked_plans:` array. After reading the design, confirm the **phase decomposition** with the user (writing-flow step 3); do not ask about splitting into multiple plans.
 
-After reading the design, ask **one** judgment question:
+Size is handled by phase decomposition, not by spawning sibling plans — `/c-execute`'s DAG engine already parallelizes across phase docs.
 
-> *"Does this design build one coherent thing — a single logical unit with shared invariants, that would be tested as one feature?"*
+## Bidirectional linkage
 
-- **Yes** → write one plan, proceed.
-- **No** → surface the suspected split boundary: *"This design's child docs `0X-foo` and `0Y-bar` look like they cover different concerns. Split into two plans?"*
-  - **Confirm split** → write sibling plan folders, each with its own `00-overview.md` wikilinking back to the same approved design. Slug discriminator (`-schema`, `-pipeline`, etc.). Each plan fully self-contained.
-  - **Reject split** → proceed with one plan; trust the user's judgment.
-
-NO threshold counts. NO "your plan has 47 tasks, please split." If the user says one plan, it's one plan. Resume protocol in `/c-execute` handles length without complaining.
-
-**Where split prevention actually happens:**
-- `/c-brainstorm` (scope decomposition) — multi-subsystem ideas split here.
-- `/c-design` (doc-index scoping) — large designs split here.
-- `/c-plan` (one judgment question) — last-mile check; splits should be rare by this point.
-
-## Bidirectional linkage (always — single or split)
-
-For each plan written:
 - Plan's `00-overview.md` carries `linked_design: <design-slug>`.
-- Append plan's slug to design's `linked_plans:` array. Update design's `updated:` date.
-- The design flips to `completed` only when EVERY entry in `linked_plans:` is at status `completed` (gated by `/c-validate`).
+- Set the design's `linked_plan: <this-plan-slug>` (singular). Update the design's `updated:` date.
+- The design flips to `completed` only when its `linked_plan` reaches status `completed` (gated by `/c-validate`).
 
 ## Folder layout
 
@@ -153,7 +138,7 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 ## Writing flow
 
 1. Read approved design end-to-end (overview + every child + 99-OOS).
-2. Ask the one judgment question (plan-splitting check).
+2. Confirm the phase decomposition with the user (no split question — one plan always).
 3. Confirm phase decomposition: *"Plan files will be `01-schema`, `02-pipeline`, `03-api`, `04-frontend`. Sound right?"*
 4. Write `00-overview.md` (index + file map + design link + frontmatter with `base_sha: null`).
 5. Write each phase doc one at a time. Before finalizing each phase doc, run the codebase verification pass (above) on every path, symbol, and import it cites. Fix inline. Pause after each.
@@ -161,7 +146,7 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 7. Write `96-validation.md`.
 8. Write `97`/`98` shells.
 9. `99-out-of-scope.md` shell (empty or populated if Q&A cut anything).
-10. **Bidirectional linkage write.** Append this plan's slug to design's `linked_plans:`. Bump design's `updated:`.
+10. **Bidirectional linkage write.** Set design's `linked_plan:` to this plan's slug (singular). Bump design's `updated:`.
 11. **Self-review pass** (see below).
 12. Status stays `draft`. Print: *"Plan written. Run `/c-execute <path>` when ready."*
 
