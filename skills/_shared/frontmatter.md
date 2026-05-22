@@ -11,7 +11,7 @@ created: <ISO date YYYY-MM-DD>
 updated: <ISO date YYYY-MM-DD>
 status: draft | in-review | approved | completed | superseded | on-hold
 tags: [design, ...user-supplied]
-linked_plans: []          # populated by /c-plan; one slug per linked plan
+linked_plan: null         # populated by /c-plan; the one plan's slug (one design -> one plan)
 ---
 ```
 
@@ -53,7 +53,7 @@ title: "Plan — <Human title> Phase NN: <PHASE_NAME>"
 |---|---|---|---|
 | Design | draft | in-review | /c-design after self-review |
 | Design | in-review | approved | User says "approved" |
-| Design | approved | completed | /c-validate offers when all linked plans hit completed |
+| Design | approved | completed | /c-validate offers when the linked plan hits completed |
 | Plan | draft | in-progress | /c-execute starts |
 | Plan | in-progress | implemented | /c-execute after /c-audit passes |
 | Plan | implemented | completed | /c-validate after 96-validation walks clean |

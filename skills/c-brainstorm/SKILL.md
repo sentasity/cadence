@@ -50,14 +50,14 @@ Before entering Q&A, walk up from the current working directory looking for `.ca
    - **Paths:** *"Where should designs and plans live?"* — options: `docs/designs` (default), `docs/obsidian/designs`, or other (free text).
    - **TDD default:** *"Should plans default to TDD-shaped tasks (test → fail → impl → pass → commit)?"* — yes / no.
    - **Advisors:** *"Any repo-specific agents to register as advisors?"* — comma-separated names or "none."
-3. Write `.cadence/config.yaml` to the repo root with the answers plus all other defaults from the plugin's `defaults/config.default.yaml`. Confirm the file was created.
+3. Write `.cadence/config.yaml` to the repo root with the answers folded in, and include `config_version: 2` plus all `execute.*` and `authoring.*` keys at their defaults (`execute.branch_check`, `execute.auto_resolve_drift`, `execute.parallel`, `execute.max_parallel`, `execute.worktree_dir`, `execute.worktree_confirm`, `execute.integrate`, `execute.resume_on_dirty_tree`, `authoring.max_parallel`, `authoring.design_mode`). All other defaults from `defaults/config.default.yaml` are included as-is. Confirm the file was created.
 4. Enter the regular Q&A loop (below) for the user's brainstorm input.
 5. **If user says no,** exit cleanly with a one-line note: *"Config required to proceed. Run /c-brainstorm again when ready."* No error, no pointer dump.
 
 ## Q&A loop mechanics
 
-**Step 1 — Parallel context scan** (before the first question, all in parallel):
-- Read `.cadence/config.yaml` (resolve paths, naming, status vocab, advisors).
+**Step 1 — Parallel context scan + pre-flight** (before the first question, all in parallel):
+- Read `.cadence/config.yaml` (resolve paths, naming, status vocab, advisors). **If the file exists, run the config-migration check (`skills/_shared/config-migration.md`) before Q&A** — surface any migration prompts to the user and resolve them before continuing.
 - Read recent commits: `git log -20 --oneline`.
 - Read related artifacts under `paths.designs` and `paths.plans` that match the idea's slug or topic.
 - Read the repo's `CLAUDE.md` (if any).
@@ -105,7 +105,7 @@ When Q&A converges, confirm: *"I have enough — writing `00-overview.md`. Proce
 
 Stub structure (at `<paths.designs>/{yyyy-mm-dd-slug}/00-overview.md`):
 
-- Frontmatter per `skills/_shared/frontmatter.md` (design overview shape, `linked_plans: []`).
+- Frontmatter per `skills/_shared/frontmatter.md` (design overview shape, `linked_plan: null`).
 - **What we're building** — 2-4 sentences, plain English.
 - **Why** — 1-2 sentences naming the motivating problem.
 - **Approach** — the picked option from step 6, summarized.

@@ -8,3 +8,9 @@
 
 # Local-only Claude Code state
 .claude/local/
+
+# Obsidian editor config (machine-specific)
+.obsidian/
+
+# Cadence working artifacts (designs/plans) — not for the public repo
+docs/

@@ -8,12 +8,9 @@ Build the module + test in two bite-sized tasks. TDD shape: test first, then imp
 
 ### Task 1.1: Failing test for `current_time_iso()`
 
-**Files:**
-- Create: `pyproject.toml`
-- Create: `src/hello_cadence/__init__.py`
-- Create: `tests/test_now.py`
-
-**Parallel:** independent
+**Reads:** []
+**Touches:** [`pyproject.toml`, `src/hello_cadence/__init__.py`, `tests/test_now.py`]
+**Depends:** []
 
 - [x] **Step 1: Write `pyproject.toml`**
 
@@ -57,10 +54,9 @@ Build the module + test in two bite-sized tasks. TDD shape: test first, then imp
 
 ### Task 1.2: Implement `current_time_iso()`
 
-**Files:**
-- Create: `src/hello_cadence/now.py`
-
-**Parallel:** depends on 1.1
+**Reads:** []
+**Touches:** [`src/hello_cadence/now.py`]
+**Depends:** [1.1]
 
 - [x] **Step 1: Write implementation**
 

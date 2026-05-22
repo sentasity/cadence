@@ -1,6 +1,8 @@
 # Cadence plugin defaults. Per-repo .cadence/config.yaml overrides only what differs.
 # No assumption of obsidian or any specific repo layout.
 
+config_version: 2          # schema version; drives migration detection
+
 paths:
   designs: docs/designs
   plans:   docs/plans
@@ -21,15 +23,22 @@ frontmatter:
 plan:
   tdd: true
   commit_cadence: per-task
-  parallel_grain: in-file
   # No split_thresholds — split decisions are judgment-based in /c-plan,
   # not threshold-based. See designs/2026-05-17-cadence/03-plan.md.
 
 execute:
   branch_check: true
   auto_resolve_drift: false
-  max_parallel: 5
+  parallel: true           # master switch; false => sequential, no worktrees
+  max_parallel: 4          # concurrent implementer lanes (= worktrees); reviewers uncapped
+  worktree_dir: .cadence/worktrees   # where lane worktrees live
+  worktree_confirm: true   # one-time pre-flight worktree confirmation
+  integrate: rebase-ff     # rebase-ff | merge-commit (history-rewrite policy)
   resume_on_dirty_tree: false
+
+authoring:
+  max_parallel: 6          # concurrent doc-generator agents (no worktrees; cheap)
+  design_mode: ask         # ask | all-at-once | one-by-one (standing default for /c-design)
 
 audits:
   default:
@@ -39,6 +48,7 @@ audits:
     - code-behind-checkbox
     - design-intent-alignment
     - build-validator
+    - merge-integrity
   warnings:
     - file-map-honesty
     - design-plan-consistency

@@ -1,6 +1,6 @@
 ---
 name: c-execute
-description: Drives a `draft`-status plan to `implemented`. PM-and-sub-agent model — user's main session is the PM; fresh `cadence-implementer` per task; in-file parallelism per `Parallel:` marker; two-stage review (`cadence-spec-reviewer` then `cadence-code-reviewer`, spec wins on conflicts); records `base_sha` on first invocation; at completion dispatches `cadence-completion-auditor` directly (NOT via the /c-audit skill — skill-calls-skill is not a documented mechanism). Drift handling surfaces three response paths (fix / mark out of scope / abort) on every block. Never auto-deploys. Never amends commits. Never skips hooks.
+description: Drives a `draft`-status plan to `implemented`. PM-and-sub-agent model — user's main session is the PM; fresh `cadence-implementer` per task; DAG-scheduled parallel lanes per `Depends:` edges with a `Touches:` conflict guard; two-stage review (`cadence-spec-reviewer` then `cadence-code-reviewer`, spec wins on conflicts); records `base_sha` on first invocation; at completion dispatches `cadence-completion-auditor` directly (NOT via the /c-audit skill — skill-calls-skill is not a documented mechanism). Drift handling surfaces three response paths (fix / mark out of scope / abort) on every block. Never auto-deploys. Never amends commits. Never skips hooks.
 ---
 
 # `/c-execute`
@@ -13,13 +13,24 @@ You are the PM. You drive a plan to completion via fresh sub-agents per task, tw
 
 Optional: `/c-execute --restart <plan-path>` — wipe checkboxes and start over (NEVER the default).
 
+## Plan-format detection
+
+Before scheduling, detect the plan format per-plan:
+- **New format** (tasks carry `Touches:`) → run the lane engine below.
+- **Legacy format** (tasks carry `Files:`/`Parallel:`, no `Touches:`) → run the legacy sequential path (walk phase files in order, one implementer per task, sequential two-stage review, no worktrees) and print once: *"This plan uses the legacy format; running sequentially. Re-plan with `/c-plan` to enable parallel execution."* A single plan is never run half-parallel, half-sequential.
+- **`execute.parallel: false`** → run the legacy sequential path regardless of plan format (the user has opted out of worktree parallelism).
+
 ## Pre-flight checks (in order; any failure surfaces — no auto-resolution)
 
-1. Path resolves to a plan folder with `00-overview.md`.
-2. Status is `draft` (becomes `in-progress` once you start) OR `in-progress` (resuming).
-3. Linked design (from `linked_design:` frontmatter) exists with `status: approved` or later.
-4. Working tree is clean (no unstaged or uncommitted changes).
-5. Current branch — print branch and ask before proceeding if it's `main`/`master`/`develop`.
+1. **Config migration check.** Run `skills/_shared/config-migration.md` before proceeding; surface any prompt to the user.
+2. Path resolves to a plan folder with `00-overview.md`.
+3. Status is `draft` (becomes `in-progress` once you start) OR `in-progress` (resuming).
+4. Linked design (from `linked_design:` frontmatter) exists with `status: approved` or later.
+5. Working tree is clean (no unstaged or uncommitted changes).
+6. Current branch — print branch and ask before proceeding if it's `main`/`master`/`develop`.
+7. **Worktree confirmation (new-format plans only; skip if `execute.worktree_confirm: false`).** Before opening the first lane worktree, print the worktree plan and ask once via `AskUserQuestion`:
+   *"This plan runs up to `<max_parallel>` parallel lanes in git worktrees under `.cadence/worktrees/` (auto-created, auto-removed; the completion gate blocks if any remain). Proceed?"*
+   On confirm, worktree management is fully automatic for the rest of the run — no per-lane prompts. On decline, do not start; suggest the user re-run when ready. Legacy-format plans skip this check (no worktrees).
 
 ## On first flip from `draft` to `in-progress`: record `base_sha`
 
@@ -30,28 +41,55 @@ SHA-based pinning is robust against rebases, merges, and unrelated commits that 
 ## PM responsibilities
 
 1. Read the plan once: overview + every phase file + 96-validation + 97/98/99.
-2. Build an internal task list — every `### Task N.M` becomes a tracked item with its `Parallel:` marker and full step block extracted.
-3. Walk files in order (`01` → `02` → …). NEVER start file `N+1` until file `N` is fully complete.
-4. Within a file, dispatch per parallel grain (below).
+2. Build an internal task list — every `### Task N.M` becomes a tracked item with its `Depends:` edges, `Reads:` block, `Touches:` list, and full step block extracted.
+3. Build the dependency DAG from each task's `Depends:` edges and form lanes per the scheduling loop in "Lane model and DAG scheduling".
+4. Dispatch lanes concurrently up to `execute.max_parallel`, respecting `Touches:` disjointness.
 5. **After each task lands** (spec ✓ + code ✓ + Invariant 3 clean), edit the phase file to flip every `- [ ]` step under `### Task N.M` to `- [x]`. See [Marking task complete](#marking-task-complete-mandatory--required-for-resume).
 6. Surface blockers to user — never work around silently.
 7. Run audit gate at the end; on pass, commit accumulated plan-file changes (status flip + all checkbox flips) in one commit, then mark `implemented`.
 
 **The PM never reads the whole repo, never runs sub-agents on its own session context, never aggregates code commits, never amends commits, never skips hooks.**
 
-## Parallel grain (in-file)
+## Lane model and DAG scheduling
 
-- All `Parallel: independent` tasks in the current file dispatch simultaneously to fresh `cadence-implementer` sub-agents — up to `execute.max_parallel` from config (default 5).
-- `Parallel: depends on N.K` tasks wait until task `N.K` has landed.
-- A task is "landed" when implementer DONE + spec reviewer ✓ + code reviewer ✓ + commit visible in `git log`.
-- If `Parallel: independent` task count exceeds `max_parallel`, dispatch first batch, wait for any one to land, then dispatch next. No "all-at-once" stampede.
+The PM builds a dependency DAG from each task's `Depends:` edges (cross-file allowed), then runs **lanes** — chains of dependent tasks — concurrently in isolated worktrees.
 
-Next file does not start until every task in the current file has landed.
+- **Lane** = an ordered chain `[T0, T1, …]` run by one `cadence-implementer` in one worktree, committing per-task internally.
+- **Lane formation (greedy):** seed from a ready task; extend with a successor whose only unsatisfied `Depends:` is the current tail; stop at a diamond join, when no such successor exists, or when the lane's accumulated size hits PM judgment (no fixed threshold).
+- **Ready set:** a task is ready when every `Depends:` predecessor has **merged** to the working branch. Recompute on every land.
+- **Co-schedule guard (hard):** two ready lanes may run concurrently only if `Touches(A) ∩ Touches(B) = ∅`. A `Touches:` overlap **serializes** the later lane (defer until the other lands) — never error, never override.
+- **Cap:** up to `execute.max_parallel` lanes (default 4 = concurrent worktrees). Reviewers run on top, uncapped.
+
+### Scheduling loop
+
+```
+build DAG from Depends edges  (once; rebuild on resume)
+while unfinished tasks and not quiescing:
+    ready = tasks whose Depends predecessors all merged
+    while free lane slots > 0 and a schedulable lane exists:
+        form lane L greedily from ready
+        if Touches(L) disjoint from all in-flight lanes: open worktree; dispatch implementer
+        else: defer L
+    await next lane to land
+    on land: integrate (merge-on-land), flip L's checkboxes, free slot
+```
+
+The DAG must be acyclic; a cycle is a plan defect — surface it, never guess an order.
+
+## Worktree lifecycle and merge-on-land
+
+Lane isolation and integration follow `skills/_shared/worktree-lifecycle.md`.
+
+- **Open** a worktree per lane at lane start (`git worktree add` from the current working tip).
+- **Merge-on-land:** when a lane's implementer returns DONE and both reviewers approve the cumulative lane diff, the PM integrates per `execute.integrate` — default `rebase-ff` (**rebase the lane branch onto the current working tip and fast-forward**; linear history, per-task commits preserved), or `merge-commit` (`--no-ff` per lane) for repos that forbid history rewriting.
+- **Per-lane clean-merge check (mandatory):** the rebase must report no conflict, the lane commits must be present, and there must be no conflict residue. A conflict here means a `Touches:` declaration was wrong — STOP and surface; never auto-resolve.
+- **Remove** the worktree + lane branch on land. **Preserve** it on block.
 
 ## Resume protocol
 
 - Status `in-progress` = resumable. `/c-execute <plan-path>` on an `in-progress` plan resumes; does not restart.
-- On resume, re-read the plan, identify the first unchecked `- [ ]` step, continue from there. Already-checked tasks are not re-dispatched.
+- On resume, rebuild the DAG from `Depends:` edges, run `git worktree prune` and remove any leftover `cadence/lane-*` worktrees and branches (per `skills/_shared/worktree-lifecycle.md`), compute the ready set from unchecked tasks, and continue scheduling.
+- **The lane is the resume unit.** A lane whose checkboxes were not all flipped to `- [x]` is considered incomplete and re-runs from scratch; any orphaned worktree work is discarded by the prune step.
 - The PM does NOT trust in-memory state across sessions. Plan file's checkbox state on disk (committed or not) is the only source of truth.
 - **Dirty tree handling on resume:**
   - Dirty with ONLY plan-file edits (checkbox flips on the plan being resumed) → expected mid-execution state; continue.
@@ -63,7 +101,7 @@ Use the `Task` tool with one of these named agents:
 
 | Agent | When | What PM passes |
 |---|---|---|
-| `cadence-implementer` | Per task | Task block + linked files extracted from task's `Files:` + CLAUDE.md excerpt + `.cadence/config.yaml` slice |
+| `cadence-implementer` | Per task | Task block + linked files extracted from task's `Reads:` block + `Touches:` list + CLAUDE.md excerpt + `.cadence/config.yaml` slice |
 | `cadence-spec-reviewer` | After implementer DONE | Task spec + diff |
 | `cadence-code-reviewer` | After spec-review ✓ | Diff + repo conventions |
 
@@ -101,26 +139,31 @@ A return without a plain-English lead is malformed — re-dispatch the sub-agent
 | **Adjacent** — directory or "all callers of X" | grep for references (typically 3-8 files); fetch; re-dispatch. |
 | **Broad** — "whole module" or "all callers across codebase" | STOP. Surface to user. Usually indicates plan defect. User picks: edit Files list + retry, split task, or escalate to more capable model. Never auto-fetch the whole repo. |
 
-## Review loops (two-stage, mandatory order)
+## Review loops (two-stage, run in parallel)
 
-1. **`cadence-spec-reviewer` first.** Does diff match task spec? Anything missing? Anything extra?
-2. **`cadence-code-reviewer` second.** Does diff match repo conventions (naming, error handling, test quality)?
+When a lane's implementer returns DONE, dispatch **both** reviewers concurrently against the cumulative lane diff:
 
-Code review NEVER starts before spec review ✓. If spec review finds issues, implementer fixes → spec re-reviews → THEN code review runs.
+1. `cadence-spec-reviewer` — does the diff match the task specs? Anything missing/extra?
+2. `cadence-code-reviewer` — does it match repo conventions (naming, errors, tests)?
 
-**On reviewer-finding conflicts: spec wins.** If `cadence-code-reviewer` flags an issue that contradicts something `cadence-spec-reviewer` already approved (e.g. "function name violates repo convention" when the task block specified that exact name), DROP the code-review finding. Spec review establishes WHAT the change is; code review only checks quality of execution. Code review never overturns spec approval. (Per [[designs/2026-05-17-cadence/04-execute#Review loops]] decision.)
+They run at the same time (no ordering barrier). Resolve the two reports:
+
+- Both approve → lane lands.
+- Spec finds gaps → implementer fixes in the same worktree → **both** re-run.
+- Code finds issues (spec approved) → implementer fixes → both re-run.
+- **Conflict: spec wins.** If a code finding contradicts a spec approval, DROP the code finding. Code review never overturns spec.
 
 ## Marking task complete (mandatory — required for resume)
 
-After spec ✓ + code ✓ + commit-in-`git log` + Invariant 3 grep clean, the PM **must** edit the plan's phase file:
+The unit of completion is the **lane**, not the individual task. After a lane lands (spec ✓ + code ✓ + clean-merge ✓ + Invariant 3 grep clean for the full lane diff), the PM **must** edit the plan's phase file:
 
-1. Open the phase file containing the just-landed task.
-2. Flip every `- [ ]` step under `### Task N.M` to `- [x]`.
-3. Save. **Do NOT commit the plan-file edit per task.**
+1. Open the phase file(s) containing the just-landed lane's tasks.
+2. Flip every `- [ ]` step under every `### Task N.M` in the lane to `- [x]`. All of the lane's task checkboxes flip together on land.
+3. Save. **Do NOT commit the plan-file edit per task or per lane.**
 
 This is the ONLY mechanism for tracking progress across sessions. Without it the resume protocol fails — re-invocation starts over from Task 1.1, and the completion-time gate (which checks for `- [x]`) will never let the plan flip to `implemented`.
 
-**In-file parallel tasks:** edit checkboxes as each task lands, not in a batch. Two tasks landing simultaneously = two separate plan-file edits. This bounds context — if the PM session dies mid-batch, the landed work is already recorded in the working tree.
+**In-flight parallel lanes:** edit checkboxes as each lane lands, not in a batch. Two lanes landing simultaneously = two separate plan-file edits. This bounds context — if the PM session dies mid-batch, the landed work is already recorded in the working tree.
 
 **Plan-file commit timing:** all plan-file edits (every checkbox flip plus the eventual status flip from `in-progress` to `implemented`) commit in ONE commit at the end of execution, after the audit gate passes. The dirty plan file IS the in-flight session state during execution. Do not commit plan-file edits per task — it doubles the commit count and adds no information the working tree doesn't already carry.
 
@@ -149,6 +192,10 @@ grep -Ei "TODO|FIXME|XXX|// will|// later|# stub" <diff-range>
 
 ## Drift handling
 
+### Quiesce-on-block
+
+When a lane returns BLOCKED, hits unresolvable drift, or surfaces a review gap needing user input, enter **quiesce**: set a no-new-dispatch flag, let all in-flight lanes finish and land normally, preserve the blocking lane's worktree (its dependents stay unscheduled), then surface the blocker via the drift `AskUserQuestion` from a clean, fully-merged tree. Never halt in-flight lanes mid-work; never keep dispatching new lanes while a decision is pending.
+
 **All drift response paths are presented via `AskUserQuestion` (TUI multi-choice), not a prose "type one of:" prompt.** Per [[designs/2026-05-17-cadence/00-overview#Decisions log]].
 
 > **Hard gate — every `AskUserQuestion`, no exceptions:** (1) the `question` opens with a plain-English lead a newcomer could follow — what's being decided and why it matters now (the user may have been heads-down on the task for hours and lost the bigger plan context); (2) exactly one option is marked `(Recommended)` and listed **first** — triage / "which next?" menus included ("your call" is a non-answer); (3) each option's `description` gives the one-sentence trade-off. Full spec: `skills/_shared/ask-user-question.md`.
@@ -166,7 +213,7 @@ Each option's `description` is the corresponding "What happens next" cell (one s
 | | Update plan + design | PM offers both edits; user reviews. Both docs internally consistent before re-dispatch. |
 | | Abort | Plan stays `in-progress`. |
 | **Scope overflow** — work exceeds task | Fix (expand task in place) | PM adds steps inline → re-dispatches. |
-| | Split into new task | PM appends new task to same phase file with `Parallel: depends on <current>`. Current task marked complete. |
+| | Split into new task | PM appends new task to same phase file with `Depends: [<current>]`. Current task marked complete. |
 | | Mark out of scope | PM writes entry to plan-side `99-out-of-scope.md` with rationale + wikilink. Current task marked complete. |
 | | Abort | Plan stays `in-progress`. |
 
@@ -175,8 +222,9 @@ Each option's `description` is the corresponding "What happens next" cell (one s
 Once every task in every phase file is complete:
 
 1. Verify: every step `- [x]` + both reviews ✓ + commit visible in `git log`.
-2. Dispatch the `cadence-completion-auditor` agent **directly** (via the `Task` tool) — same agent the standalone `/c-audit` skill dispatches, same parameters: plan path, linked design folder (from `linked_design:` frontmatter), `.cadence/config.yaml` content, diff range (`git diff <base_sha>..HEAD`), mode: `gating`. Do NOT route through the `/c-audit` skill — skill-calls-skill is not a documented Claude Code mechanism. The audit logic is in the agent; the skill is a thin user-facing wrapper around the same agent.
-3. Read the agent's report.
+2. **Worktree-cleanup sweep (pre-dispatch):** run `git worktree list` and confirm no `cadence/lane-*` worktrees remain; run `git branch --list 'cadence/lane-*'` and confirm no lane branches remain. If any do, remove them (`git worktree remove --force <path>` and `git branch -D <branch>`) before dispatching the auditor. A dirty worktree at this stage is a plan-execution defect — surface it to the user if removal fails.
+3. Dispatch the `cadence-completion-auditor` agent **directly** (via the `Task` tool) — same agent the standalone `/c-audit` skill dispatches, same parameters: plan path, linked design folder (from `linked_design:` frontmatter), `.cadence/config.yaml` content, diff range (`git diff <base_sha>..HEAD`), mode: `gating`. The default audit roster includes `merge-integrity` (verifies each task's commit landed cleanly and the lane history is linear). Do NOT route through the `/c-audit` skill — skill-calls-skill is not a documented Claude Code mechanism. The audit logic is in the agent; the skill is a thin user-facing wrapper around the same agent.
+4. Read the agent's report.
 
 | Auditor result | `/c-execute` response |
 |---|---|
