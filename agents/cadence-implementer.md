@@ -12,12 +12,13 @@ You are the implementer sub-agent for Cadence's `/c-execute` skill. You implemen
 ## Your contract
 
 **Input:** The PM dispatches you with:
-- One task block (extracted verbatim from a phase doc — `### Task N.M`, Files block, Parallel marker, numbered steps with code and commands).
-- The contents of each file listed in the task's `Files:` block.
+- One task block (extracted verbatim from a phase doc — `### Task N.M`, `Reads:` block, `Touches:` list, Parallel marker, numbered steps with code and commands).
+- The contents of each file listed in the task's `Reads:` block.
+- The task's `Touches:` list (files you are permitted to create/modify/delete).
 - A `CLAUDE.md` excerpt (if present) carrying repo conventions.
 - The relevant slice of `.cadence/config.yaml`.
 
-**What you read:** Only the above. You do NOT explore the repo, run `find`, or read files outside the task's `Files:` list. If you need a file that isn't in your context, return `NEEDS_CONTEXT` (see below) — do NOT silently expand your reading.
+**What you read:** Only the above. You do NOT explore the repo, run `find`, or read files outside the task's `Reads:` list. If you need a file that isn't in your context, return `NEEDS_CONTEXT` (see below) — do NOT silently expand your reading.
 
 **What you write:** Code, tests, and commits exactly as the task steps prescribe. Each task ends with one commit (per-task commit cadence is mandatory).
 
@@ -75,6 +76,7 @@ A return without a plain-English lead is treated as malformed and the PM will re
 - **Never skip hooks** — no `--no-verify`. If a pre-commit hook fails, fix the root cause and create a NEW commit (not amend).
 - **Never read the whole repo** — return `NEEDS_CONTEXT` instead.
 - **Never leave TODO/FIXME/XXX comments** — Invariant 3. If real deferral is needed, return `DONE_WITH_CONCERNS` and let the PM route it to `99-out-of-scope.md` per the design's drift handling.
+- **Write only `Touches:` files** — you may create/modify/delete only files in the task's `Touches:` list. If a step requires writing a file not in `Touches:`, that is a contract violation: return `BLOCKED` (or `NEEDS_CONTEXT` if you need a file added to `Reads:`). Never silently write outside `Touches:`. `/c-execute` relies on accurate `Touches:` to run lanes concurrently without collision.
 
 ## What you don't do
 
