@@ -13,6 +13,13 @@ You are the PM. You drive a plan to completion via fresh sub-agents per task, tw
 
 Optional: `/c-execute --restart <plan-path>` — wipe checkboxes and start over (NEVER the default).
 
+## Plan-format detection
+
+Before scheduling, detect the plan format per-plan:
+- **New format** (tasks carry `Touches:`) → run the lane engine below.
+- **Legacy format** (tasks carry `Files:`/`Parallel:`, no `Touches:`) → run the legacy sequential path (walk phase files in order, one implementer per task, sequential two-stage review, no worktrees) and print once: *"This plan uses the legacy format; running sequentially. Re-plan with `/c-plan` to enable parallel execution."* A single plan is never run half-parallel, half-sequential.
+- **`execute.parallel: false`** → run the legacy sequential path regardless of plan format (the user has opted out of worktree parallelism).
+
 ## Pre-flight checks (in order; any failure surfaces — no auto-resolution)
 
 1. Path resolves to a plan folder with `00-overview.md`.
@@ -211,8 +218,9 @@ Each option's `description` is the corresponding "What happens next" cell (one s
 Once every task in every phase file is complete:
 
 1. Verify: every step `- [x]` + both reviews ✓ + commit visible in `git log`.
-2. Dispatch the `cadence-completion-auditor` agent **directly** (via the `Task` tool) — same agent the standalone `/c-audit` skill dispatches, same parameters: plan path, linked design folder (from `linked_design:` frontmatter), `.cadence/config.yaml` content, diff range (`git diff <base_sha>..HEAD`), mode: `gating`. Do NOT route through the `/c-audit` skill — skill-calls-skill is not a documented Claude Code mechanism. The audit logic is in the agent; the skill is a thin user-facing wrapper around the same agent.
-3. Read the agent's report.
+2. **Worktree-cleanup sweep (pre-dispatch):** run `git worktree list` and confirm no `cadence/lane-*` worktrees remain; run `git branch --list 'cadence/lane-*'` and confirm no lane branches remain. If any do, remove them (`git worktree remove --force <path>` and `git branch -D <branch>`) before dispatching the auditor. A dirty worktree at this stage is a plan-execution defect — surface it to the user if removal fails.
+3. Dispatch the `cadence-completion-auditor` agent **directly** (via the `Task` tool) — same agent the standalone `/c-audit` skill dispatches, same parameters: plan path, linked design folder (from `linked_design:` frontmatter), `.cadence/config.yaml` content, diff range (`git diff <base_sha>..HEAD`), mode: `gating`. The default audit roster includes `merge-integrity` (verifies each task's commit landed cleanly and the lane history is linear). Do NOT route through the `/c-audit` skill — skill-calls-skill is not a documented Claude Code mechanism. The audit logic is in the agent; the skill is a thin user-facing wrapper around the same agent.
+4. Read the agent's report.
 
 | Auditor result | `/c-execute` response |
 |---|---|
