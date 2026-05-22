@@ -40,9 +40,9 @@ SHA-based pinning is robust against rebases, merges, and unrelated commits that 
 ## PM responsibilities
 
 1. Read the plan once: overview + every phase file + 96-validation + 97/98/99.
-2. Build an internal task list — every `### Task N.M` becomes a tracked item with its `Parallel:` marker and full step block extracted.
-3. Walk files in order (`01` → `02` → …). NEVER start file `N+1` until file `N` is fully complete.
-4. Within a file, dispatch per parallel grain (below).
+2. Build an internal task list — every `### Task N.M` becomes a tracked item with its `Depends:` edges, `Reads:` block, `Touches:` list, and full step block extracted.
+3. Build the dependency DAG from each task's `Depends:` edges and form lanes per the scheduling loop in "Lane model and DAG scheduling".
+4. Dispatch lanes concurrently up to `execute.max_parallel`, respecting `Touches:` disjointness.
 5. **After each task lands** (spec ✓ + code ✓ + Invariant 3 clean), edit the phase file to flip every `- [ ]` step under `### Task N.M` to `- [x]`. See [Marking task complete](#marking-task-complete-mandatory--required-for-resume).
 6. Surface blockers to user — never work around silently.
 7. Run audit gate at the end; on pass, commit accumulated plan-file changes (status flip + all checkbox flips) in one commit, then mark `implemented`.
@@ -100,7 +100,7 @@ Use the `Task` tool with one of these named agents:
 
 | Agent | When | What PM passes |
 |---|---|---|
-| `cadence-implementer` | Per task | Task block + linked files extracted from task's `Files:` + CLAUDE.md excerpt + `.cadence/config.yaml` slice |
+| `cadence-implementer` | Per task | Task block + linked files extracted from task's `Reads:` block + `Touches:` list + CLAUDE.md excerpt + `.cadence/config.yaml` slice |
 | `cadence-spec-reviewer` | After implementer DONE | Task spec + diff |
 | `cadence-code-reviewer` | After spec-review ✓ | Diff + repo conventions |
 
