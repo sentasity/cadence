@@ -102,13 +102,13 @@ Per-audit sub-agents are dispatched with one of these prompts plus the relevant 
 
 > Verify the plan folder has either `96-validation.md` (Cadence convention) or `98-validation.md` (superpowers/vault convention) with all three sections (A. Automated, B. Manual workflow, C. Prerequisites) AND at least one entry per section that wasn't moved to OOS. Warn if missing.
 
-### merge-integrity (default)
+### `merge-integrity` (Blocking)
 
-Confirms parallel execution integrated cleanly. Fail (blocking) if any hold:
-- Leftover lane worktrees or branches: `git worktree list` shows a `.cadence/worktrees/lane-*` entry, or `git branch --list 'cadence/lane-*'` is non-empty.
-- Stray commits: a commit in `base_sha..HEAD` that does not trace to a landed task in the plan.
-- Conflict residue: any `<<<<<<<`, `=======`, or `>>>>>>>` marker in the diff range.
-- Dirty tree: `git status --porcelain` shows uncommitted leftovers from a half-finished merge.
+> Confirms parallel execution integrated cleanly. Fail (blocking) if any hold:
+> - Leftover lane worktrees or branches: `git worktree list` shows a `.cadence/worktrees/lane-*` entry, or `git branch --list 'cadence/lane-*'` is non-empty.
+> - Stray commits: a commit in `base_sha..HEAD` that does not trace to a landed task in the plan.
+> - Conflict residue: any `<<<<<<<`, `=======`, or `>>>>>>>` marker in the diff range.
+> - Dirty tree: `git status --porcelain` shows uncommitted leftovers from a half-finished merge.
 
 ### Optional audits (repo-declared)
 
