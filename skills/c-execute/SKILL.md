@@ -127,14 +127,19 @@ A return without a plain-English lead is malformed — re-dispatch the sub-agent
 | **Adjacent** — directory or "all callers of X" | grep for references (typically 3-8 files); fetch; re-dispatch. |
 | **Broad** — "whole module" or "all callers across codebase" | STOP. Surface to user. Usually indicates plan defect. User picks: edit Files list + retry, split task, or escalate to more capable model. Never auto-fetch the whole repo. |
 
-## Review loops (two-stage, mandatory order)
+## Review loops (two-stage, run in parallel)
 
-1. **`cadence-spec-reviewer` first.** Does diff match task spec? Anything missing? Anything extra?
-2. **`cadence-code-reviewer` second.** Does diff match repo conventions (naming, error handling, test quality)?
+When a lane's implementer returns DONE, dispatch **both** reviewers concurrently against the cumulative lane diff:
 
-Code review NEVER starts before spec review ✓. If spec review finds issues, implementer fixes → spec re-reviews → THEN code review runs.
+1. `cadence-spec-reviewer` — does the diff match the task specs? Anything missing/extra?
+2. `cadence-code-reviewer` — does it match repo conventions (naming, errors, tests)?
 
-**On reviewer-finding conflicts: spec wins.** If `cadence-code-reviewer` flags an issue that contradicts something `cadence-spec-reviewer` already approved (e.g. "function name violates repo convention" when the task block specified that exact name), DROP the code-review finding. Spec review establishes WHAT the change is; code review only checks quality of execution. Code review never overturns spec approval. (Per [[designs/2026-05-17-cadence/04-execute#Review loops]] decision.)
+They run at the same time (no ordering barrier). Resolve the two reports:
+
+- Both approve → lane lands.
+- Spec finds gaps → implementer fixes in the same worktree → **both** re-run.
+- Code finds issues (spec approved) → implementer fixes → both re-run.
+- **Conflict: spec wins.** If a code finding contradicts a spec approval, DROP the code finding. Code review never overturns spec.
 
 ## Marking task complete (mandatory — required for resume)
 
