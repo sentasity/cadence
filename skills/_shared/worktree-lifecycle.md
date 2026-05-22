@@ -29,3 +29,14 @@ Authoritative reference for the self-managed git worktree lifecycle Cadence uses
 | Landing | reviews passed; PM integrating to the working branch |
 | Removed | integrated; worktree + branch deleted |
 | Preserved | blocked; worktree kept for the fix path |
+
+## Resume and cleanup
+
+- **On resume** (a re-invoked `/c-execute` session): run `git worktree prune`, then remove any leftover `cadence/lane-*` worktrees and branches from a dead session. Their unmerged work is discarded; the affected lanes re-enter the ready set.
+- **Completion sweep:** before flipping a plan to `implemented`, confirm no `cadence/lane-*` worktrees or branches remain — `git worktree list` shows none and `git branch --list 'cadence/lane-*'` is empty. This is asserted by the `merge-integrity` audit.
+
+## Safety
+
+- Add `.cadence/worktrees/` to the consuming repo's `.gitignore`. `/c-execute` adds this line on first lane creation if absent.
+- Worktrees live under `.cadence/` so they never pollute the working tree or get committed.
+- Never `git worktree add` onto an existing path; if `.cadence/worktrees/lane-<id>` exists from a dead session, prune/remove first.
