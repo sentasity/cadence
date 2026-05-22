@@ -39,14 +39,31 @@ SHA-based pinning is robust against rebases, merges, and unrelated commits that 
 
 **The PM never reads the whole repo, never runs sub-agents on its own session context, never aggregates code commits, never amends commits, never skips hooks.**
 
-## Parallel grain (in-file)
+## Lane model and DAG scheduling
 
-- All `Parallel: independent` tasks in the current file dispatch simultaneously to fresh `cadence-implementer` sub-agents — up to `execute.max_parallel` from config (default 5).
-- `Parallel: depends on N.K` tasks wait until task `N.K` has landed.
-- A task is "landed" when implementer DONE + spec reviewer ✓ + code reviewer ✓ + commit visible in `git log`.
-- If `Parallel: independent` task count exceeds `max_parallel`, dispatch first batch, wait for any one to land, then dispatch next. No "all-at-once" stampede.
+The PM builds a dependency DAG from each task's `Depends:` edges (cross-file allowed), then runs **lanes** — chains of dependent tasks — concurrently in isolated worktrees.
 
-Next file does not start until every task in the current file has landed.
+- **Lane** = an ordered chain `[T0, T1, …]` run by one `cadence-implementer` in one worktree, committing per-task internally.
+- **Lane formation (greedy):** seed from a ready task; extend with a successor whose only unsatisfied `Depends:` is the current tail; stop at a diamond join, when no such successor exists, or when the lane's accumulated size hits PM judgment (no fixed threshold).
+- **Ready set:** a task is ready when every `Depends:` predecessor has **merged** to the working branch. Recompute on every land.
+- **Co-schedule guard (hard):** two ready lanes may run concurrently only if `Touches(A) ∩ Touches(B) = ∅`. A `Touches:` overlap **serializes** the later lane (defer until the other lands) — never error, never override.
+- **Cap:** up to `execute.max_parallel` lanes (default 4 = concurrent worktrees). Reviewers run on top, uncapped.
+
+### Scheduling loop
+
+```
+build DAG from Depends edges  (once; rebuild on resume)
+while unfinished tasks and not quiescing:
+    ready = tasks whose Depends predecessors all merged
+    while free lane slots > 0 and a schedulable lane exists:
+        form lane L greedily from ready
+        if Touches(L) disjoint from all in-flight lanes: open worktree; dispatch implementer
+        else: defer L
+    await next lane to land
+    on land: integrate (merge-on-land), flip L's checkboxes, free slot
+```
+
+The DAG must be acyclic; a cycle is a plan defect — surface it, never guess an order.
 
 ## Resume protocol
 
