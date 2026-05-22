@@ -42,7 +42,7 @@ You hunt concrete, fixable defects. Each defect comes with a citation, severity,
 |---|---|
 | **Logical bugs in proposed flow** | Race conditions described in design, ordering violations, missing failure modes. |
 | **Plan execution bugs** | Tasks referencing functions defined nowhere; tests that test the wrong thing; commits before tests pass. |
-| **Dependency errors** | Task B `depends on` Task A but marked `Parallel: independent`; phase 2 references files created in phase 4. |
+| **Dependency errors** | Task B uses Task A's `Touches:` files or symbols but lists no `Depends: [A]` edge (parallel-execution hazard); a `Depends:` cycle; a task `Reads:` a file no task `Touches:` or that doesn't exist. |
 | **Type / signature mismatches** | Task 3 says `clearLayers()`, Task 7 says `clearFullLayers()` — same function, different name. |
 | **Impossible steps** | "Run `make foo`" when no `foo` target in Makefile. |
 
