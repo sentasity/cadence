@@ -6,14 +6,15 @@ title: "Plan — <FEATURE_TITLE> Phase NN: <PHASE_NAME>"
 
 <One paragraph: what this phase produces and how it ties to the next phase.>
 
-### Task N.M: <Task Name>
+### Task N.M: <Name>
 
 **Files:**
-- Create: `<exact/path/to/new>`
-- Modify: `<exact/path/to/existing>:<line-range>`
-- Test: `<exact/path/to/test>`
+- Create: `exact/path/new`
+- Modify: `exact/path/existing`
 
-**Parallel:** independent | depends on N.K
+**Reads:** [`exact/path/context-a`, `exact/path/context-b`]
+**Touches:** [`exact/path/written`]
+**Depends:** [N.K]   <!-- task ids that must merge first; [] if independent -->
 
 - [ ] **Step 1: Write failing test**
 
