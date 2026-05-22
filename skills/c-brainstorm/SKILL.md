@@ -105,7 +105,7 @@ When Q&A converges, confirm: *"I have enough — writing `00-overview.md`. Proce
 
 Stub structure (at `<paths.designs>/{yyyy-mm-dd-slug}/00-overview.md`):
 
-- Frontmatter per `skills/_shared/frontmatter.md` (design overview shape, `linked_plans: []`).
+- Frontmatter per `skills/_shared/frontmatter.md` (design overview shape, `linked_plan: null`).
 - **What we're building** — 2-4 sentences, plain English.
 - **Why** — 1-2 sentences naming the motivating problem.
 - **Approach** — the picked option from step 6, summarized.

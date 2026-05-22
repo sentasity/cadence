@@ -1,6 +1,6 @@
 ---
 name: c-execute
-description: Drives a `draft`-status plan to `implemented`. PM-and-sub-agent model — user's main session is the PM; fresh `cadence-implementer` per task; in-file parallelism per `Parallel:` marker; two-stage review (`cadence-spec-reviewer` then `cadence-code-reviewer`, spec wins on conflicts); records `base_sha` on first invocation; at completion dispatches `cadence-completion-auditor` directly (NOT via the /c-audit skill — skill-calls-skill is not a documented mechanism). Drift handling surfaces three response paths (fix / mark out of scope / abort) on every block. Never auto-deploys. Never amends commits. Never skips hooks.
+description: Drives a `draft`-status plan to `implemented`. PM-and-sub-agent model — user's main session is the PM; fresh `cadence-implementer` per task; DAG-scheduled parallel lanes per `Depends:` edges with a `Touches:` conflict guard; two-stage review (`cadence-spec-reviewer` then `cadence-code-reviewer`, spec wins on conflicts); records `base_sha` on first invocation; at completion dispatches `cadence-completion-auditor` directly (NOT via the /c-audit skill — skill-calls-skill is not a documented mechanism). Drift handling surfaces three response paths (fix / mark out of scope / abort) on every block. Never auto-deploys. Never amends commits. Never skips hooks.
 ---
 
 # `/c-execute`
@@ -213,7 +213,7 @@ Each option's `description` is the corresponding "What happens next" cell (one s
 | | Update plan + design | PM offers both edits; user reviews. Both docs internally consistent before re-dispatch. |
 | | Abort | Plan stays `in-progress`. |
 | **Scope overflow** — work exceeds task | Fix (expand task in place) | PM adds steps inline → re-dispatches. |
-| | Split into new task | PM appends new task to same phase file with `Parallel: depends on <current>`. Current task marked complete. |
+| | Split into new task | PM appends new task to same phase file with `Depends: [<current>]`. Current task marked complete. |
 | | Mark out of scope | PM writes entry to plan-side `99-out-of-scope.md` with rationale + wikilink. Current task marked complete. |
 | | Abort | Plan stays `in-progress`. |
 
