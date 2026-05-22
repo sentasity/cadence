@@ -1,0 +1,23 @@
+# Cadence config for the Cadence plugin source repo (dogfooding).
+# Overrides only what differs from defaults/config.default.yaml.
+
+paths:
+  designs: docs/designs
+  plans:   docs/plans
+  future:  docs/future
+  config:  .cadence
+
+plan:
+  tdd: true
+  commit_cadence: per-task
+  parallel_grain: in-file
+
+execute:
+  branch_check: true
+  auto_resolve_drift: false
+  max_parallel: 5
+  resume_on_dirty_tree: false
+
+advisors:
+  enabled: false
+  roster: []
