@@ -37,3 +37,15 @@ Skills refuse to scaffold conflicting names.
 - Every H2 section in a technical child doc opens with `> [!summary] Plain English` (2-4 sentences).
 - Subsections (H3/H4) stay pure technical. No callout flooding at lower heading levels.
 - The full plain-English narrative lives in `00a-plain-english.md` (written last in `/c-design`'s flow).
+
+## Plan task fields (shared by /c-plan, /c-execute)
+
+Every plan task block declares three list fields. They replace the old single `Files:` line and the `Parallel:` marker.
+
+| Field | Meaning |
+|---|---|
+| `Reads:` | Files loaded into the implementer's context for reference; read, not written. |
+| `Touches:` | Every file the task creates, modifies, or deletes. Drives `/c-execute`'s file-conflict guard. |
+| `Depends:` | Task ids (e.g. `1.3`, `2.1`; cross-file allowed) that must merge before this task is ready. `[]` = independent. |
+
+`Touches:` must name **every** file the task writes — `/c-execute` co-schedules tasks only when their `Touches:` sets are disjoint, so an understated list is a correctness bug, not just a missing-context cost. The retired `Parallel:` marker's meaning is now derived: a task is parallel-safe with another when there is no `Depends:` path between them and their `Touches:` sets are disjoint.
