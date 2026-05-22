@@ -2,6 +2,33 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.4.0 (2026-05-22)
+
+Parallelism release — two halves of one initiative: faster execution and faster, less-fragmented authoring.
+
+### Added
+
+- **DAG-scheduled parallel execution in `/c-execute`.** The PM builds a dependency DAG from each task's `Depends:` edges and runs independent **lanes** concurrently, each in its own git worktree, merging each lane back the moment it lands (rebase-then-fast-forward by default). Replaces the old "walk phase files in order, one task at a time" model. Concurrency capped by `execute.max_parallel` (default 4); reviewers run on top, uncapped.
+- **`Reads:` / `Touches:` / `Depends:` task contract.** Tasks now declare context files (`Reads:`), written files (`Touches:`), and dependency edges (`Depends:`). `Touches:` drives a hard file-conflict guard: two lanes co-schedule only when their `Touches:` sets are disjoint.
+- **Parallel two-stage review.** `cadence-spec-reviewer` and `cadence-code-reviewer` now run concurrently over a lane's cumulative diff (spec still wins on conflict).
+- **Self-managed worktree lifecycle** (`skills/_shared/worktree-lifecycle.md`) — Cadence drives `git worktree` itself; no runtime dependency on external skills. One-time pre-flight confirmation before the first worktree; quiesce-on-block; resume prunes stale lane worktrees.
+- **`merge-integrity` audit** in the completion-gate roster — confirms no leftover lane worktrees/branches, no stray commits, no conflict residue before a plan flips to `implemented`.
+- **Parallel doc generation + `cadence-doc-consistency` sweep agent.** `/c-design` (all-at-once mode) and `/c-plan` fan out one generator agent per child doc, then a sweep agent reconciles trivial wording and surfaces substantive cross-doc contradictions to the user.
+- **`/c-design` generation-mode toggle** — all-at-once (default) vs one-by-one.
+- **Versioned config + migration** (`config_version`, `skills/_shared/config-migration.md`). New keys: `execute.parallel`, `execute.worktree_dir`, `execute.worktree_confirm`, `execute.integrate`, `authoring.max_parallel`, `authoring.design_mode`. On config drift, mechanical keys default silently with a notice; preference keys (`worktree_dir`) prompt once.
+- **DAG-soundness lens** in `/c-check` and `/c-find-bugs` — flags two tasks that reference each other with no `Depends:` edge (the parallel-execution hazard the `Touches:` guard can't catch) and `Depends:` cycles.
+
+### Changed
+
+- **One design → one plan.** `/c-plan` always produces a single plan folder with phase docs; multi-plan splitting and the `linked_plans:` array are retired in favor of singular `linked_plan:`. `/c-validate` drops its sibling-plan graph and completes a design when its one plan completes.
+- **Plan task format migration.** `Files:` / `Parallel:` are replaced by `Reads:` / `Touches:` / `Depends:`. Existing plans still run unchanged via a legacy sequential fallback (`/c-execute` detects format per-plan); set `execute.parallel: false` to force sequential.
+- **`cadence-implementer` is write-restricted to its `Touches:` list** — writing outside it returns `BLOCKED`, so the concurrency guard is trustworthy.
+- **`/c-plan` always batches doc generation; tighter task blocks.** `templates/`, `_shared/frontmatter.md`, `_shared/obsidian-format.md`, and the `hello-cadence` example were migrated to the new format.
+
+### Why
+
+`/c-execute` was over-serialized — every task ran a fresh implementer then two sequential reviewers, and no phase started until the previous one fully landed. Authoring mirrored the problem: child docs written one at a time, and a single design fanning out into multiple linked plans that needed sibling-graph bookkeeping. This release parallelizes both, isolates concurrent writers in worktrees with a conflict guard, and consolidates to one-design-one-plan. Designed and built with Cadence itself (on the legacy sequential path), then audited clean.
+
 ## v0.3.2 (2026-05-19)
 
 ### Fixed
