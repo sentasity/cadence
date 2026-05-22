@@ -22,12 +22,13 @@ Before scheduling, detect the plan format per-plan:
 
 ## Pre-flight checks (in order; any failure surfaces — no auto-resolution)
 
-1. Path resolves to a plan folder with `00-overview.md`.
-2. Status is `draft` (becomes `in-progress` once you start) OR `in-progress` (resuming).
-3. Linked design (from `linked_design:` frontmatter) exists with `status: approved` or later.
-4. Working tree is clean (no unstaged or uncommitted changes).
-5. Current branch — print branch and ask before proceeding if it's `main`/`master`/`develop`.
-6. **Worktree confirmation (new-format plans only; skip if `execute.worktree_confirm: false`).** Before opening the first lane worktree, print the worktree plan and ask once via `AskUserQuestion`:
+1. **Config migration check.** Run `skills/_shared/config-migration.md` before proceeding; surface any prompt to the user.
+2. Path resolves to a plan folder with `00-overview.md`.
+3. Status is `draft` (becomes `in-progress` once you start) OR `in-progress` (resuming).
+4. Linked design (from `linked_design:` frontmatter) exists with `status: approved` or later.
+5. Working tree is clean (no unstaged or uncommitted changes).
+6. Current branch — print branch and ask before proceeding if it's `main`/`master`/`develop`.
+7. **Worktree confirmation (new-format plans only; skip if `execute.worktree_confirm: false`).** Before opening the first lane worktree, print the worktree plan and ask once via `AskUserQuestion`:
    *"This plan runs up to `<max_parallel>` parallel lanes in git worktrees under `.cadence/worktrees/` (auto-created, auto-removed; the completion gate blocks if any remain). Proceed?"*
    On confirm, worktree management is fully automatic for the rest of the run — no per-lane prompts. On decline, do not start; suggest the user re-run when ready. Legacy-format plans skip this check (no worktrees).
 

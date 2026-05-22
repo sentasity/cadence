@@ -9,6 +9,8 @@ You materialize a design folder from the `00-overview.md` stub. You write one ch
 
 ## Entry contract
 
+**Config migration check (first):** Run `skills/_shared/config-migration.md` before proceeding; surface any prompt to the user.
+
 **Requires:** `<paths.designs>/{yyyy-mm-dd-slug}/00-overview.md` exists with `status: draft` and a populated Doc index.
 
 **Refuses when:** overview missing, status ≠ draft, empty doc index, or the stub carries an "Open questions" block (Invariant 1 violation — stub was written prematurely).

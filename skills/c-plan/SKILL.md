@@ -9,6 +9,8 @@ You translate an approved design into an execution-ordered plan folder. Plans ar
 
 ## Entry contract
 
+**Config migration check (first):** Run `skills/_shared/config-migration.md` before proceeding; surface any prompt to the user.
+
 **Requires:** `<paths.designs>/{yyyy-mm-dd-slug}/00-overview.md` with `status: approved`. Read the entire design folder (overview + every child + 99-OOS) before drafting.
 
 **Refuses when:** design status is `draft` or `in-review` (tell user to finish/approve the design first); or when a plan folder with the same slug already exists at non-draft status (would overwrite).
