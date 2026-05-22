@@ -33,6 +33,7 @@ Each check runs as its own sub-agent in parallel (via `Task` tool). Each receive
 | **Internal logic** | Logical errors in proposed flow — race conditions, infinite loops, ordering violations. |
 | **Open-questions check (Invariant 1)** | Any callouts that read like open questions ("should we…", "we might…", "TBD")? |
 | **Codebase verification** *(plans only)* | Do the file paths, line ranges, symbols, and imports cited in the plan exist in the current code? Per `/c-plan`'s "Codebase verification" rule: `ls`/Read every `Modify` and `Test` path; Read cited line ranges; grep every symbol and import path; check codebase conventions match. Citation that doesn't resolve = **Critical** (plan unexecutable as written). Range drift that still points at the right function = **Important**. Convention mismatch (`_lambda` vs `lambda_`, etc.) = **Important**. Skipped for designs. |
+| **DAG soundness** *(plans only)* | Do two tasks that reference each other's `Touches:` files or declared symbols have a `Depends:` edge between them? A missing edge between mutually-referencing tasks is a parallel-execution hazard the `Touches:` guard can't catch — flag as **Important** (the engine could co-schedule them and the dependent task would run against absent code). Also flag any `Depends:` cycle as **Critical** (plan unexecutable). Skipped for designs. |
 
 ## `--format` mode (Cadence compliance)
 
