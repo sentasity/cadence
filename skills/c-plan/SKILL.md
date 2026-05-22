@@ -71,12 +71,9 @@ No "Background," "Why," or plain-English. Those live in the design.
 ````````markdown
 ### Task N.M: <Name>
 
-**Files:**
-- Create: `exact/path/to/new.py`
-- Modify: `exact/path/to/existing.py:120-145`
-- Test: `tests/exact/path.py`
-
-**Parallel:** independent | depends on N.K
+**Reads:** [`exact/path/context`]      <!-- context files, read not written -->
+**Touches:** [`exact/path/written`]     <!-- every file this task writes (incl. created files + tests) -->
+**Depends:** [N.K]                      <!-- task ids that must merge first; [] if independent -->
 
 - [ ] **Step 1: Write failing test**
   ```python
@@ -113,7 +110,7 @@ No "Background," "Why," or plain-English. Those live in the design.
 - Every run-command step shows the exact command and expected output/status.
 - Every task ends with a commit step (cadence: per task).
 - **Banned phrases:** `TBD`, `TODO`, `add error handling`, `fill in details`, `handle edge cases`, `write tests for the above`. Plan failures; block self-review.
-- **`Parallel:`** marker required on every task: `independent` or `depends on N.K`.
+- **`Reads:`/`Touches:`/`Depends:` required** on every task. `Touches:` must name every file the task writes (the `/c-execute` co-scheduling guard depends on it). `Depends:` lists task ids that must merge first (`[]` = independent). The former per-task concurrency marker is superseded by these three fields.
 
 **TDD default; opt-out in config.** `config.plan.tdd: true` → test → fail → impl → pass → commit. `false` → impl → run → commit (test steps omitted).
 
@@ -171,7 +168,7 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 ## Self-review pass
 
 1. **Placeholder scan** — no banned phrases (`TBD`, `TODO`, `implement here`, `similar to Task N`, `add validation`).
-2. **Task shape** — every task has Files block, `Parallel:` marker, ≥3 steps, final commit step.
+2. **Task shape** — every task has `Reads:`, `Touches:`, and `Depends:` fields, ≥3 steps, and a final commit step; every `Touches:` entry is a real path; every `Depends:` id references a real task.
 3. **Code completeness** — every code step has actual code, not a stub.
 4. **Command completeness** — every run-command step has exact command + expected output.
 5. **Symbol/path/import verification** — every cited file path, line range, symbol, and import was ground-truthed against the current code per "Codebase verification" rules. Intra-plan consistency also holds: names referenced across later tasks match earlier ones. (`/c-audit`'s `code-behind-checkbox` audit remains a backstop at completion.)
