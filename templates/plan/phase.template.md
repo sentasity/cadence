@@ -8,10 +8,6 @@ title: "Plan — <FEATURE_TITLE> Phase NN: <PHASE_NAME>"
 
 ### Task N.M: <Name>
 
-**Files:**
-- Create: `exact/path/new`
-- Modify: `exact/path/existing`
-
 **Reads:** [`exact/path/context-a`, `exact/path/context-b`]
 **Touches:** [`exact/path/written`]
 **Depends:** [N.K]   <!-- task ids that must merge first; [] if independent -->
