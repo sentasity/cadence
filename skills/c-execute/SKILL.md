@@ -27,6 +27,9 @@ Before scheduling, detect the plan format per-plan:
 3. Linked design (from `linked_design:` frontmatter) exists with `status: approved` or later.
 4. Working tree is clean (no unstaged or uncommitted changes).
 5. Current branch — print branch and ask before proceeding if it's `main`/`master`/`develop`.
+6. **Worktree confirmation (new-format plans only; skip if `execute.worktree_confirm: false`).** Before opening the first lane worktree, print the worktree plan and ask once via `AskUserQuestion`:
+   *"This plan runs up to `<max_parallel>` parallel lanes in git worktrees under `.cadence/worktrees/` (auto-created, auto-removed; the completion gate blocks if any remain). Proceed?"*
+   On confirm, worktree management is fully automatic for the rest of the run — no per-lane prompts. On decline, do not start; suggest the user re-run when ready. Legacy-format plans skip this check (no worktrees).
 
 ## On first flip from `draft` to `in-progress`: record `base_sha`
 
