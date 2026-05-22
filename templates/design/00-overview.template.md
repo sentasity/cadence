@@ -4,7 +4,7 @@ created: <ISO_DATE>
 updated: <ISO_DATE>
 status: draft
 tags: [design]
-linked_plans: []
+linked_plan: null
 ---
 
 # <HUMAN_TITLE>
