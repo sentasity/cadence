@@ -65,6 +65,15 @@ while unfinished tasks and not quiescing:
 
 The DAG must be acyclic; a cycle is a plan defect — surface it, never guess an order.
 
+## Worktree lifecycle and merge-on-land
+
+Lane isolation and integration follow `skills/_shared/worktree-lifecycle.md`.
+
+- **Open** a worktree per lane at lane start (`git worktree add` from the current working tip).
+- **Merge-on-land:** when a lane's implementer returns DONE and both reviewers approve the cumulative lane diff, the PM integrates per `execute.integrate` — default `rebase-ff` (**rebase the lane branch onto the current working tip and fast-forward**; linear history, per-task commits preserved), or `merge-commit` (`--no-ff` per lane) for repos that forbid history rewriting.
+- **Per-lane clean-merge check (mandatory):** the rebase must report no conflict, the lane commits must be present, and there must be no conflict residue. A conflict here means a `Touches:` declaration was wrong — STOP and surface; never auto-resolve.
+- **Remove** the worktree + lane branch on land. **Preserve** it on block.
+
 ## Resume protocol
 
 - Status `in-progress` = resumable. `/c-execute <plan-path>` on an `in-progress` plan resumes; does not restart.
@@ -129,15 +138,15 @@ Code review NEVER starts before spec review ✓. If spec review finds issues, im
 
 ## Marking task complete (mandatory — required for resume)
 
-After spec ✓ + code ✓ + commit-in-`git log` + Invariant 3 grep clean, the PM **must** edit the plan's phase file:
+The unit of completion is the **lane**, not the individual task. After a lane lands (spec ✓ + code ✓ + clean-merge ✓ + Invariant 3 grep clean for the full lane diff), the PM **must** edit the plan's phase file:
 
-1. Open the phase file containing the just-landed task.
-2. Flip every `- [ ]` step under `### Task N.M` to `- [x]`.
-3. Save. **Do NOT commit the plan-file edit per task.**
+1. Open the phase file(s) containing the just-landed lane's tasks.
+2. Flip every `- [ ]` step under every `### Task N.M` in the lane to `- [x]`. All of the lane's task checkboxes flip together on land.
+3. Save. **Do NOT commit the plan-file edit per task or per lane.**
 
 This is the ONLY mechanism for tracking progress across sessions. Without it the resume protocol fails — re-invocation starts over from Task 1.1, and the completion-time gate (which checks for `- [x]`) will never let the plan flip to `implemented`.
 
-**In-file parallel tasks:** edit checkboxes as each task lands, not in a batch. Two tasks landing simultaneously = two separate plan-file edits. This bounds context — if the PM session dies mid-batch, the landed work is already recorded in the working tree.
+**In-flight parallel lanes:** edit checkboxes as each lane lands, not in a batch. Two lanes landing simultaneously = two separate plan-file edits. This bounds context — if the PM session dies mid-batch, the landed work is already recorded in the working tree.
 
 **Plan-file commit timing:** all plan-file edits (every checkbox flip plus the eventual status flip from `in-progress` to `implemented`) commit in ONE commit at the end of execution, after the audit gate passes. The dirty plan file IS the in-flight session state during execution. Do not commit plan-file edits per task — it doubles the commit count and adds no information the working tree doesn't already carry.
 
