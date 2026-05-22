@@ -34,9 +34,11 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 
 ## Writing flow
 
-1. **Read the stub.** List the proposed doc index. Confirm with user: *"Write `00a-plain-english.md` next, then `01-<x>`, `02-<y>`. Sound right?"*
-2. **Write one child doc at a time.** Every H2 section opens with a `> [!summary] Plain English` callout (2-4 sentences). Subsections (H3/H4) stay pure technical. No padding paragraphs.
-3. **Pause after each.** *"`<filename>` written. Review and tell me to continue, revise, or stop."* Never auto-write the next file.
+1. **Read the stub.** List the proposed doc index. Confirm with user: *"Write `00a-plain-english.md` next, then `01-<x>`, `02-<y>`. Sound right?"* Then ask the generation-mode question (see Generation mode).
+2. **Write child docs per chosen mode.**
+   - **All-at-once:** dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`); after all complete, dispatch `cadence-doc-consistency` once over the set for a consistency sweep (see Generation mode). Then generate `00a-plain-english.md` last.
+   - **One-by-one:** write one child doc, then proceed to step 3.
+3. **Pause after each doc (one-by-one mode only).** *"`<filename>` written. Review and tell me to continue, revise, or stop."* Never auto-write the next file in this mode. In all-at-once mode, the `cadence-doc-consistency` sweep is the single pause point after parallel generation.
 4. **Invariant 2 — consistency re-litigation.** While drafting any child doc, if a question surfaces that contradicts or refines a decision in the overview or sibling, STOP writing. Surface the conflict. Ask the user to resolve. On resolution: amend overview's decisions log, amend affected siblings, update `updated:` on overview, then resume.
 5. **OOS additions during design.** Any decision-not-to-do lands in `99-out-of-scope.md` immediately with rationale + wikilink. Never deferred.
 6. **`00a-plain-english.md` is written last.** Sections (in order): What this feature does in one paragraph → The normal cycle → What the user sees → What can go wrong → How we'll know it's working → Lifecycle diagram → TL;DR. Length target: 400-700 lines for complex designs.
@@ -44,6 +46,15 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 8. **Self-review pass** (see below). Run a final pass on the whole folder.
 9. **Flip status to `in-review`.** Update `updated:`. Print: *"Design ready for review. Walk through it and tell me when to mark it `approved`."*
 10. **Status `approved`.** User-driven only. User says "approved" → flip status → print: *"Run `/c-plan` to write the implementation plan."*
+
+## Generation mode
+
+After confirming the doc index, ask via `AskUserQuestion` (default `(Recommended)` = all-at-once):
+
+- **All-at-once** (default): dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`), then dispatch `cadence-doc-consistency` once over the set. The sweep reconciles trivial wording and surfaces substantive contradictions via `AskUserQuestion`. Then generate `00a-plain-english.md` last (from the settled docs). No per-doc pause; the sweep is the single consistency gate.
+- **One-by-one**: today's behavior — write one child doc, pause for review, loop; Invariant 2 re-litigation runs incrementally.
+
+`00a-plain-english.md` is generated last in both modes.
 
 ## Callout conventions
 
