@@ -40,6 +40,7 @@ You walk a plan's post-deploy validation doc. You do NOT deploy. You verify depl
 
 - Every entry in A/B/C carries `- [ ]` at plan-write time.
 - Check them off as you walk.
+- **Checkpoint before yielding.** Follow `skills/_shared/progress-checkpoint.md`: write each `- [x]` to `96-validation.md` the moment its check passes, and flush every passed item to disk BEFORE pausing — before asking the user to do a Category B manual step, before a clarifying question, and before stopping on a Category A failure. The just-passed checks must be on disk before control leaves you, or a context loss reruns them.
 - On re-runs (status already `completed`), reset checkboxes per `config.validate.reset_checkboxes_on_rerun` (default `true`).
 
 ## Failure handling

@@ -163,6 +163,8 @@ The unit of completion is the **lane**, not the individual task. After a lane la
 
 This is the ONLY mechanism for tracking progress across sessions. Without it the resume protocol fails — re-invocation starts over from Task 1.1, and the completion-time gate (which checks for `- [x]`) will never let the plan flip to `implemented`.
 
+**Checkpoint before yielding.** Per `skills/_shared/progress-checkpoint.md`: flip a landed lane's checkboxes to disk the moment it lands, and never carry a landed-but-unmarked lane through a pause. Before surfacing any `AskUserQuestion` (drift, block, clarification), every already-landed lane's `- [x]` must be on disk first. The dirty working file is the durable record; a context loss mid-run rebuilds progress from it alone.
+
 **In-flight parallel lanes:** edit checkboxes as each lane lands, not in a batch. Two lanes landing simultaneously = two separate plan-file edits. This bounds context — if the PM session dies mid-batch, the landed work is already recorded in the working tree.
 
 **Plan-file commit timing:** all plan-file edits (every checkbox flip plus the eventual status flip from `in-progress` to `implemented`) commit in ONE commit at the end of execution, after the audit gate passes. The dirty plan file IS the in-flight session state during execution. Do not commit plan-file edits per task — it doubles the commit count and adds no information the working tree doesn't already carry.
@@ -194,7 +196,7 @@ grep -Ei "TODO|FIXME|XXX|// will|// later|# stub" <diff-range>
 
 ### Quiesce-on-block
 
-When a lane returns BLOCKED, hits unresolvable drift, or surfaces a review gap needing user input, enter **quiesce**: set a no-new-dispatch flag, let all in-flight lanes finish and land normally, preserve the blocking lane's worktree (its dependents stay unscheduled), then surface the blocker via the drift `AskUserQuestion` from a clean, fully-merged tree. Never halt in-flight lanes mid-work; never keep dispatching new lanes while a decision is pending.
+When a lane returns BLOCKED, hits unresolvable drift, or surfaces a review gap needing user input, enter **quiesce**: set a no-new-dispatch flag, let all in-flight lanes finish and land normally, flush every landed lane's checkboxes to disk (`skills/_shared/progress-checkpoint.md`), preserve the blocking lane's worktree (its dependents stay unscheduled), then surface the blocker via the drift `AskUserQuestion` from a clean, fully-merged tree. Never halt in-flight lanes mid-work; never keep dispatching new lanes while a decision is pending.
 
 **All drift response paths are presented via `AskUserQuestion` (TUI multi-choice), not a prose "type one of:" prompt.** Per [[designs/2026-05-17-cadence/00-overview#Decisions log]].
 
