@@ -2,6 +2,25 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.5.0 (2026-05-27)
+
+Reliability + validation-speed release: config updates that actually reach existing repos, and browser-driven post-deploy validation.
+
+### Added
+
+- **Deterministic config migration via a `SessionStart` hook** (`hooks/hooks.json` + `scripts/migrate-config.js`, zero-dependency Node). On every session it backfills missing default keys into a repo's `.cadence/config.yaml` (additive text-merge — preserves the user's values and comments), bumps `config_version`, and prints a one-line notice. Fail-safe: never throws to the hook, never writes on unparseable input, silent no-op when a repo has no `.cadence/config.yaml`.
+- **Browser-automation for `/c-validate` Category B.** New flat `validate.browser_driver | browser_command | browser_env_preamble` config + shared spec (`skills/_shared/browser-validation.md`). `/c-validate` delegates a Category B item to the project's CLI test runner (Playwright default) when the item carries an optional `e2e:` reference, maps the exit code to the checkbox (failures route through existing failure handling), and falls back to manual otherwise. `/c-plan` authors `e2e:` refs; `/c-execute` surfaces a one-line runner recommendation when a plan has `e2e:` steps but no runner is configured. Credential-agnostic — secrets stay in env / the project's harness, never in committed config.
+- **`skills/_shared/progress-checkpoint.md`** — shared invariant: `/c-execute` and `/c-validate` flush completed checkboxes to disk before any pause (question, manual step, failure stop, block), so progress survives a context loss.
+
+### Changed
+
+- **Per-skill config-migration pre-flight removed** from `/c-brainstorm`, `/c-design`, `/c-plan`, `/c-execute`, `/c-validate` — the `SessionStart` hook now owns migration. `/c-brainstorm`'s scaffold derives `config_version` and the key set from defaults instead of hardcoding them; `skills/_shared/config-migration.md` is reduced to a pointer stub.
+- **`config_version` 2 → 3** — adds the `validate.browser_*` keys, delivered to existing repos by the new migration hook.
+
+### Why
+
+Config migration was silently broken — the routine compared against a bare relative path that resolved from the user's working directory, not the plugin root, so it never found the defaults and never ran. Any new setting Cadence shipped therefore never reached existing repos. Fixing it first unblocked the browser-validation feature, whose new keys ride the now-working migration (and are flat, not nested, so the migration backfills them cleanly). Both features were designed, planned, and executed end-to-end with Cadence itself; completion audits passed clean.
+
 ## v0.4.0 (2026-05-22)
 
 Parallelism release — two halves of one initiative: faster execution and faster, less-fragmented authoring.
