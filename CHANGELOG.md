@@ -2,6 +2,12 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.5.1 (2026-05-27)
+
+### Fixed
+
+- **Config-migration hook now fires on every session-start source.** The `SessionStart` hook matched only `startup`, so sessions begun via `/clear`, `--resume` / `--continue`, or compaction never triggered migration — only a cold relaunch did. Removed the `matcher` so the hook runs on all sources (`startup` / `resume` / `clear` / `compact`). The migration script is idempotent and silent when the config is already current, so firing on every source is harmless.
+
 ## v0.5.0 (2026-05-27)
 
 Reliability + validation-speed release: config updates that actually reach existing repos, and browser-driven post-deploy validation.
