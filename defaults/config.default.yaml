@@ -1,7 +1,7 @@
 # Cadence plugin defaults. Per-repo .cadence/config.yaml overrides only what differs.
 # No assumption of obsidian or any specific repo layout.
 
-config_version: 2          # schema version; drives migration detection
+config_version: 3          # schema version; drives migration detection
 
 paths:
   designs: docs/designs
@@ -73,6 +73,9 @@ oos:
 
 validate:
   reset_checkboxes_on_rerun: true
+  browser_driver: auto                     # auto | playwright | manual
+  browser_command: "npx playwright test"   # CLI test invocation Cadence delegates to
+  browser_env_preamble: null               # optional shell snippet run before the command; null = none
 
 find_bugs:
   default_baseline: main

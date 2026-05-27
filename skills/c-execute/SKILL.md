@@ -229,7 +229,7 @@ Once every task in every phase file is complete:
 
 | Auditor result | `/c-execute` response |
 |---|---|
-| All pass (or warnings only) | Flip overview status to `implemented`, update `updated:`, print: *"Plan implemented. Deploy your changes, then run `/c-validate <path>`. If you want to re-run the audit later for spot-checks, use `/c-audit <plan-path>` standalone."* |
+| All pass (or warnings only) | Flip overview status to `implemented`, update `updated:`, print: *"Plan implemented. Deploy your changes, then run `/c-validate <path>`. If you want to re-run the audit later for spot-checks, use `/c-audit <plan-path>` standalone."* Then, per `skills/_shared/browser-validation.md`, append one informational line **only if** the just-implemented plan's `96-validation.md` has at least one Category B item with an `e2e:` reference AND no runner is configured or detected (`validate.browser_command` at default `npx playwright test` and `auto` detection finds no suite): recommend installing/configuring a runner (Playwright by default), else those steps fall back to manual. Once per run; a repo with a runner configured/detected prints nothing. |
 | Any blocking failure | Leave status at `in-progress`. Surface failing audits. User picks fix / mark out of scope / abort. |
 
 ## What `/c-execute` doesn't do

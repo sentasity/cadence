@@ -22,15 +22,17 @@ You walk a plan's post-deploy validation doc. You do NOT deploy. You verify depl
 
 ## Walk order (strict)
 
+**Recommendation note (once, at the start of the walk).** Per `skills/_shared/browser-validation.md`: if this plan's `96-validation.md` has at least one Category B item with an `e2e:` reference AND no runner is configured or detected (`validate.browser_command` left at default `npx playwright test` and `auto` detection finds no suite), print one informational line recommending a runner (Playwright by default), then proceed — those items take the manual fallback. A repo with a runner configured/detected prints nothing. Once per run; never nag.
+
 **1. Category C — Prerequisites first.** Read section C, print the prereq list, ask user to confirm each: *"Backend deployed? Migration run? Test users seeded? (y/each)"* Walk BLOCKS until every C item confirmed. No prereq = no validation.
 
 **2. Category A — Automated.** Run each item itself: `curl`, `psql`, `pytest`, etc. Mark `- [x]` as each passes. Stop on first failure; surface exact output for user resolution.
 
-**3. Category B — Manual workflow last.** For each walkthrough:
-- Print the human-readable step list ("Log in as X → click Y → see Z").
-- User does the clicks.
-- Run the verification (DB query or API call) after each step or at walkthrough's end.
-- Mark `- [x]` when verified.
+**3. Category B — Manual workflow last.** Resolve `validate.browser_driver` to delegate-or-manual **once** at the start of this pass, per `skills/_shared/browser-validation.md` (`auto` runs suite detection and delegates if found; `playwright` forces delegation; `manual` forces manual). Then, for each Category B item:
+- **If the driver resolved to delegate AND the item carries an `e2e:` line → delegate.** Compose `<browser_env_preamble> && <browser_command> <spec> -g "<grep>"` (drop the `&& ` prefix if no preamble; drop `-g` if the item has none), run it headless and non-interactively, and map the exit code: **exit 0 → mark `- [x]`**; **non-zero → a validation failure**, routed through the existing **Failure handling** section below (stop the walk, surface exact output, offer Fix / OOS / Abort). No new failure path.
+- **Otherwise → manual (today's behavior).** Print the human-readable step list ("Log in as X → click Y → see Z"); user does the clicks; run the verification (DB query or API call) after each step or at walkthrough's end; mark `- [x]` when verified.
+
+The C→A→B order is unchanged, and Tracking's checkpoint-before-yield flush applies to delegated and manual items alike: a passing item's `- [x]` is written to `96-validation.md` before control leaves you.
 
 ## Tracking
 
