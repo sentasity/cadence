@@ -102,10 +102,184 @@ function detectMissingKeys(projectText, defaultsText) {
   return { missingBlocks, missingNested };
 }
 
+/**
+ * Return the array of raw lines (no trailing newline) for `text`.
+ * @param {string} text
+ * @returns {string[]}
+ */
+function splitLines(text) {
+  return String(text).split('\n');
+}
+
+/**
+ * Find the [startIdx, endIdx) span of a top-level block header `block:` in
+ * `lines`. startIdx is the index of the header line; endIdx is the index of
+ * the next column-0 key line (or lines.length). Returns null if not found.
+ *
+ * Trailing blank lines immediately before the next top-level key are excluded
+ * from the block body by returning `bodyEnd` = index after the last non-blank
+ * line of the block.
+ *
+ * @param {string[]} lines
+ * @param {string} block
+ * @returns {{ start: number, bodyEnd: number, end: number } | null}
+ */
+function findBlockSpan(lines, block) {
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^([A-Za-z0-9_-]+):/);
+    if (m && m[1] === block) {
+      start = i;
+      break;
+    }
+  }
+  if (start === -1) {
+    return null;
+  }
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^[A-Za-z0-9_-]+:/.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  let bodyEnd = end;
+  while (bodyEnd > start + 1 && lines[bodyEnd - 1].trim() === '') {
+    bodyEnd -= 1;
+  }
+  return { start, bodyEnd, end };
+}
+
+/**
+ * Extract the verbatim block text (header + all lines until the next column-0
+ * key or EOF), trimming trailing blank lines. Returns a string with no
+ * trailing newline.
+ *
+ * @param {string} defaultsText
+ * @param {string} block
+ * @returns {string}
+ */
+function extractBlock(defaultsText, block) {
+  const lines = splitLines(defaultsText);
+  const span = findBlockSpan(lines, block);
+  if (!span) {
+    throw new Error(`block not found in defaults: ${block}`);
+  }
+  return lines.slice(span.start, span.bodyEnd).join('\n');
+}
+
+/**
+ * Determine the child indentation string used inside a block in defaults
+ * (the leading whitespace of the first direct child key line). Falls back to
+ * two spaces if no child key is found.
+ *
+ * @param {string} defaultsText
+ * @param {string} block
+ * @returns {string}
+ */
+function childIndentOf(defaultsText, block) {
+  const lines = splitLines(defaultsText);
+  const span = findBlockSpan(lines, block);
+  if (!span) {
+    return '  ';
+  }
+  for (let i = span.start + 1; i < span.bodyEnd; i++) {
+    const m = lines[i].match(/^(\s+)[A-Za-z0-9_-]+:/);
+    if (m) {
+      return m[1];
+    }
+  }
+  return '  ';
+}
+
+/**
+ * Read the default VALUE text for a child key under a block in defaults.
+ * Returns the substring after `key:` (everything after the first colon),
+ * including any inline value but NOT the key itself. Trailing inline comments
+ * are preserved as written. Returns empty string if the key has no inline
+ * value (e.g. a nested mapping header).
+ *
+ * @param {string} defaultsText
+ * @param {string} block
+ * @param {string} key
+ * @returns {string}
+ */
+function defaultValueOf(defaultsText, block, key) {
+  const lines = splitLines(defaultsText);
+  const span = findBlockSpan(lines, block);
+  if (!span) {
+    throw new Error(`block not found in defaults: ${block}`);
+  }
+  for (let i = span.start + 1; i < span.bodyEnd; i++) {
+    const m = lines[i].match(/^\s+([A-Za-z0-9_-]+):(.*)$/);
+    if (m && m[1] === key) {
+      return m[2];
+    }
+  }
+  throw new Error(`key not found in defaults: ${block}.${key}`);
+}
+
+/**
+ * Additive text merge. Inserts missing nested keys inside their existing
+ * blocks (at the block's child indentation, with the default value) and
+ * appends whole missing top-level blocks verbatim at EOF (single blank-line
+ * separated). Never reorders or rewrites existing lines.
+ *
+ * @param {string} projectText
+ * @param {string} defaultsText
+ * @param {{ missingBlocks: string[], missingNested: Array<{block: string, key: string}> }} missing
+ * @returns {string}
+ */
+function mergeMissing(projectText, defaultsText, missing) {
+  let lines = splitLines(projectText);
+
+  // 1. Nested keys: group by block, insert before each block's bodyEnd.
+  //    Process so that earlier insertions don't invalidate later spans by
+  //    re-resolving the span for each block right before inserting.
+  const byBlock = {};
+  for (const { block, key } of missing.missingNested) {
+    if (!byBlock[block]) {
+      byBlock[block] = [];
+    }
+    byBlock[block].push(key);
+  }
+  for (const block of Object.keys(byBlock)) {
+    const indent = childIndentOf(defaultsText, block);
+    const span = findBlockSpan(lines, block);
+    if (!span) {
+      // Block not present in project (shouldn't happen for missingNested),
+      // skip defensively.
+      continue;
+    }
+    const newLines = byBlock[block].map(
+      (key) => `${indent}${key}:${defaultValueOf(defaultsText, block, key)}`
+    );
+    lines = lines
+      .slice(0, span.bodyEnd)
+      .concat(newLines)
+      .concat(lines.slice(span.bodyEnd));
+  }
+
+  // 2. Whole blocks: append at EOF, single blank-line separated.
+  let text = lines.join('\n');
+  for (const block of missing.missingBlocks) {
+    const blockText = extractBlock(defaultsText, block);
+    // Ensure the existing text ends with exactly one newline, then one blank
+    // line, then the block.
+    text = text.replace(/\n*$/, '\n');
+    text = `${text}\n${blockText}\n`;
+  }
+
+  return text;
+}
+
 module.exports = {
   parseConfigVersion,
   parseTopLevelStructure,
   detectMissingKeys,
+  findBlockSpan,
+  extractBlock,
+  mergeMissing,
 };
 
 function main() {
