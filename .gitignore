@@ -12,6 +12,9 @@
 # Obsidian editor config (machine-specific)
 .obsidian/
 
+# VS Code workspace settings (personal — e.g. per-repo window color)
+.vscode/
+
 # Cadence working artifacts (designs/plans) — not for the public repo
 docs/
 
