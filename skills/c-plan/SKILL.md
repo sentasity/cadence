@@ -122,7 +122,7 @@ Every file path, line range, symbol, and import a plan cites must be ground-trut
 Walked by `/c-validate` only after the plan is `implemented` and the user has deployed. Three required sections:
 
 - **A. Automated** — Claude runs each: `curl`, `psql`, `pytest`, etc. Expected value/shape; broken-if signal.
-- **B. Manual workflow** — User clicks; Claude verifies after each step via DB/API.
+- **B. Manual workflow** — User clicks; Claude verifies after each step via DB/API. **Optional `e2e:` reference:** when you can identify a Playwright spec (and optional grep/tag) that exercises a Category B flow — drawn from the design and the repo's existing `tests/e2e/` specs — append an indented `e2e: <spec> -g "<grep>"` sub-line beneath that item's checkbox so `/c-validate` can run it headless (grammar in `skills/_shared/browser-validation.md`). The cited spec path is subject to the **"Codebase verification (mandatory)"** rule above — ground-truth it against the repo before it lands, the same as any `Touches:`/`Reads:` path. When no relevant spec exists, write a plain manual step (no `e2e:` line) — attaching a reference is opportunistic, never mandatory, and never breaks the plain-manual path.
 - **C. Prerequisites** — User does before Claude can test (deploy, fixtures, keys). Walk blocks until all C confirmed.
 
 Every entry gets `- [ ]`. `/c-validate` checks them off as it walks.
