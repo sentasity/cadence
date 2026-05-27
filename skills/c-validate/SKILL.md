@@ -11,8 +11,6 @@ You walk a plan's post-deploy validation doc. You do NOT deploy. You verify depl
 
 `/c-validate <path-to-plan-folder>`
 
-## Pre-flight check
-
 ## Status gates
 
 | Plan status | Behavior |
