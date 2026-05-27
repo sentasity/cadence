@@ -273,6 +273,52 @@ function mergeMissing(projectText, defaultsText, missing) {
   return text;
 }
 
+/**
+ * Replace an existing top-level `config_version:` line's number with `target`
+ * (preserving any inline comment), or insert `config_version: <target>` as a
+ * top-level line after any leading comment block.
+ *
+ * @param {string} text
+ * @param {number} target
+ * @returns {string}
+ */
+function bumpOrInsertVersion(text, target) {
+  const lines = splitLines(text);
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^config_version:\s*\d+(\s*(?:#.*)?)$/);
+    if (m) {
+      lines[i] = `config_version: ${target}${m[1]}`;
+      return lines.join('\n');
+    }
+  }
+  // Not present: find insertion point after a leading comment/blank block.
+  let insertAt = 0;
+  while (insertAt < lines.length && (/^\s*#/.test(lines[insertAt]) || lines[insertAt].trim() === '')) {
+    insertAt += 1;
+  }
+  lines.splice(insertAt, 0, `config_version: ${target}`);
+  return lines.join('\n');
+}
+
+/**
+ * Throw if the text cannot be safely reasoned about as space-indented
+ * YAML-ish config. Rejects tab characters in leading whitespace. This is a
+ * conservative guard: when in doubt, the caller treats a throw as
+ * "unparseable" and skips the migration without writing.
+ *
+ * @param {string} text
+ * @returns {void}
+ */
+function assertParseable(text) {
+  const lines = splitLines(text);
+  for (const line of lines) {
+    const lead = line.match(/^([ \t]*)/)[1];
+    if (lead.includes('\t')) {
+      throw new Error('tab indentation is not supported');
+    }
+  }
+}
+
 module.exports = {
   parseConfigVersion,
   parseTopLevelStructure,
@@ -280,10 +326,59 @@ module.exports = {
   findBlockSpan,
   extractBlock,
   mergeMissing,
+  bumpOrInsertVersion,
+  assertParseable,
+  main,
 };
 
 function main() {
-  // Implemented in Task 1.4.
+  const projectRoot = process.env.CLAUDE_PROJECT_DIR;
+  const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
+  if (!projectRoot || !pluginRoot) {
+    return;
+  }
+  const projectPath = path.join(projectRoot, '.cadence', 'config.yaml');
+  const defaultsPath = path.join(pluginRoot, 'defaults', 'config.default.yaml');
+
+  if (!fs.existsSync(projectPath)) {
+    return; // Cadence not in use here; do nothing.
+  }
+
+  const proj = fs.readFileSync(projectPath, 'utf8');
+  const def = fs.readFileSync(defaultsPath, 'utf8');
+
+  const projVer = parseConfigVersion(proj);
+  const defVer = parseConfigVersion(def);
+  if (projVer >= defVer) {
+    return; // Already current.
+  }
+
+  let merged;
+  let missing;
+  try {
+    assertParseable(proj);
+    merged = bumpOrInsertVersion(proj, defVer);
+    missing = detectMissingKeys(merged, def);
+    merged = mergeMissing(merged, def, missing);
+  } catch (err) {
+    console.warn(
+      'Cadence: skipped config migration (could not safely parse .cadence/config.yaml)'
+    );
+    return;
+  }
+
+  fs.writeFileSync(projectPath, merged);
+
+  const added = [];
+  for (const block of missing.missingBlocks) {
+    added.push(block);
+  }
+  for (const { block, key } of missing.missingNested) {
+    added.push(`${block}.${key}`);
+  }
+  console.log(
+    `Cadence config migrated to v${defVer}: added ${added.join(', ')} (defaults). Edit .cadence/config.yaml to tune.`
+  );
 }
 
 if (require.main === module) {
