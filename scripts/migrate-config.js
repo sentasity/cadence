@@ -344,8 +344,19 @@ function main() {
     return; // Cadence not in use here; do nothing.
   }
 
-  const proj = fs.readFileSync(projectPath, 'utf8');
-  const def = fs.readFileSync(defaultsPath, 'utf8');
+  if (!fs.existsSync(defaultsPath)) {
+    console.warn('Cadence: skipped config migration (plugin defaults not found)');
+    return;
+  }
+
+  let proj, def;
+  try {
+    proj = fs.readFileSync(projectPath, 'utf8');
+    def = fs.readFileSync(defaultsPath, 'utf8');
+  } catch (err) {
+    console.warn('Cadence: skipped config migration (could not read config files)');
+    return;
+  }
 
   const projVer = parseConfigVersion(proj);
   const defVer = parseConfigVersion(def);
@@ -367,7 +378,12 @@ function main() {
     return;
   }
 
-  fs.writeFileSync(projectPath, merged);
+  try {
+    fs.writeFileSync(projectPath, merged);
+  } catch (err) {
+    console.warn('Cadence: skipped config migration (could not write .cadence/config.yaml)');
+    return;
+  }
 
   const added = [];
   for (const block of missing.missingBlocks) {

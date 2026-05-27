@@ -393,3 +393,16 @@ test('main: user-tuned non-default value is never overwritten', () => {
   assert.match(after, /^ {2}max_parallel: 5$/m);
   assert.doesNotMatch(after, /^ {2}max_parallel: 4$/m);
 });
+
+test('main: missing defaults file -> warn, no write, no throw', () => {
+  const proj = 'paths:\n  designs: docs/designs\n';
+  const { projectDir, pluginRoot } = setupTemp(proj);
+  fs.rmSync(path.join(pluginRoot, 'defaults', 'config.default.yaml'));
+  const before = fs.readFileSync(path.join(projectDir, '.cadence', 'config.yaml'), 'utf8');
+  const { logs, warns } = runMain(projectDir, pluginRoot);
+  assert.deepStrictEqual(logs, []);
+  assert.strictEqual(warns.length, 1);
+  assert.match(warns[0], /plugin defaults not found/);
+  const after = fs.readFileSync(path.join(projectDir, '.cadence', 'config.yaml'), 'utf8');
+  assert.strictEqual(after, before);
+});
