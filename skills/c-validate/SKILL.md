@@ -11,10 +11,6 @@ You walk a plan's post-deploy validation doc. You do NOT deploy. You verify depl
 
 `/c-validate <path-to-plan-folder>`
 
-## Pre-flight check
-
-**Config migration check (first):** Run `skills/_shared/config-migration.md` before proceeding; surface any prompt to the user.
-
 ## Status gates
 
 | Plan status | Behavior |
