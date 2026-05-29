@@ -19,6 +19,22 @@ A design always becomes exactly **one** plan folder. Work that would once have b
 
 Size is handled by phase decomposition, not by spawning sibling plans — `/c-execute`'s DAG engine already parallelizes across phase docs.
 
+### Phase file sizing — fewer, coherent files
+
+Each phase file becomes the unit of worktree dispatch and the unit of per-lane review under `/c-execute`'s lane = phase file rule (`docs/designs/2026-05-28-lane-by-phase-file/01-execution-engine-change.md`). Consolidate related work into fewer, larger phase files:
+
+- **One substantive topic per file.** A topic is a coherent slice the reviewer can hold in their head — closely-related codebase slice (one skill, one service, one feature surface), shared `Reads:` core across tasks, a one-sentence reviewer headline with no "and also" clauses, and an internal DAG shape (chain, fan-out, fan-in — not fully disconnected).
+- **Target 5–10+ tasks per file.** Below 5 is too thin to amortize worktree spin-up + per-lane review. 10+ is fine as long as topical coherence holds. The 5–10+ figure is a **target, not a threshold** — a genuinely 3-task plan still ships as a 3-task phase file.
+- **Task size inside a phase file is unchanged.** The per-task contract (`Reads:`/`Touches:`/`Depends:`/`Steps`, every step one action, every code step shows the FULL code) is exactly today's rule. Consolidation is at the file level, not the task level.
+
+**Worked example (positive exemplar).** `docs/plans/2026-05-26-c-validate-browser-automation/01-browser-validation.md` is the canonical good shape: 5 tasks (`1.1` config keys → `1.2` shared spec → `{1.3, 1.4, 1.5}` per-skill integration), one substantive topic (browser validation), shared `Reads:` core across all five (the `2026-05-26-c-validate-browser-automation` design docs), classic setup-then-fan-out DAG. Under the new rule this file is one warm lane.
+
+**Three anti-patterns to detect.** Each is a way the new stance can fail in the wild. Flag candidates to the user via `AskUserQuestion`; never auto-merge or auto-split silently.
+
+- **Mixed-topic file.** One phase file whose tasks span more than one coherent topic. Symptoms: tasks touch unrelated codebase slices; pairwise `Reads:` overlap is zero; the reviewer's one-sentence headline requires "and" to cover the file's diff; the file's name is generic ("foundation", "miscellaneous setup"). Correct response: split at the topic boundary. Do not pad the title to umbrella both topics; do not manufacture `Depends:` between unrelated tasks to fake cohesion.
+- **Sprawling monolith.** One phase file with 20+ tasks where coherence is loose — several distinct sub-topics are visible inside (e.g. "Refactor the auth service" covering schema migration, middleware rewrite, and provider-integration tests). The internal DAG often shows near-disconnected subgraphs. Correct response: split at the strongest internal topic boundary — usually the one that produces the cleanest combined diff per resulting file.
+- **Fragmented file.** A phase file with 1–2 tasks where related tasks live in sibling phase files that share its topic. Symptoms: `Reads:` overlaps heavily with a sibling's (>50% by either side's union); the headlines are near-duplicates; a reviewer would pull up both files together; the internal DAG is trivially short. Correct response: consolidate — merge into the sibling, or merge several fragments into one new file. This is the most common failure mode the new stance directly targets. A "setup-only" phase file (one or two tasks whose only purpose is to scaffold for the next file) is a subtler form of this anti-pattern: the setup belongs in the consuming file as the foundation tasks of its internal DAG.
+
 ## Bidirectional linkage
 
 - Plan's `00-overview.md` carries `linked_design: <design-slug>`.
