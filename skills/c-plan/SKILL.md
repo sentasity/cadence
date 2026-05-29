@@ -180,8 +180,10 @@ Plan docs are mechanical, so `/c-plan` always batches generation (no one-by-one 
 5. **Symbol/path/import verification** — every cited file path, line range, symbol, and import was ground-truthed against the current code per "Codebase verification" rules. Intra-plan consistency also holds: names referenced across later tasks match earlier ones. (`/c-audit`'s `code-behind-checkbox` audit remains a backstop at completion.)
 6. **File Map honesty** — every file in tasks appears in File Map; nothing in File Map is missing from tasks.
 7. **Wikilink integrity** — every `[[…]]` resolves.
+8. **Fragmented-file detector** — flag any phase file with 1–2 tasks whose `Reads:` core overlaps a sibling phase file's by >50% (candidate for consolidation). Surface to the user via `AskUserQuestion`; never auto-merge.
+9. **Mixed-topic detector** — flag any phase file whose tasks pairwise share zero `Reads:` (candidate-multi-topic). Surface to the user via `AskUserQuestion`; never auto-split.
 
-Fix inline. No re-review needed.
+Fix items 1–7 inline. For items 8 and 9, surface candidates to the user — consolidate / split / leave-as-is is the user's call, not `/c-plan`'s. No re-review needed.
 
 ## What `/c-plan` doesn't do
 
