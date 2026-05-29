@@ -2,6 +2,19 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.6.0 (2026-05-29)
+
+Parallelism amendment: lane = phase file. Fewer, fatter worktrees; chunkier authoring.
+
+### Changed
+
+- **`/c-execute` lane formation: greedy chain extension → lane = phase file.** The PM now forms one lane per phase file from the ready subset of its tasks (`eligible(F)` = ready ∩ disjoint-`Touches:` with in-flight). Internal `Depends:` order the implementer's steps inside the warm worktree; cross-file `Depends:` sequence lanes. Partial readiness emits a follow-up lane from the same file when blockers clear. The DAG, the `Touches:` guard, parallel reviewers, the worktree lifecycle, rebase-then-ff integration, quiesce-on-block, and the `merge-integrity` audit all stand unchanged. Supersedes the `2026-05-21-cadence-parallelism` design's greedy-chain-extension rule; the rest of that design stands.
+- **`/c-plan` authoring stance: fewer, coherent phase files.** New `Phase file sizing` subsection in `skills/c-plan/SKILL.md` targets one substantive topic per file with 5–10+ tasks. Three anti-patterns documented (mixed-topic file, sprawling monolith, fragmented file). Writing-flow step 2 reframes from per-feature splitting to minimal coherent grouping. Self-review pass gains two detectors (fragmented-file across siblings; pairwise zero-`Reads:` within a file) that surface candidates to the user — never auto-merge or auto-split. Per-task contract (`Reads:`/`Touches:`/`Depends:`/`Steps`) is unchanged.
+
+### Why
+
+The v0.4.0 parallelism release introduced worktrees to expedite parallel work. In practice, the greedy chain-extension lane-formation rule produced singleton lanes on the common fan-out shape (a setup task, then a spread of independent siblings) — one worktree per fan-out task, the worktree spin-up cost dominating the saved parallelism. Users observed "1 task per worktree, which just makes it longer." This release replaces the chain-extension rule with `lane = phase file`: every ready task from one `0X-*.md` file batches into one warm worktree with one implementer and one review pass. The companion `/c-plan` stance change consolidates related work into fewer, larger phase files so each lane carries meaningful work.
+
 ## v0.5.1 (2026-05-27)
 
 ### Fixed
