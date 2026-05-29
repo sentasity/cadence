@@ -67,16 +67,28 @@ The PM builds a dependency DAG from each task's `Depends:` edges (cross-file all
 ```
 build DAG from Depends edges  (once; rebuild on resume)
 while unfinished tasks and not quiescing:
-    ready = tasks whose Depends predecessors all merged
-    while free lane slots > 0 and a schedulable lane exists:
-        form lane L greedily from ready
-        if Touches(L) disjoint from all in-flight lanes: open worktree; dispatch implementer
-        else: defer L
+    ready = tasks whose cross-file Depends predecessors all merged
+            (internal Depends do not gate; the implementer resolves them in-lane)
+    while free lane slots > 0:
+        for each phase file F (numeric order: 01- before 02- …) with ≥ 1 task in ready:
+            eligible(F) = { T in tasks(F) ∩ ready :
+                            Touches(T) ∩ Touches(in-flight lanes) = ∅ }
+            if eligible(F) is non-empty
+               and Touches(eligible(F)) ∩ Touches(in-flight) = ∅:
+                open worktree
+                dispatch one implementer with eligible(F) as the lane
+                mark eligible(F) in-flight
+                break  (one dispatch per slot per inner pass)
+            else:
+                defer F to next tick  (its ready tasks stay in the ready set)
     await next lane to land
-    on land: integrate (merge-on-land), flip L's checkboxes, free slot
+    on land: integrate (merge-on-land), flip the lane's task checkboxes, free slot
+    (remainder of F = tasks(F) \ landed \ in-flight \ merged stays in ready set;
+     re-enters eligible(F) on a later tick when its blockers clear — this is the
+     follow-up-lane mechanism)
 ```
 
-The DAG must be acyclic; a cycle is a plan defect — surface it, never guess an order.
+The DAG must be acyclic; a cycle is a plan defect — surface it, never guess an order. Internal-`Depends:` cycles inside one phase file are caught by the same acyclicity check at DAG construction time and never reach this loop.
 
 ## Worktree lifecycle and merge-on-land
 
