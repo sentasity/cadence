@@ -154,7 +154,7 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 ## Writing flow
 
 1. Read approved design end-to-end (overview + every child + 99-OOS).
-2. Confirm phase decomposition (no split question — one plan always): *"Plan files will be `01-schema`, `02-pipeline`, `03-api`, `04-frontend`. Sound right?"*
+2. Confirm phase decomposition (no split question — one plan always). Decompose into the **minimal coherent grouping** that covers the design — prefer one substantive topic per phase file (5–10+ tasks per file), not one phase file per design child-doc. A phase file is the unit of worktree dispatch and per-lane review under `/c-execute`'s lane = phase file rule; fragmented files create cold-start churn without parallelism gain. Confirm with the user: *"Plan files will be `01-<topic>`, `02-<topic>`, …. Sound right?"*
 3. Write `00-overview.md` first (frontmatter + phase index + File Map — generators need it).
 4. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`. Before each generator finalizes its doc, run the codebase verification pass (above) on every path, symbol, and import it cites. Fix inline.
 5. **Invariant 2 in reverse.** If a phase reveals a gap or inconsistency in the design, surface it. Apply drift policy (default: update plan only; user-elective: update plan + design).
