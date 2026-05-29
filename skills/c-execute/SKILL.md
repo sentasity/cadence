@@ -51,13 +51,16 @@ SHA-based pinning is robust against rebases, merges, and unrelated commits that 
 
 ## Lane model and DAG scheduling
 
-The PM builds a dependency DAG from each task's `Depends:` edges (cross-file allowed), then runs **lanes** — chains of dependent tasks — concurrently in isolated worktrees.
+The PM builds a dependency DAG from each task's `Depends:` edges (cross-file allowed), then runs **lanes** — the ready subset of one phase file's tasks — concurrently in isolated worktrees. The phase file is the lane: the unit of dispatch, the unit of review, and the unit of merge.
 
-- **Lane** = an ordered chain `[T0, T1, …]` run by one `cadence-implementer` in one worktree, committing per-task internally.
-- **Lane formation (greedy):** seed from a ready task; extend with a successor whose only unsatisfied `Depends:` is the current tail; stop at a diamond join, when no such successor exists, or when the lane's accumulated size hits PM judgment (no fixed threshold).
-- **Ready set:** a task is ready when every `Depends:` predecessor has **merged** to the working branch. Recompute on every land.
-- **Co-schedule guard (hard):** two ready lanes may run concurrently only if `Touches(A) ∩ Touches(B) = ∅`. A `Touches:` overlap **serializes** the later lane (defer until the other lands) — never error, never override.
+- **Lane** = the ready subset of one phase file `F`'s tasks, run by one `cadence-implementer` in one worktree, committing per-task internally. Lane boundaries are author-visible (the `0X-*.md` filename); they are NOT a runtime-derived chain.
+- **Lane formation (per phase file):** for every phase file `F` with at least one ready task, compute `eligible(F)` = tasks of `F` whose cross-file `Depends:` are merged AND whose `Touches:` are disjoint from every in-flight lane. If `eligible(F)` is non-empty, dispatch it as one lane. Internal `Depends:` (both endpoints in the same eligible subset) do NOT gate dispatch — the implementer resolves them inside the lane by running predecessors first. The phase file = lane rule supersedes the older greedy-chain-extension rule from `docs/designs/2026-05-21-cadence-parallelism/01-execution-engine.md` §"Lane formation".
+- **Ready set:** a task is ready when every **cross-file** `Depends:` predecessor has merged to the working branch. Internal `Depends:` are intra-lane ordering, not ready-set gates. Recompute on every land.
+- **Co-schedule guard (hard):** two ready lanes may run concurrently only if `Touches(A) ∩ Touches(B) = ∅`. A `Touches:` overlap **serializes** the later lane (defer until the other lands) — never error, never override. The guard now operates between phase-file lanes; same semantics as before.
 - **Cap:** up to `execute.max_parallel` lanes (default 4 = concurrent worktrees). Reviewers run on top, uncapped.
+- **Follow-up lanes from the same file:** when only part of a phase file is currently ready (cross-file `Depends:` pending or `Touches:` collision), the PM dispatches the ready subset now and the remainder waits in the ready set. When the remainder clears, it forms a second (or third) lane from the same phase file. One file can become 2–3 lanes over a run; each lane reviews independently against its own cumulative diff.
+
+**Edge cases (load-bearing).** A phase file with a single task = a singleton lane; same as today. A phase file with every task blocked at scheduling time = no lane forms; revisit when the ready set changes. An empty phase file is skipped. An internal-`Depends:` cycle inside one file is a plan defect — surfaced at DAG construction, never silently re-ordered. **Two tasks in `F` that declare overlapping `Touches:` are dispatched in the same lane** — the implementer runs them in `Depends:` order with per-task commits; the `Touches:` overlap inside one lane is not flagged (the guard exists only between distinct lanes).
 
 ### Scheduling loop
 
