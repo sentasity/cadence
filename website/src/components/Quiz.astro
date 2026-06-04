@@ -1,17 +1,28 @@
 ---
 interface Props {
   question: string;
-  answer: string;
+  options: string[];
+  answer: number;
+  explanation: string;
 }
 
-const { question, answer } = Astro.props;
+const { question, options, answer, explanation } = Astro.props;
+const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+const correctLetter = letters[answer] ?? String(answer + 1);
+const correctText = options[answer] ?? '';
 ---
 
 <aside class="quiz">
   <p class="quiz__question"><span class="quiz__badge">Quiz</span>{question}</p>
+  <ol class="quiz__options" type="A">
+    {options.map((opt) => (
+      <li>{opt}</li>
+    ))}
+  </ol>
   <details class="quiz__reveal">
     <summary>Show answer</summary>
-    <p class="quiz__answer">{answer}</p>
+    <p class="quiz__answer"><strong>{correctLetter}. {correctText}</strong></p>
+    <p class="quiz__explanation">{explanation}</p>
   </details>
 </aside>
 
@@ -39,6 +50,13 @@ const { question, answer } = Astro.props;
     margin: 0;
     font-weight: 600;
   }
+  .quiz__options {
+    margin: 0.75rem 0 0 1.25rem;
+    padding: 0;
+  }
+  .quiz__options li {
+    margin: 0.25rem 0;
+  }
   .quiz__reveal {
     margin-top: 0.75rem;
   }
@@ -49,5 +67,8 @@ const { question, answer } = Astro.props;
   }
   .quiz__answer {
     margin: 0.5rem 0 0;
+  }
+  .quiz__explanation {
+    margin: 0.25rem 0 0;
   }
 </style>
