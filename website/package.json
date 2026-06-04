@@ -13,6 +13,9 @@
   },
   "dependencies": {
     "@astrojs/starlight": "^0.39.3",
+    "@fontsource/ibm-plex-sans": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@fontsource/sora": "^5.2.8",
     "astro": "^6.4.4"
   }
 }

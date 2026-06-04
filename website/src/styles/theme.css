@@ -1,0 +1,40 @@
+/* Cadence docs theme — "Paper & Cobalt"
+ * Light · clean · Sora headings + IBM Plex Sans body + JetBrains Mono code.
+ *
+ * Scope is intentionally minimal: fonts + a heading-font override + the accent
+ * triple for both color modes. Starlight's default light theme is already a
+ * clean "paper" white with near-black text, so overriding the accent + type is
+ * what gives the site its identity without fighting Starlight's computed
+ * surface/contrast scale. To fine-tune the full gray/surface palette, use
+ * Starlight's color-theme editor and paste the generated --sl-color-* set here.
+ */
+
+:root {
+  --sl-font: 'IBM Plex Sans', sans-serif;
+  --sl-font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Starlight has no built-in heading-font token, so headings + the site title
+ * are switched to Sora explicitly. */
+:root {
+  --cadence-heading-font: 'Sora', sans-serif;
+}
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6),
+.site-title {
+  font-family: var(--cadence-heading-font);
+  letter-spacing: -0.015em;
+}
+
+/* Light mode (primary aesthetic) — cobalt accent on Starlight's paper-white. */
+:root[data-theme='light'] {
+  --sl-color-accent-low: #e7ecfd;
+  --sl-color-accent: #2f5fe0;
+  --sl-color-accent-high: #1e3fa8;
+}
+
+/* Dark mode counterpart — lighter cobalt for contrast on the dark surface. */
+:root {
+  --sl-color-accent-low: #15234a;
+  --sl-color-accent: #6f97f5;
+  --sl-color-accent-high: #c7d8ff;
+}
