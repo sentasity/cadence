@@ -1,4 +1,9 @@
-# Cadence
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="website/public/brand/cadence-lockup-dark@2x.png">
+    <img alt="Cadence" src="website/public/brand/cadence-lockup-light@2x.png" width="360">
+  </picture>
+</p>
 
 **Claude jumps straight to code, skips design, leaves half-done plans, and forgets to validate. Cadence enforces the stages.**
 
