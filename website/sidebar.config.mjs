@@ -7,19 +7,19 @@ export const sidebar = [
   {
     // Get Started: ordered by the 01-..05- filename prefixes
     label: 'Get Started',
-    items: [{ autogenerate: { directory: 'course/get-started' } }],
+    items: [{ autogenerate: { directory: 'get-started' } }],
   },
   {
     // Deep dives: 6 core-flow stages in order, then combined diagnostics (explicit, not prefixed)
     label: 'Deep dives',
     items: [
-      { label: 'Brainstorm', link: '/course/brainstorm/' },
-      { label: 'Design', link: '/course/design/' },
-      { label: 'Plan', link: '/course/plan/' },
-      { label: 'Execute', link: '/course/execute/' },
-      { label: 'Audit', link: '/course/audit/' },
-      { label: 'Validate', link: '/course/validate/' },
-      { label: 'Diagnostics', link: '/course/diagnostics/' },
+      { label: 'Brainstorm', link: '/brainstorm/' },
+      { label: 'Design', link: '/design/' },
+      { label: 'Plan', link: '/plan/' },
+      { label: 'Execute', link: '/execute/' },
+      { label: 'Audit', link: '/audit/' },
+      { label: 'Validate', link: '/validate/' },
+      { label: 'Diagnostics', link: '/diagnostics/' },
     ],
   },
   {

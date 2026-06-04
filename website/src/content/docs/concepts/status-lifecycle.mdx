@@ -22,9 +22,9 @@ stateDiagram-v2
     completed --> [*]
 ```
 
-- **draft → in-review** — triggered by **[/c-design](/cadence/course/design/)** after it finishes its own self-review pass. The design is written and internally checked; now it's ready for *your* eyes.
+- **draft → in-review** — triggered by **[/c-design](/cadence/design/)** after it finishes its own self-review pass. The design is written and internally checked; now it's ready for *your* eyes.
 - **in-review → approved** — triggered by **you**. This is a human gate: the design sits in review until you explicitly say "approved." Nothing downstream (no plan, no code) proceeds until you do.
-- **approved → completed** — offered by **[/c-validate](/cadence/course/validate/)** once the plan built from this design reaches `completed`. Cadence offers it; you confirm.
+- **approved → completed** — offered by **[/c-validate](/cadence/validate/)** once the plan built from this design reaches `completed`. Cadence offers it; you confirm.
 
 <Aside type="note" title="Approval is yours alone">
 The jump to `approved` is the one transition no Cadence stage will ever make for you. It's the design gate — the place where your judgment, not the machine's, decides the work is right.
@@ -43,9 +43,9 @@ stateDiagram-v2
     completed --> [*]
 ```
 
-- **draft → in-progress** — triggered when **[/c-execute](/cadence/course/execute/)** starts running the plan.
-- **in-progress → implemented** — triggered by **[/c-execute](/cadence/course/execute/)**, but only after the completion **audit passes**. The code is written *and* checked against its own plan before the plan is called implemented.
-- **implemented → completed** — triggered by **[/c-validate](/cadence/course/validate/)** once it walks the plan's validation checklist and everything passes clean (after you've deployed).
+- **draft → in-progress** — triggered when **[/c-execute](/cadence/execute/)** starts running the plan.
+- **in-progress → implemented** — triggered by **[/c-execute](/cadence/execute/)**, but only after the completion **audit passes**. The code is written *and* checked against its own plan before the plan is called implemented.
+- **implemented → completed** — triggered by **[/c-validate](/cadence/validate/)** once it walks the plan's validation checklist and everything passes clean (after you've deployed).
 
 <Aside type="tip" title="Status is the trust trail">
 Read top to bottom, the statuses are the chain that lets you trust a result you didn't read line-by-line: a design you *approved*, a plan that *passed audit*, and an implementation that *validated clean*. Each word is a gate that something — or someone — had to clear.
