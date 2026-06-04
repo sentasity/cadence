@@ -1,0 +1,67 @@
+---
+title: The Design phase
+description: How a stub becomes a full, human-readable design folder — the artifact you actually approve.
+sidebar:
+  order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Quiz from '../../../components/Quiz.astro';
+
+Design is the phase that produces the document *you* read and approve. Where brainstorm gave you a short stub, `/c-design` grows it into a full **design folder** written for a human — specifically, a human who will never read the code.
+
+## The design folder is the artifact
+
+`/c-design` reads your `00-overview.md` stub and materializes a folder of related documents in reading order. The folder always includes:
+
+- `00-overview.md` — the what/why/approach plus the decisions log.
+- `00a-plain-english.md` — a narrative tour, written last, in plain language.
+- One or more numbered child docs (`01-…`, `02-…`) covering the technical detail.
+- `99-out-of-scope.md` — what this design deliberately won't do, each with a reason.
+
+You don't approve code. You approve *this folder*. That's why it's written to be read.
+
+## The plain-English narrative and the decisions log
+
+Two parts carry the most weight for a non-coder.
+
+The **plain-English narrative** (`00a-plain-english.md`) is written last, once everything else is settled, and follows a fixed shape: what the feature does in one paragraph, the normal cycle, what you'd see, what can go wrong, how you'll know it's working, and a TL;DR. It's the document you read to decide whether the design is right.
+
+The **decisions log** lives in the overview and records every meaningful choice *with its rationale*. You see not just what was decided but why — so you can push back on the reasoning, not just the outcome.
+
+<Aside type="note" title="A plain-English callout at every section">
+Throughout the technical child docs, each major section opens with a plain-English summary callout. You're never dropped into jargon without a translation alongside it.
+</Aside>
+
+## Parallel vs sequential generation
+
+When you run `/c-design`, it asks how to write the child docs:
+
+- **All-at-once** (the default) — it writes all the technical child docs in parallel, then runs a single consistency sweep across them, then writes the plain-English narrative last. One review pause, at the end.
+- **One-by-one** — it writes a single child doc, pauses for you to review, then continues. More control, more pauses.
+
+Either way, the plain-English narrative is generated last, from the settled docs.
+
+## The self-review gate before `in-review`
+
+Before it asks you to look at anything, `/c-design` runs a **self-review pass** over the whole folder: no leftover placeholders, every internal link resolves, decisions are reflected consistently across docs, and nothing reads like an unresolved open question. Only after that does it flip the design to `in-review` and invite you to walk through it.
+
+<Aside type="caution" title="Approval is yours alone">
+Cadence never marks a design `approved` itself. It flips to `in-review` and waits. *You* say "approved" — that explicit word is the gate between design and plan. Nothing auto-promotes.
+</Aside>
+
+<Quiz
+  question="Which document does /c-design always write last?"
+  options={[
+    "00a-plain-english.md — the narrative tour",
+    "00-overview.md — the stub",
+    "99-out-of-scope.md",
+    "The first technical child doc"
+  ]}
+  answer={0}
+  explanation="The plain-English narrative is written last in both modes, once the technical docs are settled, so it accurately reflects the final design."
+/>
+
+**Exact usage:** see the **[/c-design reference](/cadence/reference/c-design/)** for the entry contract, folder layout, and generation modes.
+
+Next phase: **[The Plan phase](/cadence/course/plan/)**.
