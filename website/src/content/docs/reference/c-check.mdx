@@ -1,0 +1,43 @@
+---
+title: /c-check
+sidebar:
+  order: 7
+---
+
+Source of truth: `skills/c-check/SKILL.md`. For the *why* behind the diagnostics, read the [Diagnostics deep dive](/cadence/course/diagnostics/).
+
+## Purpose
+
+Reviews a design or plan for substance — does it make sense, does it hang together, are there gaps, contradictions, or silent assumptions — and reports back in plain English without touching the doc.
+
+## When to use it
+
+Use `/c-check` before approving a design, before running `/c-plan` or `/c-execute`, or after a long brainstorm — any time you want a sanity check on whether a doc is ready for the next phase. It is an off-pipeline, read-only diagnostic. Use `/c-find-bugs` instead when you want concrete code defects, not a "is this good?" judgment.
+
+## Invocation forms
+
+- `/c-check <design-folder-path>` — review a full design.
+- `/c-check <plan-folder-path>` — review a full plan.
+- `/c-check <single-doc-path>` — review one child doc in isolation.
+- `/c-check --format <path>` — also run Cadence format-compliance checks (for hand-edited or imported artifacts).
+- `/c-check --any <path>` — accept paths outside Cadence's expected folder structure.
+
+## Inputs & preconditions
+
+An existing design or plan doc. It refuses if the path doesn't exist, or if the path is in a Cadence-managed location but lacks the expected structure (no overview, missing frontmatter) — unless `--any` is set.
+
+## What it produces
+
+A citation-first report in chat: a plain-English readiness summary, findings grouped Critical / Important / Minor with a fix direction each, a mandatory "What's working" section, and one specific recommended next action. After printing, it can optionally walk you through applying findings. It never modifies the reviewed doc.
+
+## Gates & guarantees
+
+- Each substance lens (accuracy, internal consistency, completeness, hidden assumptions, scope discipline, internal logic, open-questions) runs as its own parallel sub-agent; plans additionally get codebase-citation and DAG-soundness checks.
+- Severity is applied conservatively — Critical is reserved for things that block the next phase outright.
+- It never reviews code quality beyond verifying a plan's cited paths/symbols exist, never modifies the doc, never flips status, and never writes a result file (the report stays in chat).
+
+## Related commands
+
+- **Sister diagnostics:** [`/c-find-bugs`](/cadence/reference/c-find-bugs/) (concrete defects) and [`/c-explain`](/cadence/reference/c-explain/) (explanation, not judgment).
+- **Related pipeline:** [`/c-audit`](/cadence/reference/c-audit/) audits an *implemented* plan against code; `/c-check` reviews a doc's substance before build.
+- **Deep dive:** [Diagnostics: check, find-bugs, explain](/cadence/course/diagnostics/).
