@@ -7,9 +7,9 @@ export const sidebar = [
   {
     label: 'Course',
     items: [
-      // Quickstart: ordered by the 01-..04- filename prefixes
-      { label: 'Quickstart', items: [{ autogenerate: { directory: 'course/quickstart' } }] },
-      // Deep dives: 6 core-flow phases in order, then combined diagnostics (explicit, not prefixed)
+      // Get Started: ordered by the 01-..05- filename prefixes
+      { label: 'Get Started', items: [{ autogenerate: { directory: 'course/get-started' } }] },
+      // Deep dives: 6 core-flow stages in order, then combined diagnostics (explicit, not prefixed)
       {
         label: 'Deep dives',
         items: [
@@ -23,6 +23,11 @@ export const sidebar = [
         ],
       },
     ],
+  },
+  {
+    // Cross-cutting topics, ordered by each page's sidebar.order frontmatter.
+    label: 'Concepts',
+    items: [{ autogenerate: { directory: 'concepts' } }],
   },
   {
     label: 'Reference',

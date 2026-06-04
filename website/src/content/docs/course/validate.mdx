@@ -1,5 +1,5 @@
 ---
-title: The Validate phase
+title: The Validate stage
 description: How post-deploy validation closes the loop and marks work truly done.
 sidebar:
   order: 6
@@ -8,11 +8,11 @@ sidebar:
 import { Aside } from '@astrojs/starlight/components';
 import Quiz from '../../../components/Quiz.astro';
 
-Validate is the last phase — the one that confirms the thing actually works *after it's deployed*, then formally marks the work done. Audit proved the code matches the plan; validate proves the *running system* does what was promised.
+Validate is the last stage — the one that confirms the thing actually works *after it's deployed*, then formally marks the work done. Audit proved the code matches the plan; validate proves the *running system* does what was promised.
 
 ## The 96-validation checklist
 
-Every plan carries a validation document — its `96-validation.md` — written back during the plan phase. It's a checklist of everything that needs to be true for the feature to count as working in the real world. `/c-validate` walks that checklist with you, item by item, after you've deployed.
+Every plan carries a validation document — its `96-validation.md` — written back during the plan stage. It's a checklist of everything that needs to be true for the feature to count as working in the real world. `/c-validate` walks that checklist with you, item by item, after you've deployed.
 
 <Aside type="note" title="Validate never deploys">
 `/c-validate` does not deploy anything — that's your step. It verifies *deployed* behavior. You deploy; it checks. Keeping those separate means Cadence never pushes something live on its own.
@@ -37,7 +37,7 @@ As each item passes, Cadence marks it off on the checklist and writes that progr
 When every item passes, `/c-validate` flips the plan to `completed`. Then it reads the plan's link back to its design and offers to mark that **design** `completed` too — your call.
 
 <Aside type="tip" title="This is where the loop closes">
-Remember the two-way link from the plan phase? This is where it pays off. The design only reaches its formal `completed` state once its plan has been validated. The whole loop — idea to brainstorm to design to plan to code to audit to validation — closes here, with your confirmation.
+Remember the two-way link from the plan stage? This is where it pays off. The design only reaches its formal `completed` state once its plan has been validated. The whole loop — idea to brainstorm to design to plan to code to audit to validation — closes here, with your confirmation.
 </Aside>
 
 <Quiz

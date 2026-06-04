@@ -12,7 +12,7 @@ Reviews a design or plan for substance — does it make sense, does it hang toge
 
 ## When to use it
 
-Use `/c-check` before approving a design, before running `/c-plan` or `/c-execute`, or after a long brainstorm — any time you want a sanity check on whether a doc is ready for the next phase. It is an off-pipeline, read-only diagnostic. Use `/c-find-bugs` instead when you want concrete code defects, not a "is this good?" judgment.
+Use `/c-check` before approving a design, before running `/c-plan` or `/c-execute`, or after a long brainstorm — any time you want a sanity check on whether a doc is ready for the next stage. It is an off-pipeline, read-only diagnostic. Use `/c-find-bugs` instead when you want concrete code defects, not a "is this good?" judgment.
 
 ## Invocation forms
 
@@ -33,7 +33,7 @@ A citation-first report in chat: a plain-English readiness summary, findings gro
 ## Gates & guarantees
 
 - Each substance lens (accuracy, internal consistency, completeness, hidden assumptions, scope discipline, internal logic, open-questions) runs as its own parallel sub-agent; plans additionally get codebase-citation and DAG-soundness checks.
-- Severity is applied conservatively — Critical is reserved for things that block the next phase outright.
+- Severity is applied conservatively — Critical is reserved for things that block the next stage outright.
 - It never reviews code quality beyond verifying a plan's cited paths/symbols exist, never modifies the doc, never flips status, and never writes a result file (the report stays in chat).
 
 ## Related commands

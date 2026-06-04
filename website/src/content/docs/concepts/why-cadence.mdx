@@ -1,0 +1,52 @@
+---
+title: Why Cadence
+description: The thesis behind Cadence — an AI-first workflow that front-loads design and judgment, and lets audit and validation carry the trust you can't get from reading diffs.
+sidebar:
+  order: 1
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Left to its own devices, Claude jumps straight to code. It skips the design, leaves plans half-done, and forgets to validate. That's fine when you can read the diff and catch the gaps yourself. It's a problem when you can't.
+
+Cadence is built for the second case.
+
+## The bet: spend more time on design, less on implementation
+
+Cadence is an **AI-first workflow**. The bet it makes is that with a capable model writing the code, the scarce resource is no longer typing — it's *direction*. So Cadence flips where your time goes: you spend significantly **more** time on the front half (brainstorm → design → plan) and much **less** worrying about how any of it is implemented.
+
+This is "vibe coding" made responsible. You still work by intent and feel — "I want a credit ledger that shows AWS credits per account" — but instead of letting that intent slide straight into an unreviewable pile of code, Cadence routes it through stages, each with a written artifact and an explicit gate where *you* decide whether to continue.
+
+You direct judgment at the gates. The machine carries the verification load.
+
+<Aside type="note" title="Who this is for">
+Cadence is built for people who are strong on operations and ideation but can't verify code by reading diffs. If that's you, the usual AI-coding loop asks you to trust something you literally cannot inspect. Cadence is designed so you never have to.
+</Aside>
+
+## Why gates and readable artifacts are the whole point
+
+If you can't read code, then "the tests pass" or "here's the diff" isn't trust — it's a leap of faith. Cadence replaces the leap with two things you *can* evaluate:
+
+- **Readable artifacts at every stage.** Brainstorm produces a plain-English stub. Design produces a narrative you can actually follow. The plan is exact, but the design it came from speaks your language. You're never asked to approve something you can't understand.
+- **Explicit gates between stages.** Nothing advances on its own. Brainstorm stops and tells you to run design. Design stops and waits for you to say "approved." Execute stops at the audit. Each pause is a place where your judgment — the thing you *are* good at — is exactly what's needed.
+
+The mental model is simple: **you supply intent and judgment at the gates; the artifacts let you exercise that judgment without reading a single line of code.**
+
+## How the trust gets built without you reading diffs
+
+Two stages exist specifically so you don't have to inspect the implementation:
+
+- **Audit** checks the work *against its own plan* — every checkbox backed by real code, no half-finished steps, no quietly-dropped scope, no deferred `TODO`s smuggled in. It's an automated reviewer that answers "did it actually do what the plan said?"
+- **Validate** walks the work *as a user would* after deploy — the manual and automated checks that confirm the thing behaves the way you wanted.
+
+Together they carry the verification load. You judge intent at the design gate; audit and validate confirm the result matches that intent. That's the chain that lets someone who can't read diffs still trust what shipped.
+
+<Aside type="tip" title="The pause is the feature">
+Every "now run the next command yourself" is deliberate. The friction *is* the safety. A workflow that chained all six stages automatically would be faster — and would put the result back out of your reach.
+</Aside>
+
+## Where to go next
+
+- New here? Start with the course: **[What is Cadence?](/cadence/course/get-started/01-what-is-cadence/)**
+- Want the deeper mechanics of each stage? Read the deep dives — **[Brainstorm](/cadence/course/brainstorm/)**, **[Design](/cadence/course/design/)**, **[Plan](/cadence/course/plan/)**, **[Execute](/cadence/course/execute/)**, **[Audit](/cadence/course/audit/)**, and **[Validate](/cadence/course/validate/)**.
+- Curious how the other concept pages fit in? See **[Advisors](/cadence/concepts/advisors/)**, **[Parallelism & worktrees](/cadence/concepts/parallelism-and-worktrees/)**, and the **[Status lifecycle](/cadence/concepts/status-lifecycle/)**.

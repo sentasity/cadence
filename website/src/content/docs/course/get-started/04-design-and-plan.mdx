@@ -2,7 +2,7 @@
 title: Design and plan it
 description: Turn the stub into a full human-readable design, approve it, then translate it into an exact machine-readable plan.
 sidebar:
-  order: 3
+  order: 4
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
@@ -13,7 +13,7 @@ You have a stub. This lesson grows it into a full **design** you can actually re
 
 ## Design: the stub becomes something you can read
 
-`/c-design` takes your `00-overview.md` stub and materializes the full **design folder** — the artifact for this phase. It writes child documents in reading order and, crucially, a plain-English narrative document written for someone who will never read code.
+`/c-design` takes your `00-overview.md` stub and materializes the full **design folder** — the artifact for this stage. It writes child documents in reading order and, crucially, a plain-English narrative document written for someone who will never read code.
 
 <Aside type="note" title="Why design and plan are separate">
 A design is for *you* — plain English, decisions explained, written to be reviewed by a non-coder. A plan is for the *machine* — exact paths and steps, no story. Keeping them separate means the thing you approve is the thing you can actually understand.
@@ -30,7 +30,7 @@ A design is for *you* — plain English, decisions explained, written to be revi
   <Fragment slot="step-4-body">After a self-review pass, Cadence flips the design to `in-review` and asks you to walk through it. When you're satisfied, you say "approved" — that explicit word is the gate. Cadence then tells you to run `/c-plan`.</Fragment>
 </Walkthrough>
 
-The finished design folder for this exact feature ships with Cadence. Open these to see what "done" looks like for the design phase:
+The finished design folder for this exact feature ships with Cadence. Open these to see what "done" looks like for the design stage:
 
 <Tabs>
   <TabItem label="Design folder">
@@ -76,4 +76,4 @@ A task with exact `Reads:` / `Touches:` / `Depends:` fields and steps like: writ
   explanation="The design explains the why in plain English so you can approve it. The plan is exact paths, code, and commands — no narrative — because the machine executes it."
 />
 
-Next: **[Execute, audit, and validate](/cadence/course/quickstart/04-execute-and-validate/)** — turn the plan into real code and close the loop.
+Next: **[Execute, audit, and validate](/cadence/course/get-started/05-execute-and-validate/)** — turn the plan into real code and close the loop.

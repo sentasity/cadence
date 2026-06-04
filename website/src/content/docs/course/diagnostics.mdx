@@ -8,21 +8,21 @@ sidebar:
 import { Aside } from '@astrojs/starlight/components';
 import Quiz from '../../../components/Quiz.astro';
 
-The six pipeline phases move work forward. The three **diagnostics** do the opposite: they let you *inspect* without advancing anything. They're off-pipeline, read-only helpers — think of them as instruments you reach for when you want to understand or check something, not push it ahead.
+The six pipeline stages move work forward. The three **diagnostics** do the opposite: they let you *inspect* without advancing anything. They're off-pipeline, read-only helpers — think of them as instruments you reach for when you want to understand or check something, not push it ahead.
 
 ## One shared mental model: inspect, don't advance
 
 All three share a single idea. None of them writes code, changes a plan, or flips a status. They read, they report, and they stop. That's why they get one combined lesson instead of three: the *when-to-advance* gates are the pipeline's job; these tools sit beside the pipeline and answer questions on demand.
 
 <Aside type="note" title="Read-only and outside the gates">
-You can run any of these any time — on a draft design, a finished plan, a branch of code — without consequence. They never move your work between phases. The worst they can do is tell you something you didn't want to hear.
+You can run any of these any time — on a draft design, a finished plan, a branch of code — without consequence. They never move your work between stages. The worst they can do is tell you something you didn't want to hear.
 </Aside>
 
 ## `/c-check` — is this good?
 
 `/c-check` is a **substance review** of a design or plan. It asks: does this hang together — is it accurate, internally consistent, complete, free of hidden assumptions and scope creep? It returns a report sorted by severity (critical / important / minor), always including a "what's working" section so the feedback is calibrated, and a single recommended next action.
 
-Reach for it **before** you approve a design, or **before** you run `/c-plan` or `/c-execute` — to catch gaps in the document before they corrupt the next phase.
+Reach for it **before** you approve a design, or **before** you run `/c-plan` or `/c-execute` — to catch gaps in the document before they corrupt the next stage.
 
 ## `/c-find-bugs` — what specific defects exist?
 
@@ -46,7 +46,7 @@ Reach for it when you want to understand a design you didn't write, or refresh y
   question="What do all three diagnostic commands have in common?"
   options={[
     "They're read-only — they inspect and report but never advance work or change anything",
-    "They each move a plan to the next phase",
+    "They each move a plan to the next stage",
     "They write code fixes automatically",
     "They can only be run on the whole repository"
   ]}

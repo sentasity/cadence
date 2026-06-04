@@ -1,8 +1,10 @@
 # Cadence
 
-**Claude jumps straight to code, skips design, leaves half-done plans, and forgets to validate. Cadence enforces the phases.**
+**Claude jumps straight to code, skips design, leaves half-done plans, and forgets to validate. Cadence enforces the stages.**
 
-Cadence is a Claude Code plugin that turns "I want to build X" into a working, validated implementation through nine slash commands: six core-flow (`/c-brainstorm` → `/c-design` → `/c-plan` → `/c-execute` → `/c-audit` → `/c-validate`) plus three diagnostic (`/c-check`, `/c-find-bugs`, `/c-explain`). Each phase produces a tangible artifact. Each gate is explicit. No atomic chains. No silent drift. No deferred TODOs in code.
+> **Docs:** [sentasity.github.io/cadence](https://sentasity.github.io/cadence/) — a guided course and per-command reference.
+
+Cadence is a Claude Code plugin that turns "I want to build X" into a working, validated implementation through nine slash commands: six core-flow (`/c-brainstorm` → `/c-design` → `/c-plan` → `/c-execute` → `/c-audit` → `/c-validate`) plus three diagnostic (`/c-check`, `/c-find-bugs`, `/c-explain`). Each stage produces a tangible artifact. Each gate is explicit. No atomic chains. No silent drift. No deferred TODOs in code.
 
 Built for users who are strong on operations and ideation but can't verify code by reading diffs — Cadence's audit and validation layers carry that load.
 
