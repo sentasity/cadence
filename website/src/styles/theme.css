@@ -1,4 +1,4 @@
-/* Cadence docs theme — "Paper & Cobalt"
+/* Cadence docs theme: "Paper & Cobalt"
  * Light · clean · Sora headings + IBM Plex Sans body + JetBrains Mono code.
  *
  * Scope is intentionally minimal: fonts + a heading-font override + the accent
@@ -25,14 +25,14 @@
   letter-spacing: -0.015em;
 }
 
-/* Light mode (primary aesthetic) — cobalt accent on Starlight's paper-white. */
+/* Light mode (primary aesthetic): cobalt accent on Starlight's paper-white. */
 :root[data-theme='light'] {
   --sl-color-accent-low: #e7ecfd;
   --sl-color-accent: #2f5fe0;
   --sl-color-accent-high: #1e3fa8;
 }
 
-/* Dark mode counterpart — lighter cobalt for contrast on the dark surface. */
+/* Dark mode counterpart: lighter cobalt for contrast on the dark surface. */
 :root {
   --sl-color-accent-low: #15234a;
   --sl-color-accent: #6f97f5;

@@ -9,11 +9,11 @@ import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 import Walkthrough from '../../../components/Walkthrough.astro';
 import Quiz from '../../../components/Quiz.astro';
 
-In this lesson you run `/c-brainstorm` for the first time. Two things happen: Cadence sets up its config for the repo, and then it converges your idea into a small written **stub** — the first artifact of the pipeline.
+In this lesson you run `/c-brainstorm` for the first time. Two things happen: Cadence sets up its config for the repo, and then it converges your idea into a small written **stub**: the first artifact of the pipeline.
 
 ## What brainstorm is for
 
-Brainstorm's job is to turn a fuzzy thought into a written starting point through disciplined question-and-answer. It asks **one question at a time**, each with a recommended option, and you mostly just pick. You are never asked to draft anything from a blank page — you nod or redirect.
+Brainstorm's job is to turn a fuzzy thought into a written starting point through disciplined question-and-answer. It asks **one question at a time**, each with a recommended option, and you mostly just pick. You are never asked to draft anything from a blank page. You nod or redirect.
 
 The feature you'll brainstorm throughout this quickstart is deliberately tiny: *a function that prints the current time in a standard format*. It's small on purpose, so the loop is fast and you can compare your result against the finished example at the end.
 
@@ -22,7 +22,7 @@ The feature you'll brainstorm throughout this quickstart is deliberately tiny: *
 The very first time you run `/c-brainstorm` in a repo that has no Cadence config, Cadence notices and offers to create one.
 
 <Aside type="note" title="What is the config?">
-`.cadence/config.yaml` is a small settings file at the repo root. It tells Cadence where to keep designs and plans, whether plans default to a test-first shape, and which (if any) helper agents to consult. You answer three quick questions and Cadence writes the file — there is no separate install or setup command.
+`.cadence/config.yaml` is a small settings file at the repo root. It tells Cadence where to keep designs and plans, whether plans default to a test-first shape, and which (if any) helper agents to consult. You answer three quick questions and Cadence writes the file. There is no separate install or setup command.
 </Aside>
 
 <Tabs>
@@ -48,7 +48,7 @@ With the config written, Cadence enters the Q&A loop. Each question leads with a
   <Fragment slot="step-1-title">Run the command with your idea</Fragment>
   <Fragment slot="step-1-body">`/c-brainstorm a function that prints the current time`. On a fresh repo, accept the config scaffold first (three quick questions).</Fragment>
   <Fragment slot="step-2-title">Answer one question at a time</Fragment>
-  <Fragment slot="step-2-body">Cadence asks focused questions — output format, whether to include a way to run it directly, what's explicitly not in scope. Each has a Recommended pick. You choose; you don't write prose.</Fragment>
+  <Fragment slot="step-2-body">Cadence asks focused questions: output format, whether to include a way to run it directly, what's explicitly not in scope. Each has a Recommended pick. You choose; you don't write prose.</Fragment>
   <Fragment slot="step-3-title">Pick an approach</Fragment>
   <Fragment slot="step-3-body">Once the questions converge, Cadence proposes an approach and asks you to confirm. For this feature: a single small module with one function returning an ISO-8601 timestamp, plus a way to run it directly.</Fragment>
   <Fragment slot="step-4-title">It writes the stub</Fragment>
@@ -57,7 +57,7 @@ With the config written, Cadence enters the Q&A loop. Each question leads with a
 
 ## The artifact: a `00-overview.md` stub
 
-The stub is the artifact you'll read. It's short and plain-English — a "What we're building" paragraph, a one-line "Why", the chosen approach, a proposed list of child documents, and a decisions log capturing every choice you made during the Q&A. You can open the finished version of exactly this stub in the worked example:
+The stub is the artifact you'll read. It's short and plain-English: a "What we're building" paragraph, a one-line "Why", the chosen approach, a proposed list of child documents, and a decisions log capturing every choice you made during the Q&A. You can open the finished version of exactly this stub in the worked example:
 
 <Tabs>
   <TabItem label="Where it lands">
@@ -67,11 +67,11 @@ docs/designs/2026-01-15-hello-cadence/00-overview.md
   </TabItem>
   <TabItem label="What's inside">
     <ul>
-      <li><strong>What we're building</strong> — a <code>current_time_iso()</code> function returning an ISO-8601 string.</li>
-      <li><strong>Why</strong> — the canonical Cadence teaching example.</li>
-      <li><strong>Approach</strong> — one module, one function, one test, run-directly entry.</li>
-      <li><strong>Doc index</strong> — the child docs design will write next.</li>
-      <li><strong>Decisions log</strong> — every Recommended pick you accepted.</li>
+      <li><strong>What we're building</strong>: a <code>current_time_iso()</code> function returning an ISO-8601 string.</li>
+      <li><strong>Why</strong>: the canonical Cadence teaching example.</li>
+      <li><strong>Approach</strong>: one module, one function, one test, run-directly entry.</li>
+      <li><strong>Doc index</strong>: the child docs design will write next.</li>
+      <li><strong>Decisions log</strong>: every Recommended pick you accepted.</li>
     </ul>
   </TabItem>
 </Tabs>
@@ -89,7 +89,7 @@ Brainstorm writes the stub and stops. It never silently jumps into design. The h
     "The implemented code"
   ]}
   answer={0}
-  explanation="Brainstorm converges on an approach and writes one short stub — 00-overview.md. The full design folder is the next stage's job."
+  explanation="Brainstorm converges on an approach and writes one short stub: 00-overview.md. The full design folder is the next stage's job."
 />
 
-Next: **[Design and plan it](/cadence/get-started/04-design-and-plan/)** — grow the stub into a full design, then translate it into an exact plan.
+Next: **[Design and plan it](/cadence/get-started/04-design-and-plan/)**. Grow the stub into a full design, then translate it into an exact plan.

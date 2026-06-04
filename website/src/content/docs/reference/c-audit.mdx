@@ -8,15 +8,15 @@ Source of truth: `skills/c-audit/SKILL.md`. For the *why* behind this stage, rea
 
 ## Purpose
 
-Independently checks that a plan was actually implemented — every checkbox backed by real code, no unjustified deferrals, the build green — and reports the result without changing anything.
+Independently checks that a plan was actually implemented (every checkbox backed by real code, no unjustified deferrals, the build green) and reports the result without changing anything.
 
 ## When to use it
 
-Use `/c-audit` to double-check an implemented plan: after `/c-execute` finished, before you deploy, or long after to catch regressions against current code. Don't reach for it during an `/c-execute` pause on an audit failure — the report `/c-execute` already showed you is the same one (same agent), so re-running just wastes tokens.
+Use `/c-audit` to double-check an implemented plan: after `/c-execute` finished, before you deploy, or long after to catch regressions against current code. Don't reach for it during an `/c-execute` pause on an audit failure. The report `/c-execute` already showed you is the same one (same agent), so re-running just wastes tokens.
 
 ## Invocation forms
 
-- `/c-audit <plan-path>` — standalone audit. Report only; it never flips status. There is no "internal" mode — `/c-execute` runs the same audit on its own.
+- `/c-audit <plan-path>`: standalone audit. Report only; it never flips status. There is no "internal" mode. `/c-execute` runs the same audit on its own.
 
 ## Inputs & preconditions
 
@@ -28,12 +28,12 @@ A citation-first report in chat: a plain-English summary, a verdict (PASS / BLOC
 
 ## Gates & guarantees
 
-- Runs a roster of audits — checkbox completeness, out-of-scope justification, deferred-comment scan, code-behind-each-checkbox, design-intent alignment, and a build validator (which refuses to pass if no build command is configured).
-- On failure it offers three paths via multiple-choice — fix, mark out of scope, or abort — with "fix" recommended in most cases.
+- Runs a roster of audits: checkbox completeness, out-of-scope justification, deferred-comment scan, code-behind-each-checkbox, design-intent alignment, and a build validator (which refuses to pass if no build command is configured).
+- On failure it offers three paths via multiple-choice (fix, mark out of scope, or abort), with "fix" recommended in most cases.
 - It never validates a deployed system (that's `/c-validate`), never reviews code quality (that's `/c-find-bugs`), and never writes code, modifies the plan, or flips status when run standalone.
 
 ## Related commands
 
-- **Previous:** [`/c-execute`](/cadence/reference/c-execute/) — runs this same audit as its completion gate.
-- **Next:** [`/c-validate`](/cadence/reference/c-validate/) — validates the deployed system once you've shipped.
+- **Previous:** [`/c-execute`](/cadence/reference/c-execute/) runs this same audit as its completion gate.
+- **Next:** [`/c-validate`](/cadence/reference/c-validate/) validates the deployed system once you've shipped.
 - **Deep dive:** [The Audit stage](/cadence/audit/) for what counts as drift between plan and implementation.

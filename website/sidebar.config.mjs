@@ -1,4 +1,4 @@
-// Sidebar configuration — single source of truth.
+// Sidebar configuration: single source of truth.
 // Imported by both astro.config.mjs (Starlight integration) and
 // scripts/check-sidebar.mjs (consistency checker). Kept in a separate file so
 // the checker can import the sidebar without loading Astro/Starlight (which

@@ -8,35 +8,35 @@ sidebar:
 import { Aside } from '@astrojs/starlight/components';
 import Quiz from '../../components/Quiz.astro';
 
-Audit is the stage that proves the work is really done — not "the workers said so", but checked independently against the plan. It's the safety net that lets a non-coder believe "implemented" actually means implemented.
+Audit is the stage that proves the work is really done: not "the workers said so", but checked independently against the plan. It's the safety net that lets a non-coder believe "implemented" actually means implemented.
 
 ## An independent check, not the builder's word
 
-When execution finishes, Cadence dispatches a **completion auditor** — a separate checker from the ones that wrote the code. That independence is the whole point: it's a genuine second opinion, not the builder grading its own homework.
+When execution finishes, Cadence dispatches a **completion auditor**, a separate checker from the ones that wrote the code. That independence is the whole point: it's a genuine second opinion, not the builder grading its own homework.
 
 The audit runs automatically at the end of `/c-execute`, and you can also run it yourself any time with `/c-audit` for a standalone spot-check. Both paths run the exact same checks, so the results are identical.
 
 <Aside type="note" title="Standalone audits never change anything">
-Run on its own, `/c-audit` is report-only. It tells you what it found and stops — it never edits the plan, never flips status, never touches code. It's a flashlight, not a tool.
+Run on its own, `/c-audit` is report-only. It tells you what it found and stops. It never edits the plan, never flips status, never touches code. It's a flashlight, not a tool.
 </Aside>
 
 ## What counts as drift between plan and code
 
 The audit's job is to catch any gap between what the plan said and what the code actually does. It checks, among other things:
 
-- **Completeness** — every step the plan listed is actually finished.
-- **Code behind every claim** — if a step says it added a particular function, that function really exists in the change.
-- **Design alignment** — the implementation honors the design's intent, not just the literal wording of each task.
-- **A clean build** — the project's build/test command passes.
+- **Completeness:** every step the plan listed is actually finished.
+- **Code behind every claim:** if a step says it added a particular function, that function really exists in the change.
+- **Design alignment:** the implementation honors the design's intent, not just the literal wording of each task.
+- **A clean build:** the project's build/test command passes.
 
 If any of these fail, the plan does *not* flip to done; it stays open and Cadence offers you the same three choices as execute: fix, mark out of scope, or abort.
 
 ## The no-deferred-TODOs rule
 
-One specific check is worth calling out, because it's a favorite hiding place for half-done work: the audit scans the change for **deferred comments** — leftover notes like "TODO", "FIXME", or "will do later" that quietly signal a step was skipped.
+One specific check is worth calling out, because it's a favorite hiding place for half-done work: the audit scans the change for **deferred comments**: leftover notes like "TODO", "FIXME", or "will do later" that quietly signal a step was skipped.
 
 <Aside type="caution" title="Why this rule matters to you">
-A "TODO: handle this later" buried in the code is exactly the kind of silent gap a non-coder would never catch by reading. The audit treats any *new* unjustified deferral as a failure — so the only way to legitimately defer something is to mark it out of scope, in writing, where you can see it.
+A "TODO: handle this later" buried in the code is exactly the kind of silent gap a non-coder would never catch by reading. The audit treats any *new* unjustified deferral as a failure, so the only way to legitimately defer something is to mark it out of scope, in writing, where you can see it.
 </Aside>
 
 <Quiz
@@ -48,7 +48,7 @@ A "TODO: handle this later" buried in the code is exactly the kind of silent gap
     "Deletes the failing task"
   ]}
   answer={0}
-  explanation="A blocking audit failure leaves the plan unfinished. Cadence surfaces it and hands you the three response paths — it never advances past a failed audit silently."
+  explanation="A blocking audit failure leaves the plan unfinished. Cadence surfaces it and hands you the three response paths. It never advances past a failed audit silently."
 />
 
 **Exact usage:** see the **[/c-audit reference](/cadence/reference/c-audit/)** for the audit roster, lethality, and standalone use.

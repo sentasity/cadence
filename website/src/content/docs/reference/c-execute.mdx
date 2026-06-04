@@ -8,16 +8,16 @@ Source of truth: `skills/c-execute/SKILL.md`. For the *why* behind this stage, r
 
 ## Purpose
 
-Drives a draft plan to implemented code: your main session acts as project manager, dispatching a fresh worker per task, running every change through two reviews, and auditing the whole thing at the end — so you can trust the result without reading the diff yourself.
+Drives a draft plan to implemented code: your main session acts as project manager, dispatching a fresh worker per task, running every change through two reviews, and auditing the whole thing at the end, so you can trust the result without reading the diff yourself.
 
 ## When to use it
 
-Use `/c-execute` when a plan is written and you're ready to build. It is the fourth stage, between plan and audit. Don't use it to deploy or to validate a running system — it stops at implemented code.
+Use `/c-execute` when a plan is written and you're ready to build. It is the fourth stage, between plan and audit. Don't use it to deploy or to validate a running system: it stops at implemented code.
 
 ## Invocation forms
 
-- `/c-execute <path-to-plan-folder>` — execute the plan.
-- `/c-execute --restart <plan-path>` — wipe all checkboxes and start over (never the default; normal re-runs resume where they left off).
+- `/c-execute <path-to-plan-folder>`: execute the plan.
+- `/c-execute --restart <plan-path>`: wipe all checkboxes and start over (never the default; normal re-runs resume where they left off).
 
 ## Inputs & preconditions
 
@@ -25,18 +25,18 @@ A plan folder with `00-overview.md` at status `draft` (or `in-progress` to resum
 
 ## What it produces
 
-Real code committed to the branch (one commit per task), every plan checkbox flipped to done, and — on a passing completion audit — the plan's status flipped to `implemented`. Plan-file edits are committed once at the end.
+Real code committed to the branch (one commit per task), every plan checkbox flipped to done, and (on a passing completion audit) the plan's status flipped to `implemented`. Plan-file edits are committed once at the end.
 
 ## Gates & guarantees
 
 - Two-stage review on every change: a spec review then a code review; on conflict, spec wins.
 - Parallel work runs in isolated worktrees scheduled by each task's dependencies, with a guard that serializes any two tasks touching the same files.
 - A completion audit must pass before the status can flip to `implemented`.
-- On any block it surfaces three explicit paths — fix, mark out of scope, or abort — and never works around a blocker silently.
+- On any block it surfaces three explicit paths (fix, mark out of scope, or abort) and never works around a blocker silently.
 - It never auto-deploys, never amends commits, never skips commit hooks, and never reads the whole repo on every worker dispatch.
 
 ## Related commands
 
-- **Previous:** [`/c-plan`](/cadence/reference/c-plan/) — produced the plan this command executes.
-- **Next:** [`/c-audit`](/cadence/reference/c-audit/) — the standalone re-run of the same completion audit; then [`/c-validate`](/cadence/reference/c-validate/) once deployed.
+- **Previous:** [`/c-plan`](/cadence/reference/c-plan/) produced the plan this command executes.
+- **Next:** [`/c-audit`](/cadence/reference/c-audit/) is the standalone re-run of the same completion audit; then [`/c-validate`](/cadence/reference/c-validate/) once deployed.
 - **Deep dive:** [The Execute stage](/cadence/execute/) for the PM-and-sub-agent model and the two-stage review.

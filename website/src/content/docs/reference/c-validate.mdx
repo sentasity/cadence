@@ -8,15 +8,15 @@ Source of truth: `skills/c-validate/SKILL.md`. For the *why* behind this stage, 
 
 ## Purpose
 
-Walks a plan's post-deploy validation checklist — confirming prerequisites, running automated checks, and guiding manual workflow steps — and flips the plan to completed once everything passes.
+Walks a plan's post-deploy validation checklist (confirming prerequisites, running automated checks, and guiding manual workflow steps) and flips the plan to completed once everything passes.
 
 ## When to use it
 
-Use `/c-validate` after you've deployed an implemented plan, to confirm the live system actually behaves as intended and to formally close the loop. It is the sixth and final stage. It does not deploy for you — you deploy first, then validate.
+Use `/c-validate` after you've deployed an implemented plan, to confirm the live system actually behaves as intended and to formally close the loop. It is the sixth and final stage. It does not deploy for you. You deploy first, then validate.
 
 ## Invocation forms
 
-- `/c-validate <path-to-plan-folder>` — walk the plan's `96-validation.md`.
+- `/c-validate <path-to-plan-folder>`: walk the plan's `96-validation.md`.
 
 ## Inputs & preconditions
 
@@ -24,16 +24,16 @@ A plan at status `implemented` (it runs the walk) or `completed` (it re-validate
 
 ## What it produces
 
-Each validation item checked off as it passes (written to disk before any pause), and — on a full clean pass — the plan's overview status flipped to `completed`. It then reads the plan's `linked_design:` and offers to flip the linked design to `completed` too (you confirm; the default is no).
+Each validation item checked off as it passes (written to disk before any pause), and, on a full clean pass, the plan's overview status flipped to `completed`. It then reads the plan's `linked_design:` and offers to flip the linked design to `completed` too (you confirm; the default is no).
 
 ## Gates & guarantees
 
 - Strict walk order: Category C (prerequisites) first and blocking, then A (automated checks it runs itself), then B (manual workflow, optionally delegated to a headless browser run).
-- Status never advances to `completed` while any validation item is unchecked — no silent passes.
+- Status never advances to `completed` while any validation item is unchecked: no silent passes.
 - On a failure it offers fix-and-retry, mark out of scope, or abort.
 - It never writes code, never deploys, never runs `/c-execute` on failure, and never flips the linked design's status without your confirmation.
 
 ## Related commands
 
-- **Previous:** [`/c-execute`](/cadence/reference/c-execute/) — must have driven the plan to `implemented` first; [`/c-audit`](/cadence/reference/c-audit/) verifies the code matches the plan.
+- **Previous:** [`/c-execute`](/cadence/reference/c-execute/) must have driven the plan to `implemented` first. [`/c-audit`](/cadence/reference/c-audit/) verifies the code matches the plan.
 - **Deep dive:** [The Validate stage](/cadence/validate/) for the checklist categories and closing the loop.

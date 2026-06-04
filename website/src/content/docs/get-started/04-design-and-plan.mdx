@@ -9,25 +9,25 @@ import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 import Walkthrough from '../../../components/Walkthrough.astro';
 import Quiz from '../../../components/Quiz.astro';
 
-You have a stub. This lesson grows it into a full **design** you can actually read and approve, then translates the approved design into a **plan** — and shows you exactly how the two differ.
+You have a stub. This lesson grows it into a full **design** you can actually read and approve, then translates the approved design into a **plan**, and shows you exactly how the two differ.
 
 ## Design: the stub becomes something you can read
 
-`/c-design` takes your `00-overview.md` stub and materializes the full **design folder** — the artifact for this stage. It writes child documents in reading order and, crucially, a plain-English narrative document written for someone who will never read code.
+`/c-design` takes your `00-overview.md` stub and materializes the full **design folder**: the artifact for this stage. It writes child documents in reading order and, crucially, a plain-English narrative document written for someone who will never read code.
 
 <Aside type="note" title="Why design and plan are separate">
-A design is for *you* — plain English, decisions explained, written to be reviewed by a non-coder. A plan is for the *machine* — exact paths and steps, no story. Keeping them separate means the thing you approve is the thing you can actually understand.
+A design is for *you*: plain English, decisions explained, written to be reviewed by a non-coder. A plan is for the *machine*: exact paths and steps, no story. Keeping them separate means the thing you approve is the thing you can actually understand.
 </Aside>
 
 <Walkthrough title="Design the current-time feature">
   <Fragment slot="step-1-title">Run /c-design</Fragment>
   <Fragment slot="step-1-body">With the stub in place, run `/c-design`. Cadence confirms the list of child docs it will write, then asks whether to generate them all at once (the default) or one at a time.</Fragment>
   <Fragment slot="step-2-title">Read the plain-English narrative</Fragment>
-  <Fragment slot="step-2-body">The design always includes `00a-plain-english.md` — a narrative tour: what the feature does, the normal cycle, what you'd see, what could go wrong, and how you'll know it works. This is the document you read to decide if the design is right.</Fragment>
+  <Fragment slot="step-2-body">The design always includes `00a-plain-english.md`, a narrative tour: what the feature does, the normal cycle, what you'd see, what could go wrong, and how you'll know it works. This is the document you read to decide if the design is right.</Fragment>
   <Fragment slot="step-3-title">Read the decisions log</Fragment>
-  <Fragment slot="step-3-body">The overview's decisions log records each choice with its rationale — for the example, "use the non-deprecated time API" and "ISO-8601 with a Z suffix, no microseconds". You can see *why*, not just *what*.</Fragment>
+  <Fragment slot="step-3-body">The overview's decisions log records each choice with its rationale: for the example, "use the non-deprecated time API" and "ISO-8601 with a Z suffix, no microseconds". You can see *why*, not just *what*.</Fragment>
   <Fragment slot="step-4-title">Approve it</Fragment>
-  <Fragment slot="step-4-body">After a self-review pass, Cadence flips the design to `in-review` and asks you to walk through it. When you're satisfied, you say "approved" — that explicit word is the gate. Cadence then tells you to run `/c-plan`.</Fragment>
+  <Fragment slot="step-4-body">After a self-review pass, Cadence flips the design to `in-review` and asks you to walk through it. When you're satisfied, you say "approved". That explicit word is the gate. Cadence then tells you to run `/c-plan`.</Fragment>
 </Walkthrough>
 
 The finished design folder for this exact feature ships with Cadence. Open these to see what "done" looks like for the design stage:
@@ -43,16 +43,16 @@ examples/hello-cadence/designs/2026-01-15-hello-cadence/
 ```
   </TabItem>
   <TabItem label="What the design says">
-The function is `current_time_iso()`, returns a string like `2026-01-15T14:30:00Z`, formatted from the current UTC time with no microseconds, plus a run-directly entry. One test asserts the *shape* of the output (you can't assert the exact value — time moves).
+The function is `current_time_iso()`, returns a string like `2026-01-15T14:30:00Z`, formatted from the current UTC time with no microseconds, plus a run-directly entry. One test asserts the *shape* of the output (you can't assert the exact value: time moves).
   </TabItem>
 </Tabs>
 
 ## Plan: the design becomes exact steps
 
-Once the design is approved, `/c-plan` translates it into a **plan folder** — same name, but written for the machine. A plan is exact paths, exact code, exact commands, and explicit ordering. **No narrative.** That's the visible difference: where the design explains *why*, the plan only states *what and in what order*.
+Once the design is approved, `/c-plan` translates it into a **plan folder**: same name, but written for the machine. A plan is exact paths, exact code, exact commands, and explicit ordering. **No narrative.** That's the visible difference: where the design explains *why*, the plan only states *what and in what order*.
 
 <Aside type="tip" title="One design, one plan">
-A design always becomes exactly one plan. If the work is large, the plan splits it into numbered phase files inside that single plan folder — it never spawns separate sibling plans. Cadence also writes a two-way link between the design and the plan so they can't silently drift apart.
+A design always becomes exactly one plan. If the work is large, the plan splits it into numbered phase files inside that single plan folder. It never spawns separate sibling plans. Cadence also writes a two-way link between the design and the plan so they can't silently drift apart.
 </Aside>
 
 <Tabs>
@@ -60,7 +60,7 @@ A design always becomes exactly one plan. If the work is large, the plan splits 
 > Use the current UTC time, formatted ISO-8601 with a `Z` suffix and no microseconds, because it's human-readable and sorts cleanly.
   </TabItem>
   <TabItem label="Plan (for the machine)">
-A task with exact `Reads:` / `Touches:` / `Depends:` fields and steps like: write a failing test at a named path, run it and expect failure, implement the function with the full code shown, run the test and expect pass, then commit. No "why" — that already lives in the design.
+A task with exact `Reads:` / `Touches:` / `Depends:` fields and steps like: write a failing test at a named path, run it and expect failure, implement the function with the full code shown, run the test and expect pass, then commit. No "why": that already lives in the design.
   </TabItem>
 </Tabs>
 
@@ -73,7 +73,7 @@ A task with exact `Reads:` / `Touches:` / `Depends:` fields and steps like: writ
     "A plan is approved first, then the design is written"
   ]}
   answer={0}
-  explanation="The design explains the why in plain English so you can approve it. The plan is exact paths, code, and commands — no narrative — because the machine executes it."
+  explanation="The design explains the why in plain English so you can approve it. The plan is exact paths, code, and commands (no narrative) because the machine executes it."
 />
 
-Next: **[Execute, audit, and validate](/cadence/get-started/05-execute-and-validate/)** — turn the plan into real code and close the loop.
+Next: **[Execute, audit, and validate](/cadence/get-started/05-execute-and-validate/)**. Turn the plan into real code and close the loop.

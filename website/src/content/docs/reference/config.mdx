@@ -8,7 +8,7 @@ import { Aside } from '@astrojs/starlight/components';
 
 `.cadence/config.yaml` is Cadence's per-repo settings file. It lives at the repo root under `.cadence/` and tells the commands where your designs and plans live, how plans get split and committed, which audits run, and how parallel execution behaves. Every key has a built-in default, so the file only needs to hold the values you want to change.
 
-The canonical default for every key (with inline comments) ships at `defaults/config.default.yaml`. Your repo's `.cadence/config.yaml` overrides only what differs from those defaults — there is no need to copy the whole file.
+The canonical default for every key (with inline comments) ships at `defaults/config.default.yaml`. Your repo's `.cadence/config.yaml` overrides only what differs from those defaults. There is no need to copy the whole file.
 
 <Aside title="First-run scaffold">
 On your first `/c-brainstorm` in a repo that has no `.cadence/config.yaml`, Cadence notices the missing file and offers to scaffold one inline. It asks three short questions, writes a minimal config from your answers, and then continues into the Q&A. A missing config is a prompt, not a hard blocker.
@@ -41,7 +41,7 @@ How `/c-plan` shapes the plan it writes.
 | --- | --- | --- | --- |
 | `plan.tdd` | Whether plans bake in a test-driven workflow (write the test, then the code). | `true` | `true` \| `false` |
 | `plan.commit_cadence` | How often the plan commits during execution. | `per-task` | `per-task` (other cadences are judgment-based) |
-| `plan.parallel_grain` | The finest granularity at which tasks within one plan may run in parallel. `per-file` keeps each file to one lane; `in-file` allows lanes to split work within a single file. Not set in the defaults file — add it under `plan` to opt in. | unset (`per-file` behaviour) | `per-file` \| `in-file` |
+| `plan.parallel_grain` | The finest granularity at which tasks within one plan may run in parallel. `per-file` keeps each file to one lane; `in-file` allows lanes to split work within a single file. Not set in the defaults file. Add it under `plan` to opt in. | unset (`per-file` behaviour) | `per-file` \| `in-file` |
 
 There are deliberately no split thresholds. Whether and where to split a plan into phase docs is a judgment call `/c-plan` makes, not a number you tune. See [Parallelism and worktrees](/cadence/concepts/parallelism-and-worktrees/) for how grain relates to execution lanes.
 
@@ -93,7 +93,7 @@ Conventions for naming design/plan folders.
 
 ## `status`
 
-The allowed status values for design and plan documents. The order matters — it is the lifecycle progression Cadence expects.
+The allowed status values for design and plan documents. The order matters: it is the lifecycle progression Cadence expects.
 
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |

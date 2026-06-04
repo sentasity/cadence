@@ -8,15 +8,15 @@ Source of truth: `skills/c-plan/SKILL.md`. For the *why* behind this stage, read
 
 ## Purpose
 
-Translates an approved design into an AI-readable plan folder — exact file paths, exact code, exact commands, and no narrative — so the work can be executed step by step.
+Translates an approved design into an AI-readable plan folder (exact file paths, exact code, exact commands, and no narrative) so the work can be executed step by step.
 
 ## When to use it
 
-Use `/c-plan` once a design is approved and you want a precise, executable blueprint before building. It is the third stage, between design and execute. Don't use it to write code or to run anything — it only writes the plan.
+Use `/c-plan` once a design is approved and you want a precise, executable blueprint before building. It is the third stage, between design and execute. Don't use it to write code or to run anything: it only writes the plan.
 
 ## Invocation forms
 
-- `/c-plan` — reads the approved design with the matching slug and writes the plan folder.
+- `/c-plan`: reads the approved design with the matching slug and writes the plan folder.
 
 One design always becomes exactly one plan; large work is split into **phase docs** inside that single plan, not into sibling plans. After reading the design, it confirms the phase decomposition with you.
 
@@ -32,10 +32,10 @@ A plan folder at `<paths.plans>/{yyyy-mm-dd-slug}/`: a `00-overview.md` (goal, a
 
 - Every file path, line range, symbol, and import the plan cites is ground-truthed against the real code before it lands.
 - Every task carries `Reads:`, `Touches:`, and `Depends:` fields and ends with a commit step; banned placeholder phrases (`TBD`, `TODO`, "handle edge cases", "similar to Task N") are blocked in self-review.
-- It never writes code, never runs anything, and never auto-executes — `/c-execute` is invoked separately.
+- It never writes code, never runs anything, and never auto-executes; `/c-execute` is invoked separately.
 
 ## Related commands
 
-- **Previous:** [`/c-design`](/cadence/reference/c-design/) — produced the design this plan is built from.
-- **Next:** [`/c-execute`](/cadence/reference/c-execute/) — drives this plan to implemented code.
+- **Previous:** [`/c-design`](/cadence/reference/c-design/) produced the design this plan is built from.
+- **Next:** [`/c-execute`](/cadence/reference/c-execute/) drives this plan to implemented code.
 - **Deep dive:** [The Plan stage](/cadence/plan/) for why a separate code-exact plan exists and the linkage mechanism.
