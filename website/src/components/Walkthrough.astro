@@ -1,0 +1,71 @@
+---
+interface Step {
+  title: string;
+  body: string;
+}
+
+interface Props {
+  steps?: Step[];
+}
+
+const { steps } = Astro.props;
+const hasSteps = Array.isArray(steps) && steps.length > 0;
+---
+
+<div class="walkthrough">
+  {
+    hasSteps ? (
+      <ol class="walkthrough__list">
+        {steps!.map((step) => (
+          <li class="walkthrough__item">
+            <details class="walkthrough__step">
+              <summary>{step.title}</summary>
+              <div class="walkthrough__body" set:html={step.body} />
+            </details>
+          </li>
+        ))}
+      </ol>
+    ) : (
+      <div class="walkthrough__slot">
+        <slot />
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .walkthrough {
+    margin: 1.5rem 0;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+  .walkthrough__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: walkthrough;
+  }
+  .walkthrough__item {
+    border-top: 1px solid var(--sl-color-gray-5);
+  }
+  .walkthrough__item:first-child {
+    border-top: none;
+  }
+  .walkthrough__step summary {
+    cursor: pointer;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    counter-increment: walkthrough;
+  }
+  .walkthrough__step summary::before {
+    content: counter(walkthrough) '. ';
+    color: var(--sl-color-accent-high, var(--sl-color-accent));
+  }
+  .walkthrough__body {
+    padding: 0 1rem 1rem;
+  }
+  .walkthrough__slot {
+    padding: 1rem;
+  }
+</style>
