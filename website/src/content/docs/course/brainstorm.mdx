@@ -1,0 +1,60 @@
+---
+title: The Brainstorm phase
+description: How a fuzzy idea becomes a written stub through disciplined, one-question-at-a-time Q&A.
+sidebar:
+  order: 1
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Quiz from '../../../components/Quiz.astro';
+
+Brainstorm is where a fuzzy idea in your head becomes a short written **stub** you can build on. It does that through one thing done well: disciplined question-and-answer.
+
+## One question at a time
+
+The defining feature of `/c-brainstorm` is its restraint. It asks **one question per turn** — never a wall of questions — and every question follows the same shape: a plain-English lead explaining what's being decided and why it matters right now, a short list of options, and exactly one option marked **Recommended** and listed first.
+
+That structure matters for the non-coder audience: you are never handed a blank page. You react to a recommendation. You nod, or you redirect. The Q&A converges your thinking without ever asking you to write a spec from scratch.
+
+<Aside type="note" title="Why the recommended option is mandatory">
+"It's your call" is treated as a non-answer. Cadence always picks the option *it* would choose and says why, so you have a safe default even when you're unsure. You can always override it.
+</Aside>
+
+## Two modes: thought-partner and design-brainstorm
+
+`/c-brainstorm` runs in one of two modes, and it detects which from how you phrase your idea:
+
+- **Thought-partner mode** — exploratory. "Help me think about…", "is X a good idea?". It helps you reason and writes *nothing* unless you ask. The conversation itself is the value.
+- **Design-brainstorm mode** — convergent. "I want to build…", "design…", "let's add…". It steers toward a concrete approach and ends by writing one artifact: a `00-overview.md` stub.
+
+If your phrasing is ambiguous, it asks once which mode you mean. You can also switch mid-session — "let's capture this as a design" promotes a chat into a real stub.
+
+## The artifact: a `00-overview.md` stub
+
+In design-brainstorm mode, the session ends by writing a single short document: `00-overview.md` under a dated folder. It contains a plain-English "what we're building", a one-line "why", the chosen approach, a proposed index of child docs, and a **decisions log** recording every choice you made with its rationale.
+
+<Aside type="caution" title="Never half-finished">
+The stub never contains an "open questions" section. If a question is still open, Cadence keeps asking — it won't write a stub with unresolved holes in it. A written stub is, by definition, a settled starting point.
+</Aside>
+
+## Why it never auto-chains into design
+
+This is the philosophical heart of the phase. When the stub is written, brainstorm **stops** and tells you to run `/c-design` yourself. It never silently rolls forward into writing the full design.
+
+That stop is the first gate of the pipeline. Cadence is built so that nothing advances without an explicit human go-ahead — and the discipline starts here, at the very first artifact. The pause is the point.
+
+<Quiz
+  question="In thought-partner mode, what does /c-brainstorm write by default?"
+  options={[
+    "Nothing — it writes an artifact only if you ask",
+    "A 00-overview.md stub every time",
+    "A full design folder",
+    "A plan with code steps"
+  ]}
+  answer={0}
+  explanation="Thought-partner mode is exploratory and artifact-free by default. Design-brainstorm mode is the one that ends with a 00-overview.md stub."
+/>
+
+**Exact usage:** see the **[/c-brainstorm reference](/cadence/reference/c-brainstorm/)** for invocation forms, modes, and the config-scaffold flow.
+
+Next phase: **[The Design phase](/cadence/course/design/)**.
