@@ -1,0 +1,93 @@
+---
+title: Your first brainstorm
+description: Scaffold the config on first run, then converge a fuzzy idea into a 00-overview.md stub, one question at a time.
+sidebar:
+  order: 2
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import Walkthrough from '../../../../components/Walkthrough.astro';
+import Quiz from '../../../../components/Quiz.astro';
+
+In this lesson you run `/c-brainstorm` for the first time. Two things happen: Cadence sets up its config for the repo, and then it converges your idea into a small written **stub** — the first artifact of the pipeline.
+
+## What brainstorm is for
+
+Brainstorm's job is to turn a fuzzy thought into a written starting point through disciplined question-and-answer. It asks **one question at a time**, each with a recommended option, and you mostly just pick. You are never asked to draft anything from a blank page — you nod or redirect.
+
+The feature you'll brainstorm throughout this quickstart is deliberately tiny: *a function that prints the current time in a standard format*. It's small on purpose, so the loop is fast and you can compare your result against the finished example at the end.
+
+## First run: Cadence scaffolds its config
+
+The very first time you run `/c-brainstorm` in a repo that has no Cadence config, Cadence notices and offers to create one.
+
+<Aside type="note" title="What is the config?">
+`.cadence/config.yaml` is a small settings file at the repo root. It tells Cadence where to keep designs and plans, whether plans default to a test-first shape, and which (if any) helper agents to consult. You answer three quick questions and Cadence writes the file — there is no separate install or setup command.
+</Aside>
+
+<Tabs>
+  <TabItem label="Command">
+```text
+/c-brainstorm a function that prints the current time
+```
+  </TabItem>
+  <TabItem label="What you'll see first">
+```text
+No .cadence/config.yaml found in this repo or any parent.
+Scaffold defaults to get started? (y/n)
+```
+Answer `y`, then answer three questions: where designs and plans should live (default `docs/designs`), whether plans should be test-first by default, and any helper agents to register (or "none").
+  </TabItem>
+</Tabs>
+
+## Then: the question-at-a-time loop
+
+With the config written, Cadence enters the Q&A loop. Each question leads with a plain-English sentence explaining what's being decided and why it matters right now, gives you options, and marks exactly one as **Recommended** so you always have a safe default.
+
+<Walkthrough title="Brainstorm the current-time function">
+  <Fragment slot="step-1-title">Run the command with your idea</Fragment>
+  <Fragment slot="step-1-body">`/c-brainstorm a function that prints the current time`. On a fresh repo, accept the config scaffold first (three quick questions).</Fragment>
+  <Fragment slot="step-2-title">Answer one question at a time</Fragment>
+  <Fragment slot="step-2-body">Cadence asks focused questions — output format, whether to include a way to run it directly, what's explicitly not in scope. Each has a Recommended pick. You choose; you don't write prose.</Fragment>
+  <Fragment slot="step-3-title">Pick an approach</Fragment>
+  <Fragment slot="step-3-body">Once the questions converge, Cadence proposes an approach and asks you to confirm. For this feature: a single small module with one function returning an ISO-8601 timestamp, plus a way to run it directly.</Fragment>
+  <Fragment slot="step-4-title">It writes the stub</Fragment>
+  <Fragment slot="step-4-body">Cadence asks "I have enough — writing 00-overview.md. Proceed?" On yes, it writes a `00-overview.md` stub under `docs/designs/2026-01-15-hello-cadence/` (your date will differ) and stops. It does not auto-start the design phase.</Fragment>
+</Walkthrough>
+
+## The artifact: a `00-overview.md` stub
+
+The stub is the artifact you'll read. It's short and plain-English — a "What we're building" paragraph, a one-line "Why", the chosen approach, a proposed list of child documents, and a decisions log capturing every choice you made during the Q&A. You can open the finished version of exactly this stub in the worked example:
+
+<Tabs>
+  <TabItem label="Where it lands">
+```text
+docs/designs/2026-01-15-hello-cadence/00-overview.md
+```
+  </TabItem>
+  <TabItem label="What's inside">
+- **What we're building** — a `current_time_iso()` function returning an ISO-8601 string.
+- **Why** — the canonical Cadence teaching example.
+- **Approach** — one module, one function, one test, run-directly entry.
+- **Doc index** — the child docs design will write next.
+- **Decisions log** — every Recommended pick you accepted.
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="No auto-chaining">
+Brainstorm writes the stub and stops. It never silently jumps into design. The handoff is explicit: it tells you to run `/c-design` next. That stop *is* the first gate.
+</Aside>
+
+<Quiz
+  question="What single artifact does a design-brainstorm session end by writing?"
+  options={[
+    "A 00-overview.md stub",
+    "The full design folder",
+    "A plan with exact code steps",
+    "The implemented code"
+  ]}
+  answer={0}
+  explanation="Brainstorm converges on an approach and writes one short stub — 00-overview.md. The full design folder is the next phase's job."
+/>
+
+Next: **[Design and plan it](/cadence/course/quickstart/03-design-and-plan/)** — grow the stub into a full design, then translate it into an exact plan.
