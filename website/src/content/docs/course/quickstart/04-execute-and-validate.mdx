@@ -1,0 +1,91 @@
+---
+title: Execute, audit, and validate
+description: Drive the plan to real code, let an independent audit prove it matches, validate, and compare your output to the worked example.
+sidebar:
+  order: 4
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import Walkthrough from '../../../../components/Walkthrough.astro';
+import Quiz from '../../../../components/Quiz.astro';
+
+This is the payoff lesson. You turn the plan into real, working code, let Cadence prove the code matches the plan, validate the result, and then compare what you produced against the finished example to confirm you got it right.
+
+## Execute: the plan becomes code — without you reading it
+
+`/c-execute` drives the plan to implemented code. You stay in the driver's seat as the **PM** (project manager); Cadence spins up a fresh helper for each task, and every change is reviewed twice before it lands. You never read the diff yourself.
+
+<Aside type="note" title="The PM-and-sub-agent model, in plain English">
+Your session is the manager. For each task in the plan, Cadence dispatches a fresh worker that sees only that task and the files it needs — never the whole repo. When the worker is done, **two** reviewers check the change at the same time: one asks "does this match what the plan asked for?" and the other asks "does this follow the repo's conventions?". If they disagree, the spec reviewer wins. Only then does the change land.
+</Aside>
+
+<Walkthrough title="Execute the plan">
+  <Fragment slot="step-1-title">Run /c-execute with the plan path</Fragment>
+  <Fragment slot="step-1-body">`/c-execute docs/plans/2026-01-15-hello-cadence`. Cadence checks the working tree is clean and confirms before it begins.</Fragment>
+  <Fragment slot="step-2-title">Watch tasks land, reviewed twice</Fragment>
+  <Fragment slot="step-2-body">Each task runs in isolation, gets the two-stage review, and commits on its own. You see plain-English summaries of what landed — not diffs.</Fragment>
+  <Fragment slot="step-3-title">Trust the gates, not the code</Fragment>
+  <Fragment slot="step-3-body">If anything drifts from the plan, Cadence stops and offers you three choices — fix it, mark it out of scope, or abort — and waits for you. It never works around a problem silently, never auto-deploys, and never skips safety checks.</Fragment>
+</Walkthrough>
+
+## Audit: an independent check proves the match
+
+When execution finishes, Cadence runs a **completion audit** automatically — an independent check that the code actually matches the plan. It confirms every step is done, that no work was quietly deferred with a leftover "TODO" comment in the code, and that the build passes.
+
+<Aside type="tip" title="Why the audit is separate">
+The audit is run by a different checker than the one that wrote the code, so it's a genuine second opinion. If it finds a problem, the plan stays open and you choose how to handle it. Only a clean audit flips the plan to `implemented`. You can also run `/c-audit` yourself any time for a spot-check — it's report-only and never changes anything.
+</Aside>
+
+## Validate: close the loop on the live thing
+
+After you deploy, `/c-validate` walks the plan's validation checklist to confirm the deployed thing actually works, then flips the plan to `completed`.
+
+<Walkthrough title="Validate and close the loop">
+  <Fragment slot="step-1-title">Confirm prerequisites first</Fragment>
+  <Fragment slot="step-1-body">Validation always starts with prerequisites (Category C) — anything that must be true before checks can run. It blocks until you confirm each.</Fragment>
+  <Fragment slot="step-2-title">Automated checks run themselves</Fragment>
+  <Fragment slot="step-2-body">Next come automated checks (Category A) that Cadence runs for you, ticking each off as it passes.</Fragment>
+  <Fragment slot="step-3-title">Manual workflow last</Fragment>
+  <Fragment slot="step-3-body">Finally any manual steps (Category B) — Cadence tells you what to click and verifies the result. When everything passes, it flips the plan to `completed` and offers to mark the linked design `completed` too.</Fragment>
+</Walkthrough>
+
+<Aside type="caution" title="The hello-cadence example has no validation doc">
+The worked example folder contains `00-overview.md`, `00a-plain-english.md`, `01-implementation.md`, and `99-out-of-scope.md` — but no validation file, because the toy feature isn't deployed anywhere. On a real feature, `/c-plan` writes a `96-validation.md` and `/c-validate` walks it. Here, you've still seen the full design → plan → execute → audit shape.
+</Aside>
+
+## Did you get it right? Compare to the worked example
+
+Now the comparison that makes the quickstart worth doing. Open the finished example shipped with Cadence and check your output against it:
+
+<Tabs>
+  <TabItem label="The known-good folder">
+```text
+examples/hello-cadence/designs/2026-01-15-hello-cadence/
+├── 00-overview.md          # what, why, approach, decisions log
+├── 00a-plain-english.md    # the narrative tour
+├── 01-implementation.md    # current_time_iso() signature, behavior, one test
+└── 99-out-of-scope.md      # what it deliberately skips
+```
+  </TabItem>
+  <TabItem label="What to check">
+- Your design folder has the same shape: an overview, a plain-English narrative, an implementation child doc, and an out-of-scope doc.
+- Your implementation matches `01-implementation.md`: a `current_time_iso()` function returning an ISO-8601 string ending in `Z`, plus a single shape-asserting test.
+- Your decisions log captured *why* each choice was made.
+  </TabItem>
+</Tabs>
+
+If the *shape* matches, you've driven a full Cadence loop correctly. The exact wording will differ — that's fine. What matters is that every phase produced a readable artifact and nothing advanced without you.
+
+<Quiz
+  question="When execute hits something that drifts from the plan, what does Cadence do?"
+  options={[
+    "Stops and offers three choices — fix, mark out of scope, or abort — and waits for you",
+    "Silently picks the closest interpretation and continues",
+    "Deletes the plan and starts over",
+    "Deploys anyway and logs a warning"
+  ]}
+  answer={0}
+  explanation="Cadence never works around drift silently. It surfaces the block and hands you the three response paths — fix, mark out of scope, or abort."
+/>
+
+That's the full loop. The **deep dives** go one phase at a time and explain *why* each phase and gate exists — start with **[The Brainstorm phase](/cadence/course/brainstorm/)**, or jump straight to **[The Execute phase](/cadence/course/execute/)** if that's the part you most want reassurance about.
