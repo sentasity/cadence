@@ -15,7 +15,8 @@ Execute is the phase that most needs to earn your trust — it's where the plan 
 When you run `/c-execute`, your own session becomes the **PM** — the project manager. The PM doesn't write code and never reads the whole repository. Instead, for each task in the plan, it dispatches a **fresh sub-agent** — a worker that sees only that one task and the specific files it needs.
 
 <Aside type="note" title="Why fresh workers per task">
-Each worker starts clean, with just its task and the files named in that task. It can't be confused by context from earlier work, and it physically can't wander off and change unrelated parts of the codebase. The PM coordinates; the workers do focused, bounded work.</Aside>
+Each worker starts clean, with just its task and the files named in that task. It can't be confused by context from earlier work, and it physically can't wander off and change unrelated parts of the codebase. The PM coordinates; the workers do focused, bounded work.
+</Aside>
 
 ## Parallel lanes and the touches-conflict guard
 
@@ -31,7 +32,8 @@ No change lands until it passes **two reviewers**, run at the same time:
 If the two disagree, **the spec reviewer wins** — matching the plan is what matters most, and a style preference never overrides correctness against the spec. Only when both approve does the change land.
 
 <Aside type="tip" title="This is why you don't read the diff">
-You don't verify the code by reading it. Two independent reviewers verify it for you, against the plan you already approved. That's the gate. Your job is to read their plain-English summary of what landed.</Aside>
+You don't verify the code by reading it. Two independent reviewers verify it for you, against the plan you already approved. That's the gate. Your job is to read their plain-English summary of what landed.
+</Aside>
 
 ## The three drift response paths
 
@@ -44,7 +46,8 @@ If a change starts to drift from the plan — the work doesn't fit, the spec is 
 It never silently picks one. The decision is always yours.
 
 <Aside type="caution" title="What execute never does">
-It never auto-deploys your code. It never rewrites history by amending commits. And it never skips the repository's safety checks. If a check fails, it fixes the cause and makes a new commit — it doesn't paper over the failure.</Aside>
+It never auto-deploys your code. It never rewrites history by amending commits. And it never skips the repository's safety checks. If a check fails, it fixes the cause and makes a new commit — it doesn't paper over the failure.
+</Aside>
 
 <Quiz
   question="If the spec reviewer and the code reviewer disagree, which one wins?"

@@ -18,7 +18,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const WEBSITE_ROOT = path.resolve(SCRIPT_DIR, '..');
 const DOCS_ROOT = path.join(WEBSITE_ROOT, 'src', 'content', 'docs');
-const CONFIG_PATH = path.join(WEBSITE_ROOT, 'astro.config.mjs');
+const SIDEBAR_CONFIG_PATH = path.join(WEBSITE_ROOT, 'sidebar.config.mjs');
 
 // Pages intentionally absent from the sidebar; never reported as orphans.
 const ALLOWLIST = new Set(['index', '404']);
@@ -118,18 +118,18 @@ async function main() {
   // 1. Real pages.
   const pageSlugs = new Set(await listSlugs(DOCS_ROOT));
 
-  // 2. Sidebar entries. Import the named `sidebar` export from astro.config.mjs.
-  //    Task 1.4 defines `export const sidebar = [...]` at the top of the config
-  //    so it can be imported here without re-running the Starlight integration.
+  // 2. Sidebar entries. Import the named `sidebar` export from sidebar.config.mjs.
+  //    That file is intentionally free of Astro/Starlight imports so Node can
+  //    load it directly (Starlight 0.39+ exposes .ts entry points that Node
+  //    cannot evaluate without a TypeScript loader).
   //    Dynamic import is used so the pure functions above remain importable by
-  //    the test suite without loading Astro/Starlight (which requires node_modules).
-  const configModule = await import(pathToFileURL(CONFIG_PATH).href);
-  let sidebar = configModule.sidebar;
+  //    the test suite without any filesystem or module side-effects.
+  const sidebarModule = await import(pathToFileURL(SIDEBAR_CONFIG_PATH).href);
+  let sidebar = sidebarModule.sidebar;
   if (!sidebar) {
     console.error(
-      'check-sidebar: could not resolve `sidebar` from astro.config.mjs. ' +
-        'Export it as a named `sidebar` const, e.g. `export const sidebar = [...]` ' +
-        'and reference it in the starlight() options.',
+      'check-sidebar: could not resolve `sidebar` from sidebar.config.mjs. ' +
+        'Ensure sidebar.config.mjs exports `export const sidebar = [...]`.',
     );
     process.exit(1);
   }

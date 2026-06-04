@@ -17,7 +17,8 @@ When execution finishes, Cadence dispatches a **completion auditor** — a separ
 The audit runs automatically at the end of `/c-execute`, and you can also run it yourself any time with `/c-audit` for a standalone spot-check. Both paths run the exact same checks, so the results are identical.
 
 <Aside type="note" title="Standalone audits never change anything">
-Run on its own, `/c-audit` is report-only. It tells you what it found and stops — it never edits the plan, never flips status, never touches code. It's a flashlight, not a tool.</Aside>
+Run on its own, `/c-audit` is report-only. It tells you what it found and stops — it never edits the plan, never flips status, never touches code. It's a flashlight, not a tool.
+</Aside>
 
 ## What counts as drift between plan and code
 
@@ -35,7 +36,8 @@ If any of these fail, the plan does *not* flip to done; it stays open and Cadenc
 One specific check is worth calling out, because it's a favorite hiding place for half-done work: the audit scans the change for **deferred comments** — leftover notes like "TODO", "FIXME", or "will do later" that quietly signal a step was skipped.
 
 <Aside type="caution" title="Why this rule matters to you">
-A "TODO: handle this later" buried in the code is exactly the kind of silent gap a non-coder would never catch by reading. The audit treats any *new* unjustified deferral as a failure — so the only way to legitimately defer something is to mark it out of scope, in writing, where you can see it.</Aside>
+A "TODO: handle this later" buried in the code is exactly the kind of silent gap a non-coder would never catch by reading. The audit treats any *new* unjustified deferral as a failure — so the only way to legitimately defer something is to mark it out of scope, in writing, where you can see it.
+</Aside>
 
 <Quiz
   question="What does the audit do if it finds a problem?"

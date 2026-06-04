@@ -1,35 +1,11 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import { sidebar } from './sidebar.config.mjs';
 
-// Exported as a named const so website/scripts/check-sidebar.mjs can
-// `import { sidebar } from '../astro.config.mjs'` without re-running the
-// Starlight integration. This is the single source of truth for the sidebar.
-export const sidebar = [
-  {
-    label: 'Course',
-    items: [
-      // Quickstart: ordered by the 01-..04- filename prefixes
-      { label: 'Quickstart', autogenerate: { directory: 'course/quickstart' } },
-      // Deep dives: 6 core-flow phases in order, then combined diagnostics (explicit, not prefixed)
-      {
-        label: 'Deep dives',
-        items: [
-          { label: 'Brainstorm', link: '/course/brainstorm/' },
-          { label: 'Design', link: '/course/design/' },
-          { label: 'Plan', link: '/course/plan/' },
-          { label: 'Execute', link: '/course/execute/' },
-          { label: 'Audit', link: '/course/audit/' },
-          { label: 'Validate', link: '/course/validate/' },
-          { label: 'Diagnostics', link: '/course/diagnostics/' },
-        ],
-      },
-    ],
-  },
-  {
-    label: 'Reference',
-    autogenerate: { directory: 'reference' },
-  },
-];
+// sidebar is the single source of truth; it lives in sidebar.config.mjs so
+// scripts/check-sidebar.mjs can import it without loading Astro/Starlight
+// (Starlight 0.39+ exposes .ts entry points that Node cannot evaluate directly).
+export { sidebar };
 
 // https://astro.build/config
 export default defineConfig({
