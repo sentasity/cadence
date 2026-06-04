@@ -10,7 +10,7 @@ This action does not invent the voice — it **applies** the voice defined in th
 
 ## What you enforce
 
-When writing or revising any page under `course/`, check it against these three things:
+When writing or revising any page under `course/`, check it against these four things:
 
 1. **One concept per lesson.** A lesson teaches a single idea, not a grab-bag. If a draft is trying to teach two unrelated concepts, flag it and propose splitting it (or moving the second concept to the lesson that owns it).
 
@@ -27,5 +27,5 @@ When writing or revising any page under `course/`, check it against these three 
 
 ## How to run it
 
-- **Authoring a new lesson:** draft it against the three checks above, leading with the concept and glossing every term on first use. Confirm the lesson teaches exactly one concept and uses the standard Starlight components consistently with sibling lessons.
-- **Reviewing an existing lesson:** read it against the three checks and report each violation with a concrete fix — for example "opens with an invocation table; lead with what `/c-execute` is *for* first", or "uses `DAG` without a gloss". Propose the edit; let the maintainer approve it. Defer to `02-content-plan` for any voice question this file does not settle.
+- **Authoring a new lesson:** draft it against the four checks above, leading with the concept and glossing every term on first use. Confirm the lesson teaches exactly one concept and uses the standard Starlight components consistently with sibling lessons.
+- **Reviewing an existing lesson:** read it against the four checks and report each violation with a concrete fix — for example "opens with an invocation table; lead with what `/c-execute` is *for* first", or "uses `DAG` without a gloss". Propose the edit; let the maintainer approve it. Defer to `02-content-plan` for any voice question this file does not settle.
