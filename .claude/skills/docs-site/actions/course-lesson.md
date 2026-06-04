@@ -23,7 +23,7 @@ When writing or revising any page under `course/`, check it against these four t
 
 3. **Consistent use of Starlight components.** Course pages may be interactive and narrative: use Starlight tabs, asides, collapsible walkthroughs, and end-of-lesson quizzes — and use them the same way across lessons so the course feels like one guide. (The component inventory itself is owned by the site architecture doc.) Reference pages, by contrast, stay precise and scannable and follow their fixed template — do not import course-style narrative or interactive components into a reference page.
 
-4. **Base-prefixed body links.** Every raw Markdown cross-link in a lesson body is written with the `/cadence/` base — `](/cadence/course/<phase>/)`, `](/cadence/reference/<command>/)` — because Astro does not auto-prepend the base to authored Markdown links. Flag any body link missing the prefix and propose the fix. Frontmatter `hero.actions[].link` and sidebar entries stay root-relative (Starlight base-prefixes those); see the link convention in `02-content-plan`.
+4. **Base-prefixed body links.** Every raw Markdown cross-link in a lesson body is written with the `/cadence/` base — `](/cadence/course/<phase>/)`, `](/cadence/reference/<command>/)` — because Astro does not auto-prepend the base to authored Markdown links. The same applies to `hero.actions[].link` in page frontmatter — author those with the `/cadence/` prefix too. Only sidebar entries in `astro.config.mjs` stay root-relative (Starlight base-prefixes those). Flag any authored content link missing the prefix and propose the fix; see the link convention in `02-content-plan`.
 
 ## How to run it
 

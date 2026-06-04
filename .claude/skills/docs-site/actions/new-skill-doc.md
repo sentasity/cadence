@@ -22,7 +22,7 @@ Read the new command's `skills/<new>/SKILL.md` and create `website/src/content/d
 6. **Gates & guarantees** — the explicit gate(s) it enforces and the things it will never do silently (e.g. never auto-chains, never auto-deploys, never amends commits, never skips hooks).
 7. **Related commands** — the neighbouring commands in the pipeline plus the matching course deep-dive lesson to read for the *why*.
 
-When seeding raw Markdown links in the page body (e.g. the "Related commands" field), write them base-prefixed — `](/cadence/course/<phase>/)` and `](/cadence/reference/<command>/)` — because the site deploys under the `/cadence/` base and Astro does not auto-prepend the base to authored Markdown links. (Frontmatter and sidebar links Starlight renders itself stay root-relative; see the link convention in `02-content-plan`.)
+When seeding raw Markdown links in the page body (e.g. the "Related commands" field), write them base-prefixed — `](/cadence/course/<phase>/)` and `](/cadence/reference/<command>/)` — because the site deploys under the `/cadence/` base and Astro does not auto-prepend the base to authored Markdown links. The same applies to any `hero.actions[].link` in page frontmatter — author those with the `/cadence/` prefix too. Only sidebar entries in `astro.config.mjs` stay root-relative (Starlight base-prefixes those); see the link convention in `02-content-plan`.
 
 ### 2. Register it in the Starlight sidebar config
 
