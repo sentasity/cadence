@@ -5,23 +5,21 @@
 // exposes TypeScript source files that Node cannot evaluate directly).
 export const sidebar = [
   {
-    label: 'Course',
+    // Get Started: ordered by the 01-..05- filename prefixes
+    label: 'Get Started',
+    items: [{ autogenerate: { directory: 'course/get-started' } }],
+  },
+  {
+    // Deep dives: 6 core-flow stages in order, then combined diagnostics (explicit, not prefixed)
+    label: 'Deep dives',
     items: [
-      // Get Started: ordered by the 01-..05- filename prefixes
-      { label: 'Get Started', items: [{ autogenerate: { directory: 'course/get-started' } }] },
-      // Deep dives: 6 core-flow stages in order, then combined diagnostics (explicit, not prefixed)
-      {
-        label: 'Deep dives',
-        items: [
-          { label: 'Brainstorm', link: '/course/brainstorm/' },
-          { label: 'Design', link: '/course/design/' },
-          { label: 'Plan', link: '/course/plan/' },
-          { label: 'Execute', link: '/course/execute/' },
-          { label: 'Audit', link: '/course/audit/' },
-          { label: 'Validate', link: '/course/validate/' },
-          { label: 'Diagnostics', link: '/course/diagnostics/' },
-        ],
-      },
+      { label: 'Brainstorm', link: '/course/brainstorm/' },
+      { label: 'Design', link: '/course/design/' },
+      { label: 'Plan', link: '/course/plan/' },
+      { label: 'Execute', link: '/course/execute/' },
+      { label: 'Audit', link: '/course/audit/' },
+      { label: 'Validate', link: '/course/validate/' },
+      { label: 'Diagnostics', link: '/course/diagnostics/' },
     ],
   },
   {
