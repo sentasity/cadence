@@ -1,0 +1,56 @@
+---
+title: "Diagnostics: check, find-bugs, explain"
+description: The three off-pipeline, read-only tools that let a non-coder inspect state and code health on demand.
+sidebar:
+  order: 7
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Quiz from '../../../components/Quiz.astro';
+
+The six pipeline phases move work forward. The three **diagnostics** do the opposite: they let you *inspect* without advancing anything. They're off-pipeline, read-only helpers — think of them as instruments you reach for when you want to understand or check something, not push it ahead.
+
+## One shared mental model: inspect, don't advance
+
+All three share a single idea. None of them writes code, changes a plan, or flips a status. They read, they report, and they stop. That's why they get one combined lesson instead of three: the *when-to-advance* gates are the pipeline's job; these tools sit beside the pipeline and answer questions on demand.
+
+<Aside type="note" title="Read-only and outside the gates">
+You can run any of these any time — on a draft design, a finished plan, a branch of code — without consequence. They never move your work between phases. The worst they can do is tell you something you didn't want to hear.</Aside>
+
+## `/c-check` — is this good?
+
+`/c-check` is a **substance review** of a design or plan. It asks: does this hang together — is it accurate, internally consistent, complete, free of hidden assumptions and scope creep? It returns a report sorted by severity (critical / important / minor), always including a "what's working" section so the feedback is calibrated, and a single recommended next action.
+
+Reach for it **before** you approve a design, or **before** you run `/c-plan` or `/c-execute` — to catch gaps in the document before they corrupt the next phase.
+
+## `/c-find-bugs` — what specific defects exist?
+
+`/c-find-bugs` is a different lens. Where `/c-check` asks "is this good?", find-bugs asks "what specific things are *wrong*?". It hunts concrete, fixable defects and gives you a prioritized list, each with a location and a one-line fix direction.
+
+It works on documents *and* on code — a design, a plan, a branch of changes, a single file, or (with explicit confirmation, because it's expensive) the whole repository. It's how a non-coder gets a concrete defect list without reading the code themselves.
+
+## `/c-explain` — what does this say and how does it work?
+
+`/c-explain` is for understanding, not judging. It opens with a one-screen orientation of a design or plan — a section list with plain-English summaries — then drops into open question-and-answer. You ask anything; it answers in plain English, citing both the document and the underlying code when implementation comes up.
+
+Reach for it when you want to understand a design you didn't write, or refresh yourself on one you haven't touched in a while.
+
+<Aside type="tip" title="When to reach for which">
+- **"Is this design ready to approve?"** → `/c-check` (substance and gaps).
+- **"Give me a concrete list of what's broken."** → `/c-find-bugs` (defects with fixes).
+- **"Help me understand what this says and how it works."** → `/c-explain` (orientation and Q&A).
+</Aside>
+
+<Quiz
+  question="What do all three diagnostic commands have in common?"
+  options={[
+    "They're read-only — they inspect and report but never advance work or change anything",
+    "They each move a plan to the next phase",
+    "They write code fixes automatically",
+    "They can only be run on the whole repository"
+  ]}
+  answer={0}
+  explanation="The diagnostics are off-pipeline and read-only. They share one mental model — inspect, don't advance — which is why they get a single combined lesson."
+/>
+
+**Exact usage:** each diagnostic has its own reference page — **[/c-check](/cadence/reference/c-check/)**, **[/c-find-bugs](/cadence/reference/c-find-bugs/)**, and **[/c-explain](/cadence/reference/c-explain/)** — for invocation forms, scopes, and output shape.
