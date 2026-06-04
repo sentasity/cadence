@@ -14,6 +14,12 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Cadence',
+      // Brand mark shown beside the title in the header (Starlight requires the
+      // asset under src/assets, not public/). replacesTitle defaults to false,
+      // so the "Cadence" wordmark text stays next to the icon.
+      logo: {
+        src: './src/assets/cadence-icon.svg',
+      },
       social: [
         {
           icon: 'github',

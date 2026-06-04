@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="Cadence">
-  <!-- Cadence brand mark · "Open-C / downbeat"
+  <!-- Cadence brand mark · "Open-C / downbeat" (B3 bold)
        Palette: cobalt #2f5fe0 → deep #1e3fa8 (docs "Paper & Cobalt" theme) -->
   <defs>
     <linearGradient id="cadence-cobalt" x1="0" y1="0" x2="1" y2="1">
