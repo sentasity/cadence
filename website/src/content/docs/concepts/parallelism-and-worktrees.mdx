@@ -41,6 +41,21 @@ This is what makes true parallelism safe: each lane has a private copy of the re
 Before opening the first worktree, `/c-execute` shows you the plan and asks once for the go-ahead. After you confirm, worktree creation, merging, and cleanup are fully automatic, with no per-lane prompts. The completion gate even refuses to finish if any stray worktree is left behind.
 </Aside>
 
+Putting the four steps together: the plan's tasks become a dependency map, the ready ones pass the touches-conflict guard, the survivors run as parallel lanes in their own worktrees, and each lane merges back to advance the tip:
+
+```mermaid
+flowchart TB
+    plan["Plan tasks<br/>each with Depends: / Touches:"] --> dag{{"dependency DAG:<br/>which tasks are ready now?"}}
+    dag --> guard{"ready lanes'<br/>Touches: sets disjoint?"}
+    guard -->|yes| run["run as parallel lanes<br/>≤ execute.max_parallel"]
+    guard -->|"no — files overlap"| wait["serialize:<br/>later lane waits its turn"]
+    run --> wt["each lane in its own<br/>git worktree (isolated copy)"]
+    wt --> review["lane passes two-stage review"]
+    review --> merge["merge back per execute.integrate<br/>(default rebase-ff)"]
+    merge --> tip(["tip advances;<br/>next ready lanes dispatch"])
+    wait -.->|blocker landed| dag
+```
+
 ## How many at once, and how they merge
 
 - **Cap.** At most `execute.max_parallel` lanes run concurrently (default **4**). If more work is ready than slots are free, the extra lanes wait their turn.

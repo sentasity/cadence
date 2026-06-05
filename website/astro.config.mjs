@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import mermaid from 'astro-mermaid';
 import { sidebar } from './sidebar.config.mjs';
 
 // sidebar is the single source of truth; it lives in sidebar.config.mjs so
@@ -12,6 +13,18 @@ export default defineConfig({
   site: 'https://sentasity.github.io',
   base: '/cadence/',
   integrations: [
+    // astro-mermaid MUST come before starlight: it registers the rehype plugin
+    // that turns ```mermaid code blocks into client-rendered diagrams, and that
+    // plugin has to run before Starlight's markdown processing. autoTheme wires
+    // the diagram theme to Starlight's data-theme attribute (light/dark), so
+    // diagrams follow the site's "Paper & Cobalt" light/dark toggle.
+    mermaid({
+      theme: 'default',
+      autoTheme: true,
+      mermaidConfig: {
+        flowchart: { curve: 'basis' },
+      },
+    }),
     starlight({
       title: 'Cadence',
       // Brand mark shown beside the title in the header (Starlight requires the
