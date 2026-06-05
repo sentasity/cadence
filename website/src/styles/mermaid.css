@@ -1,0 +1,148 @@
+/* Cadence mermaid theme: brand the diagrams in "Paper & Cobalt".
+ *
+ * astro-mermaid runs with autoTheme, so Mermaid's own theme swaps default
+ * (light) / dark on the data-theme toggle, giving readable text + contrast for
+ * free. This file layers the Cadence cobalt palette on top, driven entirely by
+ * Starlight's --sl-color-accent* / --sl-color-gray* tokens. Because those
+ * tokens already flip under :root[data-theme='dark'], every color below
+ * auto-swaps light/dark with no per-diagram theming.
+ *
+ * Mermaid injects an SVG <style> scoped by a unique #mermaid-<id>, so its rules
+ * carry ID specificity. Color/stroke/font overrides therefore need !important
+ * to win (Mermaid's injected rules are not themselves !important, so a single
+ * !important is enough). Layout/structure rules don't.
+ *
+ * Selectors verified against the rendered Mermaid v11 SVG (flowchart-v2 +
+ * stateDiagram-v2): nodes/states = rect.basic, decisions = polygon, edges =
+ * .flowchart-link / .transition, subgraph box = .cluster rect, state
+ * terminals = circle.state-start, labels = HTML spans in foreignObject.
+ */
+
+/* ---- The figure frame: each diagram sits in a centered, subtly panelled card */
+.mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 1.75rem 0;
+  padding: 1.5rem 1.25rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 12px;
+  background:
+    color-mix(in srgb, var(--sl-color-accent-low) 22%, var(--sl-color-bg));
+  overflow-x: auto;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Typography note: the diagram font (JetBrains Mono) is set in Mermaid's
+ * config, not here, so Mermaid measures every label box with the mono metrics
+ * during layout. Overriding font-family/size in CSS would resize text after
+ * the foreignObjects are sized and clip the labels — so this file deliberately
+ * leaves font metrics alone and only touches color. */
+
+/* ---- Nodes (flowchart boxes + stadium terminals) and states ------------- */
+.mermaid .node rect.basic,
+.mermaid rect.basic,
+.mermaid .statediagram-state rect {
+  fill: var(--sl-color-accent-low) !important;
+  stroke: var(--sl-color-accent) !important;
+  stroke-width: 1.5px !important;
+  rx: 7px;
+  ry: 7px;
+}
+
+/* Node label text: cobalt-high reads as dark-on-pale (light) and
+ * light-on-deep (dark) — on-brand and high-contrast in both modes. */
+.mermaid .node .nodeLabel,
+.mermaid .nodeLabel,
+.mermaid .statediagram-state .nodeLabel {
+  color: var(--sl-color-accent-high) !important;
+  fill: var(--sl-color-accent-high) !important;
+}
+
+/* ---- Decision diamonds: same family, a touch more saturated to read as a
+ *      branch point without leaving the palette. */
+.mermaid .node polygon {
+  fill: color-mix(in srgb, var(--sl-color-accent) 16%, var(--sl-color-bg)) !important;
+  stroke: var(--sl-color-accent) !important;
+  stroke-width: 1.5px !important;
+}
+
+/* ---- Edges + arrowheads: a muted cobalt-tinted line, not stock gray ----- */
+.mermaid .flowchart-link,
+.mermaid path.transition,
+.mermaid .edgePath .path {
+  stroke: color-mix(in srgb, var(--sl-color-accent) 40%, var(--sl-color-gray-4)) !important;
+  stroke-width: 1.5px !important;
+}
+
+.mermaid marker path,
+.mermaid marker polygon,
+.mermaid .arrowMarkerPath {
+  fill: color-mix(in srgb, var(--sl-color-accent) 40%, var(--sl-color-gray-4)) !important;
+  stroke: none !important;
+}
+
+/* ---- State-diagram terminals ([*] start/end): solid cobalt dots --------- */
+.mermaid circle.state-start,
+.mermaid .statediagram-state circle {
+  fill: var(--sl-color-accent) !important;
+  stroke: var(--sl-color-accent) !important;
+}
+/* the end-state inner ring */
+.mermaid .statediagram-state .innerCircle,
+.mermaid circle.state-end {
+  fill: var(--sl-color-bg) !important;
+}
+
+/* ---- Edge labels: render the gate/trigger text as a quiet chip.
+ *      overflow:visible on the foreignObject lets the padded chip extend past
+ *      the box Mermaid sized to the bare text, so nothing clips. */
+.mermaid .edgeLabel foreignObject {
+  overflow: visible;
+}
+.mermaid .edgeLabel .labelBkg,
+.mermaid .edgeLabel foreignObject > div {
+  background: transparent !important;
+}
+.mermaid .edgeLabel span,
+.mermaid span.edgeLabel {
+  color: var(--sl-color-gray-2) !important;
+  background: var(--sl-color-bg) !important;
+  padding: 0.08rem 0.5rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 12px;
+  /* No white-space override: let long transition labels wrap within the box
+   * Mermaid sized for them. Forcing nowrap overflows that box and clips. */
+}
+
+/* ---- Subgraph container: a faint dashed frame with a small section label */
+.mermaid .cluster rect {
+  fill: color-mix(in srgb, var(--sl-color-accent-low) 28%, transparent) !important;
+  stroke: var(--sl-color-gray-5) !important;
+  stroke-width: 1px !important;
+  stroke-dasharray: 4 4 !important;
+  rx: 10px;
+  ry: 10px;
+}
+.mermaid .cluster-label .nodeLabel,
+.mermaid .cluster-label {
+  color: var(--sl-color-gray-2) !important;
+  fill: var(--sl-color-gray-2) !important;
+  font-weight: 600 !important;
+}
+
+/* ---- A small, modern hover lift on nodes ------------------------------- */
+.mermaid .node {
+  transition: transform 0.12s ease;
+}
+.mermaid .node:hover {
+  transform: translateY(-1.5px);
+}
+.mermaid .node:hover rect.basic,
+.mermaid .node:hover polygon {
+  stroke: var(--sl-color-accent-high) !important;
+  stroke-width: 2px !important;
+}

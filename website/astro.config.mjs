@@ -22,6 +22,20 @@ export default defineConfig({
       theme: 'default',
       autoTheme: true,
       mermaidConfig: {
+        // Set the diagram font in Mermaid's config (not CSS) so Mermaid
+        // measures label boxes with the mono font during layout. Overriding
+        // font-family in CSS after layout would make labels wider than their
+        // pre-sized foreignObjects and clip the text. JetBrains Mono ties the
+        // diagrams to the CLI / `/c-*` identity; theme.css loads the face.
+        fontFamily: '"JetBrains Mono", monospace',
+        themeVariables: {
+          fontSize: '14px',
+          // Mermaid otherwise paints a light edge-label background via an
+          // ID-scoped !important rule that a class selector can't override.
+          // Make it transparent so mermaid.css can render its own token-based
+          // chip that auto-swaps light/dark.
+          edgeLabelBackground: 'transparent',
+        },
         flowchart: { curve: 'basis' },
       },
     }),
@@ -52,6 +66,9 @@ export default defineConfig({
         // Theme tokens (accent + font assignments). Listed last so its
         // --sl-font/--sl-color-* overrides win.
         './src/styles/theme.css',
+        // Mermaid diagram branding. After theme.css so it can read the
+        // accent tokens defined there.
+        './src/styles/mermaid.css',
       ],
       sidebar,
     }),
