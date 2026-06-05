@@ -35,10 +35,7 @@ jobs:
         run: node scripts/check-sidebar.mjs
 
       - name: Check internal links
-        uses: lycheeverse/lychee-action@v2
-        with:
-          args: >-
-            --offline
-            --include-fragments
-            'website/dist/**/*.html'
-          fail: true
+        # Base-aware internal-link checker (resolves /cadence/ links against
+        # dist/). Replaces lychee, which can't resolve a configured base path
+        # for local files without symlink/root-dir gymnastics.
+        run: node scripts/check-links.mjs
