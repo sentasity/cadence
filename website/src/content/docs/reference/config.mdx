@@ -1,0 +1,192 @@
+---
+title: .cadence/config.yaml
+sidebar:
+  order: 10
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+`.cadence/config.yaml` is Cadence's per-repo settings file. It lives at the repo root under `.cadence/` and tells the commands where your designs and plans live, how plans get split and committed, which audits run, and how parallel execution behaves. Every key has a built-in default, so the file only needs to hold the values you want to change.
+
+The canonical default for every key (with inline comments) ships at `defaults/config.default.yaml`. Your repo's `.cadence/config.yaml` overrides only what differs from those defaults. There is no need to copy the whole file.
+
+<Aside title="First-run scaffold">
+On your first `/c-brainstorm` in a repo that has no `.cadence/config.yaml`, Cadence notices the missing file and offers to scaffold one inline. It asks three short questions, writes a minimal config from your answers, and then continues into the Q&A. A missing config is a prompt, not a hard blocker.
+</Aside>
+
+## `config_version`
+
+A single top-level integer that records which config schema this file was written against. It drives migration detection when Cadence's schema changes.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `config_version` | Schema version of this file; used to detect when a migration is needed. | `3` | Integer |
+
+## `paths`
+
+Where Cadence reads and writes documents. Paths are relative to the repo root. Commands resolve `<paths.designs>` / `<paths.plans>` from here, so changing these moves the whole document tree.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `paths.designs` | Folder that holds design folders. | `docs/designs` | Repo-relative path |
+| `paths.plans` | Folder that holds plan folders. | `docs/plans` | Repo-relative path |
+| `paths.future` | Folder for "future" / parking-lot notes (e.g. thought-partner `/c-brainstorm` notes). | `docs/future` | Repo-relative path |
+| `paths.config` | Folder that holds this config and Cadence's working state. | `.cadence` | Repo-relative path |
+
+## `plan`
+
+How `/c-plan` shapes the plan it writes.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `plan.tdd` | Whether plans bake in a test-driven workflow (write the test, then the code). | `true` | `true` \| `false` |
+| `plan.commit_cadence` | How often the plan commits during execution. | `per-task` | `per-task` (other cadences are judgment-based) |
+| `plan.parallel_grain` | The finest granularity at which tasks within one plan may run in parallel. `per-file` keeps each file to one lane; `in-file` allows lanes to split work within a single file. Not set in the defaults file. Add it under `plan` to opt in. | unset (`per-file` behaviour) | `per-file` \| `in-file` |
+
+There are deliberately no split thresholds. Whether and where to split a plan into phase docs is a judgment call `/c-plan` makes, not a number you tune. See [Parallelism and worktrees](/cadence/concepts/parallelism-and-worktrees/) for how grain relates to execution lanes.
+
+## `execute`
+
+How `/c-execute` drives a plan to implemented code, including the parallel-lane machinery. The `01-…` / `02-…` files inside a single plan are its **phases**; the keys below govern how those phases run, in lanes that may use git worktrees.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `execute.branch_check` | Refuse to start unless you're on an appropriate branch. | `true` | `true` \| `false` |
+| `execute.auto_resolve_drift` | Auto-resolve drift between plan and code instead of surfacing it for a decision. | `false` | `true` \| `false` |
+| `execute.parallel` | Master switch for parallel execution. When `false`, execution is sequential and no worktrees are created. | `true` | `true` \| `false` |
+| `execute.max_parallel` | Maximum concurrent implementer lanes (one worktree per lane). Reviewers are uncapped. | `4` | Positive integer |
+| `execute.worktree_dir` | Where lane worktrees are created. | `.cadence/worktrees` | Repo-relative path |
+| `execute.worktree_confirm` | Show a one-time pre-flight confirmation before creating worktrees. | `true` | `true` \| `false` |
+| `execute.integrate` | History-rewrite policy when integrating a lane's work back. | `rebase-ff` | `rebase-ff` \| `merge-commit` |
+| `execute.resume_on_dirty_tree` | Allow resuming execution when the working tree is dirty. | `false` | `true` \| `false` |
+
+See [Parallelism and worktrees](/cadence/concepts/parallelism-and-worktrees/) for the model behind lanes, the `max_parallel` cap, and the integrate policy.
+
+## `authoring`
+
+How doc-generator agents run when `/c-design` materializes a design folder. These agents do not use worktrees (they only write docs), so they are cheap to parallelize.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `authoring.max_parallel` | Maximum concurrent doc-generator agents. | `6` | Positive integer |
+| `authoring.design_mode` | Standing default for how `/c-design` writes child docs: `ask` prompts you, `all-at-once` generates in parallel, `one-by-one` writes sequentially with a review per doc. | `ask` | `ask` \| `all-at-once` \| `one-by-one` |
+
+## `advisors`
+
+Opt-in advisor personas that can weigh in during brainstorm and design. Disabled by default.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `advisors.enabled` | Whether advisors are offered at all. | `false` | `true` \| `false` |
+| `advisors.roster` | The set of advisor personas available when enabled. | `[]` (empty) | List of advisor entries |
+
+See [Advisors](/cadence/concepts/advisors/) for what advisors are and how the roster is defined.
+
+## `naming`
+
+Conventions for naming design/plan folders.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `naming.date_format` | Date stamp used in folder slugs. | `YYYY-MM-DD` | Date format string |
+| `naming.slug_case` | Casing for the slug portion of folder names. | `kebab` | `kebab` (and similar case styles) |
+
+## `status`
+
+The allowed status values for design and plan documents. The order matters: it is the lifecycle progression Cadence expects.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `status.design` | Valid statuses for a design. | `[draft, in-review, approved, completed, superseded, on-hold]` | List of status strings |
+| `status.plan` | Valid statuses for a plan. | `[draft, in-progress, implemented, completed, superseded, on-hold]` | List of status strings |
+
+## `frontmatter`
+
+Frontmatter requirements Cadence enforces on documents it writes.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `frontmatter.required` | Frontmatter keys that must be present on every document. | `[title, created, updated, status, tags]` | List of key names |
+
+## `audits`
+
+Which checks `/c-audit` (and the completion auditor) run, split into blocking checks, non-blocking warnings, and an optional set. The `build_validator` sub-block configures the build check.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `audits.default` | Audit checks that run and block on failure. | `checkbox-completeness`, `oos-justification`, `deferred-comment-scan`, `code-behind-checkbox`, `design-intent-alignment`, `build-validator`, `merge-integrity` | List of audit names |
+| `audits.warnings` | Checks that run but only warn (non-blocking). | `file-map-honesty`, `design-plan-consistency`, `validation-doc-presence` | List of audit names |
+| `audits.optional` | Checks available but off by default. | `[]` (empty) | List of audit names |
+| `audits.build_validator.command` | Shell command the `build-validator` audit runs. `null` means no build command is run. | `null` | Shell command string or `null` |
+| `audits.build_validator.expect_zero_exit` | Treat a non-zero exit from the build command as a failure. | `true` | `true` \| `false` |
+
+## `plain_english`
+
+How Cadence writes the plain-English narrative that accompanies designs.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `plain_english.section_callout` | Add a callout marking the plain-English section. | `true` | `true` \| `false` |
+| `plain_english.always_write_00a` | Always write the `00a` plain-English companion doc. | `true` | `true` \| `false` |
+| `plain_english.length_target` | Target word-count range for the narrative. | `"400-700"` | Range string |
+
+## `oos`
+
+Rules for out-of-scope (OOS) entries in designs and plans.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `oos.require_rationale` | Require a written rationale for each out-of-scope item. | `true` | `true` \| `false` |
+| `oos.require_wikilink` | Require a wikilink (pointer) for each out-of-scope item. | `true` | `true` \| `false` |
+
+## `validate`
+
+How `/c-validate` walks a plan's `96-validation.md` post-deploy, including how it runs browser/automated checks.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `validate.reset_checkboxes_on_rerun` | Clear validation checkboxes when validation is re-run. | `true` | `true` \| `false` |
+| `validate.browser_driver` | Which driver runs browser-based checks. `auto` detects, `playwright` forces Playwright, `manual` walks you through by hand. | `auto` | `auto` \| `playwright` \| `manual` |
+| `validate.browser_command` | The CLI test command Cadence delegates browser checks to. | `"npx playwright test"` | Shell command string |
+| `validate.browser_env_preamble` | Optional shell snippet run before the browser command (e.g. to set env vars). `null` means none. | `null` | Shell snippet string or `null` |
+
+## `find_bugs`
+
+Defaults for `/c-find-bugs`.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `find_bugs.default_baseline` | The git ref bug-finding diffs against by default. | `main` | Git ref |
+| `find_bugs.exclude` | Paths excluded from the bug scan. | `[node_modules, dist, build, __pycache__, target, .next, vendor]` | List of paths |
+
+## A realistic config
+
+This repo dogfoods Cadence, and its own `.cadence/config.yaml` is a good example of the "override only what differs" pattern. It keeps the default paths and audits, bumps `execute.max_parallel` to `5`, and opts into `plan.parallel_grain: in-file`:
+
+```yaml
+config_version: 3
+paths:
+  designs: docs/designs
+  plans:   docs/plans
+  future:  docs/future
+  config:  .cadence
+
+plan:
+  tdd: true
+  commit_cadence: per-task
+  parallel_grain: in-file
+
+execute:
+  branch_check: true
+  auto_resolve_drift: false
+  max_parallel: 5
+  resume_on_dirty_tree: false
+  parallel: true
+  worktree_dir: .cadence/worktrees
+  worktree_confirm: true
+  integrate: rebase-ff
+
+advisors:
+  enabled: false
+  roster: []
+```

@@ -1,0 +1,41 @@
+---
+title: /c-design
+sidebar:
+  order: 2
+---
+
+Source of truth: `skills/c-design/SKILL.md`. For the *why* behind this stage, read the [Design deep dive](/cadence/design/).
+
+## Purpose
+
+Takes the `00-overview.md` stub from `/c-brainstorm` and fills out the whole design folder (the child docs, the plain-English narrative, and the out-of-scope list), written for a human to read and approve.
+
+## When to use it
+
+Use `/c-design` once you have an approved-shape stub and want the full, reviewable design before any plan or code. It is the second stage, sitting between brainstorm and plan. Don't use it to write a plan or touch code: those come later.
+
+## Invocation forms
+
+- `/c-design`: materializes the design folder from the existing `00-overview.md` stub in the current design slug.
+
+After confirming the doc index, it asks one question: generate the child docs **all-at-once** (the default, parallel) or **one-by-one** (write, pause for your review, repeat).
+
+## Inputs & preconditions
+
+A `00-overview.md` with `status: draft` and a populated doc index. It refuses to run if the overview is missing, its status is not `draft`, the doc index is empty, or the stub still carries an "Open questions" block (a sign the stub was written too early).
+
+## What it produces
+
+A full design folder: `00-overview.md`, `00a-plain-english.md`, the numbered child docs (`01-…`, `02-…`), optional `97-infrastructure-inventory.md` and `98-architecture-diagrams.md` when the doc index calls for them, and a `99-out-of-scope.md`. After a self-review pass it flips the overview's status to `in-review`.
+
+## Gates & guarantees
+
+- A self-review pass (placeholder scan, wikilink integrity, decisions consistency, out-of-scope integrity, open-questions audit) runs before the status flips to `in-review`.
+- Status only advances to `approved` when you say so, never automatically.
+- It never writes or modifies code, never writes plans, and never writes a child doc that isn't in the doc index (it loops back to update the overview first).
+
+## Related commands
+
+- **Previous:** [`/c-brainstorm`](/cadence/reference/c-brainstorm/) produced the stub this command expands.
+- **Next:** [`/c-plan`](/cadence/reference/c-plan/) turns the approved design into an exact plan.
+- **Deep dive:** [The Design stage](/cadence/design/) for the artifact, the narrative, and the self-review gate.

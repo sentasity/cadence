@@ -1,0 +1,57 @@
+---
+title: The Validate stage
+description: How post-deploy validation closes the loop and marks work truly done.
+sidebar:
+  order: 6
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Quiz from '../../components/Quiz.astro';
+
+Validate is the last stage, the one that confirms the thing actually works *after it's deployed*, then formally marks the work done. Audit proved the code matches the plan; validate proves the *running system* does what was promised.
+
+## The 96-validation checklist
+
+Every plan carries a validation document (its `96-validation.md`) written back during the plan stage. It's a checklist of everything that needs to be true for the feature to count as working in the real world. `/c-validate` walks that checklist with you, item by item, after you've deployed.
+
+<Aside type="note" title="Validate never deploys">
+`/c-validate` does not deploy anything. That's your step. It verifies *deployed* behavior. You deploy; it checks. Keeping those separate means Cadence never pushes something live on its own.
+</Aside>
+
+## Category order: prerequisites, then automated, then manual
+
+The walk runs in a strict order, and the order is deliberate:
+
+1. **Prerequisites (Category C) first:** anything that must already be true before any check can run (the backend deployed, a migration applied, test users created). The walk *blocks* here until you confirm each one. No prerequisites, no validation.
+2. **Automated checks (Category A) next:** checks Cadence runs itself: hitting an endpoint, querying a database, running tests. It ticks each off as it passes and stops on the first failure.
+3. **Manual workflow (Category B) last:** steps where you click through the real interface and Cadence verifies the result afterward.
+
+Doing prerequisites first means you never waste time on checks that were always going to fail for a setup reason.
+
+## Checking items off as it walks
+
+As each item passes, Cadence marks it off on the checklist and writes that progress to disk immediately, so if anything interrupts the session, the work already verified isn't lost. The status of the plan **never** advances to `completed` while any checklist item is still unchecked. There are no silent passes.
+
+## Flipping to completed and closing the design
+
+When every item passes, `/c-validate` flips the plan to `completed`. Then it reads the plan's link back to its design and offers to mark that **design** `completed` too. Your call.
+
+<Aside type="tip" title="This is where the loop closes">
+Remember the two-way link from the plan stage? This is where it pays off. The design only reaches its formal `completed` state once its plan has been validated. The whole loop (idea to brainstorm to design to plan to code to audit to validation) closes here, with your confirmation.
+</Aside>
+
+<Quiz
+  question="Which category does /c-validate always walk first?"
+  options={[
+    "Prerequisites (Category C), and it blocks until each is confirmed",
+    "Automated checks (Category A)",
+    "Manual workflow (Category B)",
+    "Whichever the user picks"
+  ]}
+  answer={0}
+  explanation="The walk is strictly prerequisites, then automated, then manual. Prerequisites come first and block the walk until confirmed, so no check runs against an unprepared system."
+/>
+
+**Exact usage:** see the **[/c-validate reference](/cadence/reference/c-validate/)** for status gates, walk order, and the completed-status flow.
+
+Next: **[Diagnostics: check, find-bugs, explain](/cadence/diagnostics/)**.

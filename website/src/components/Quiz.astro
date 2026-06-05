@@ -1,0 +1,74 @@
+---
+interface Props {
+  question: string;
+  options: string[];
+  answer: number;
+  explanation: string;
+}
+
+const { question, options, answer, explanation } = Astro.props;
+const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+const correctLetter = letters[answer] ?? String(answer + 1);
+const correctText = options[answer] ?? '';
+---
+
+<aside class="quiz">
+  <p class="quiz__question"><span class="quiz__badge">Quiz</span>{question}</p>
+  <ol class="quiz__options" type="A">
+    {options.map((opt) => (
+      <li>{opt}</li>
+    ))}
+  </ol>
+  <details class="quiz__reveal">
+    <summary>Show answer</summary>
+    <p class="quiz__answer"><strong>{correctLetter}. {correctText}</strong></p>
+    <p class="quiz__explanation">{explanation}</p>
+  </details>
+</aside>
+
+<style>
+  .quiz {
+    margin: 1.5rem 0;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    background: var(--sl-color-gray-7, var(--sl-color-bg-nav));
+  }
+  .quiz__badge {
+    display: inline-block;
+    margin-right: 0.5rem;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: 0.25rem;
+    color: var(--sl-color-white);
+    background: var(--sl-color-accent);
+  }
+  .quiz__question {
+    margin: 0;
+    font-weight: 600;
+  }
+  .quiz__options {
+    margin: 0.75rem 0 0 1.25rem;
+    padding: 0;
+  }
+  .quiz__options li {
+    margin: 0.25rem 0;
+  }
+  .quiz__reveal {
+    margin-top: 0.75rem;
+  }
+  .quiz__reveal summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--sl-color-accent-high, var(--sl-color-accent));
+  }
+  .quiz__answer {
+    margin: 0.5rem 0 0;
+  }
+  .quiz__explanation {
+    margin: 0.25rem 0 0;
+  }
+</style>

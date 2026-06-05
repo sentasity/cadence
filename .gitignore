@@ -16,7 +16,12 @@
 .vscode/
 
 # Cadence working artifacts (designs/plans) — not for the public repo
-docs/
+/docs/
 
 # Cadence execution lane worktrees (auto-created/removed by /c-execute)
 .cadence/worktrees/
+
+# Astro docs site (website/) — generated, not committed
+website/node_modules/
+website/dist/
+website/.astro/

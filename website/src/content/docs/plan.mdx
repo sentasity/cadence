@@ -1,0 +1,53 @@
+---
+title: The Plan stage
+description: Why a separate, code-exact plan exists between an approved design and execution.
+sidebar:
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Quiz from '../../components/Quiz.astro';
+
+Plan is the quiet, technical stage between the design you approved and the code that gets built. `/c-plan` takes your approved design and writes a **plan folder**, and a plan is a very different kind of document from a design.
+
+## Exact paths, exact steps, no narrative
+
+A design explains *why*. A plan states *what and in what order*, and nothing else. It's written for the machine that will execute it, so it's exact paths, exact code, exact commands, and explicit ordering. There is deliberately **no narrative** in a plan: the story already lives in the design, and repeating it here would just be a place for the two to drift apart.
+
+<Aside type="note" title="You don't normally read the plan closely">
+The plan is for the machine. As a non-coder you'll skim it to confirm it covers what the design promised, but the document you truly review and approve is the *design*. The plan is downstream of an approval you already gave.
+</Aside>
+
+## One design becomes one plan
+
+A design always becomes exactly **one** plan folder, never several. When work is large, the plan splits it into numbered **phase files** (`01-…`, `02-…`) inside that single folder, and the execution engine runs those phases in parallel where it safely can. There's no "should we split this into multiple plans?" question, because the answer is always no: phase files handle decomposition.
+
+<Aside type="tip" title="Phase files are coherent slices">
+Each phase file is a coherent chunk of work a reviewer can hold in their head: one topic, related tasks, a clear shape. The planner groups work into the fewest coherent phase files rather than scattering it, so each one is a meaningful unit.
+</Aside>
+
+## Bidirectional linkage: the no-drift mechanism
+
+This is the part worth internalizing. When `/c-plan` writes the plan, it records a **two-way link**: the plan's overview names its source design (`linked_design:`), and the design's overview is updated to name its plan (`linked_plan:`).
+
+That linkage is how Cadence prevents silent drift between what you approved and what gets built. The design and plan know about each other. A design only ever becomes formally `completed` once its linked plan has been validated. The two move together, by design, never independently.
+
+<Aside type="caution" title="Plan never writes code, never auto-executes">
+`/c-plan` writes the plan and stops. It doesn't run anything and it doesn't roll into `/c-execute`. As always, advancing to the next stage is an explicit step you take.
+</Aside>
+
+<Quiz
+  question="How many plans does a single approved design become?"
+  options={[
+    "Exactly one: large work splits into phase files inside that one plan",
+    "One plan per design child doc",
+    "As many as the work needs, as sibling plans",
+    "None: the design is executed directly"
+  ]}
+  answer={0}
+  explanation="One design always becomes one plan. Decomposition happens through numbered phase files inside that single plan folder, not through multiple plans."
+/>
+
+**Exact usage:** see the **[/c-plan reference](/cadence/reference/c-plan/)** for the plan folder layout, task structure, and linkage rules.
+
+Next stage: **[The Execute stage](/cadence/execute/)**.

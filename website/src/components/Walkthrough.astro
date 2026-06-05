@@ -1,0 +1,89 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+
+const hasStep1 = Astro.slots.has('step-1-title');
+const hasStep2 = Astro.slots.has('step-2-title');
+const hasStep3 = Astro.slots.has('step-3-title');
+const hasStep4 = Astro.slots.has('step-4-title');
+const hasStep5 = Astro.slots.has('step-5-title');
+const hasStep6 = Astro.slots.has('step-6-title');
+---
+
+<div class="walkthrough">
+  {title && <p class="walkthrough__title">{title}</p>}
+  <ol class="walkthrough__list">
+    {hasStep1 && (
+      <li class="walkthrough__item">
+        <p class="walkthrough__step-title"><slot name="step-1-title" /></p>
+        <div class="walkthrough__step-body"><slot name="step-1-body" /></div>
+      </li>
+    )}
+    {hasStep2 && (
+      <li class="walkthrough__item">
+        <p class="walkthrough__step-title"><slot name="step-2-title" /></p>
+        <div class="walkthrough__step-body"><slot name="step-2-body" /></div>
+      </li>
+    )}
+    {hasStep3 && (
+      <li class="walkthrough__item">
+        <p class="walkthrough__step-title"><slot name="step-3-title" /></p>
+        <div class="walkthrough__step-body"><slot name="step-3-body" /></div>
+      </li>
+    )}
+    {hasStep4 && (
+      <li class="walkthrough__item">
+        <p class="walkthrough__step-title"><slot name="step-4-title" /></p>
+        <div class="walkthrough__step-body"><slot name="step-4-body" /></div>
+      </li>
+    )}
+    {hasStep5 && (
+      <li class="walkthrough__item">
+        <p class="walkthrough__step-title"><slot name="step-5-title" /></p>
+        <div class="walkthrough__step-body"><slot name="step-5-body" /></div>
+      </li>
+    )}
+    {hasStep6 && (
+      <li class="walkthrough__item">
+        <p class="walkthrough__step-title"><slot name="step-6-title" /></p>
+        <div class="walkthrough__step-body"><slot name="step-6-body" /></div>
+      </li>
+    )}
+  </ol>
+</div>
+
+<style>
+  .walkthrough {
+    margin: 1.5rem 0;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    padding: 1rem 1.25rem;
+    background: var(--sl-color-gray-7, var(--sl-color-bg-nav));
+  }
+  .walkthrough__title {
+    margin: 0 0 0.75rem;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+  .walkthrough__list {
+    margin: 0;
+    padding: 0 0 0 1.5rem;
+  }
+  .walkthrough__item {
+    margin: 0.75rem 0;
+  }
+  .walkthrough__item:first-child {
+    margin-top: 0;
+  }
+  .walkthrough__step-title {
+    margin: 0;
+    font-weight: 600;
+  }
+  .walkthrough__step-body {
+    margin: 0.25rem 0 0;
+  }
+</style>

@@ -1,0 +1,45 @@
+---
+title: /c-find-bugs
+sidebar:
+  order: 8
+---
+
+Source of truth: `skills/c-find-bugs/SKILL.md`. For the *why* behind the diagnostics, read the [Diagnostics deep dive](/cadence/diagnostics/).
+
+## Purpose
+
+Hunts for concrete, fixable defects in a doc or in code (each one named with a file-and-line citation, a severity, and a one-line fix direction) so a non-coder can see what's actually wrong without reading the code.
+
+## When to use it
+
+Use `/c-find-bugs` when you want a specific defect list rather than a quality opinion: bugs on a branch before merge, logic errors in a plan, or problems in a single file. It is an off-pipeline, read-only diagnostic. Use `/c-check` instead when the question is "is this design good?" rather than "what specific defects exist?"
+
+## Invocation forms
+
+- `/c-find-bugs <design-folder>`: logical defects in the proposed system.
+- `/c-find-bugs <plan-folder>`: execution bugs (missing dependency edges, name mismatches, impossible steps).
+- `/c-find-bugs <branch-name>`: code changes on a branch versus baseline.
+- `/c-find-bugs <file-path>`: one file's source.
+- `/c-find-bugs --repo`: the whole repo (token-heavy; prints estimated scope and waits for explicit confirmation).
+
+With no target, it defaults to the current branch's diff against `main` (or the configured baseline); on `main` itself it asks for an explicit target.
+
+## Inputs & preconditions
+
+An existing target: a design folder, plan folder, branch, file, or the repo. `--repo` scope requires explicit confirmation before it starts and excludes vendor/generated/build paths.
+
+## What it produces
+
+A citation-first report in chat: a plain-English health summary, defects grouped Critical / High / Medium / Low with a fix direction each, a mandatory "What's working" section, and one recommended next action. After printing, it can optionally enter a fix mode to walk defects one at a time. It never fixes bugs on its own without your go-ahead.
+
+## Gates & guarantees
+
+- Fans out one sub-agent per enabled defect category (correctness, logic, resources, concurrency, error handling, security, API misuse, time/date, plus doc-specific categories), then merges and deduplicates.
+- `--repo` runs only after it prints an estimated token count and you confirm.
+- It never writes or modifies code/plans/designs on its own, never audits plan completion (that's `/c-audit`), never reviews for substance (that's `/c-check`), and treats every run as fresh (no dedupe against a tracker).
+
+## Related commands
+
+- **Sister diagnostics:** [`/c-check`](/cadence/reference/c-check/) (substance/quality) and [`/c-explain`](/cadence/reference/c-explain/) (explanation).
+- **Related pipeline:** [`/c-audit`](/cadence/reference/c-audit/) checks a plan was implemented; `/c-find-bugs` hunts defects regardless of any plan.
+- **Deep dive:** [Diagnostics: check, find-bugs, explain](/cadence/diagnostics/).

@@ -1,0 +1,41 @@
+name: Docs PR quality gate
+
+on:
+  pull_request:
+    paths:
+      - 'website/**'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npx astro build
+
+      - name: Check sidebar / page consistency
+        run: node scripts/check-sidebar.mjs
+
+      - name: Check internal links
+        # Base-aware internal-link checker (resolves /cadence/ links against
+        # dist/). Replaces lychee, which can't resolve a configured base path
+        # for local files without symlink/root-dir gymnastics.
+        run: node scripts/check-links.mjs

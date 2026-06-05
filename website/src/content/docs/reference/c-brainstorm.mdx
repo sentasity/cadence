@@ -1,0 +1,43 @@
+---
+title: /c-brainstorm
+sidebar:
+  order: 1
+---
+
+Source of truth: `skills/c-brainstorm/SKILL.md`. For the *why* behind this stage, read the [Brainstorm deep dive](/cadence/brainstorm/).
+
+## Purpose
+
+Runs an interactive question-and-answer session that turns a fuzzy idea into either a useful conversation or a written design stub, one question at a time, never jumping ahead to write code.
+
+## When to use it
+
+Reach for `/c-brainstorm` at the very start, when you have an idea but no written artifact yet. Use **thought-partner mode** when you just want to think something through out loud and may not build it. Use **design-brainstorm mode** when you intend to converge on an approach and walk away with a `00-overview.md` stub. Do not use it to flesh out child docs or write a plan: that is `/c-design` and `/c-plan`.
+
+## Invocation forms
+
+- `/c-brainstorm <idea text>`: start fresh; the mode is detected from how you phrase the idea.
+- `/c-brainstorm`: no idea given; it first asks "What are we tackling?"
+- `/c-brainstorm --explore <topic>`: force thought-partner mode (no artifact required).
+- `/c-brainstorm --design <topic>`: force design-brainstorm mode (ends with a stub).
+
+## Inputs & preconditions
+
+A `.cadence/config.yaml` in the repo (or a parent folder). On the first run in a fresh repo where none exists, the command detects this and offers to scaffold sensible defaults inline before the Q&A begins. A missing config is not a hard blocker, it is a prompt. No prior design or plan is required; this is the entry point.
+
+## What it produces
+
+- **Thought-partner mode:** nothing by default; the conversation is the value. On exit it offers (once) to drop a `future/{slug}.md` note or promote the session into design-brainstorm mode.
+- **Design-brainstorm mode:** a single `00-overview.md` stub at `<paths.designs>/{yyyy-mm-dd-slug}/`, holding what you're building, why, the chosen approach, a proposed doc index, a decisions log, and an out-of-scope pointer. The stub never contains open questions.
+
+## Gates & guarantees
+
+- Every question is multiple-choice with exactly one option marked `(Recommended)` listed first, a plain-English lead, and a one-sentence trade-off per option.
+- It never writes the stub while questions are still open.
+- It never writes child docs, plans, or code.
+- It never auto-chains into `/c-design`; handing off is a separate, explicit step you take.
+
+## Related commands
+
+- **Next in the pipeline:** [`/c-design`](/cadence/reference/c-design/) turns the stub into a full design folder.
+- **Deep dive:** [The Brainstorm stage](/cadence/brainstorm/) for the concept and the one-question-at-a-time discipline.

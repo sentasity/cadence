@@ -1,0 +1,43 @@
+---
+title: /c-explain
+sidebar:
+  order: 9
+---
+
+Source of truth: `skills/c-explain/SKILL.md`. For the *why* behind the diagnostics, read the [Diagnostics deep dive](/cadence/diagnostics/).
+
+## Purpose
+
+Runs an interactive, plain-English discussion of an existing design or plan: opening with a one-screen orientation, then answering whatever you ask, grounding every answer in the doc and the code beneath it.
+
+## When to use it
+
+Use `/c-explain` when you want to understand what a design or plan *says* and how it actually works: onboarding to someone else's design, or refreshing your own. It is an off-pipeline, read-only diagnostic. It explains; it does not judge. Use `/c-check` for "is this good?" and `/c-find-bugs` for "what's broken?"
+
+## Invocation forms
+
+- `/c-explain <design-folder-path>`: discuss a whole design.
+- `/c-explain <plan-folder-path>`: discuss a whole plan.
+- `/c-explain <single-doc-path>`: one child doc in isolation.
+- `/c-explain <doc-path>#<heading>`: scope to a sub-section anchor.
+- `/c-explain --any <path>`: bypass the Cadence-layout check for imported/external docs.
+
+## Inputs & preconditions
+
+An existing design or plan doc. It refuses if the path doesn't exist, or if the path is in a Cadence-managed location but lacks the expected structure (no overview, missing frontmatter), unless `--any` is set.
+
+## What it produces
+
+By default, nothing written. The conversation is the value. On exit it offers (once) to drop a `future/learned-from-{slug}.md` note or to append a `## Q&A — <date>` appendix to the relevant design/plan doc (the appendix option is only available for Cadence-managed targets, not `--any`).
+
+## Gates & guarantees
+
+- Answers lead with plain English; when implementation comes up, it cites both the design section and the code location, and calls out explicitly when the doc and code disagree.
+- Gaps trigger an investigation chain (code → git history → related docs); if still unclear it answers with an `[INFERRED]` marker and explains the inference. It never fabricates a rationale.
+- It never critiques substance (that's `/c-check`), never enumerates defects (that's `/c-find-bugs`), never writes new designs or plans, and never modifies the target except via the explicit "append Q&A appendix" exit option.
+
+## Related commands
+
+- **Sister diagnostics:** [`/c-check`](/cadence/reference/c-check/) (substance review) and [`/c-find-bugs`](/cadence/reference/c-find-bugs/) (concrete defects).
+- **Related authoring:** [`/c-brainstorm`](/cadence/reference/c-brainstorm/) also runs Q&A, but on an open topic with no existing artifact to ground in.
+- **Deep dive:** [Diagnostics: check, find-bugs, explain](/cadence/diagnostics/).

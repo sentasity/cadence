@@ -1,0 +1,58 @@
+---
+title: Parallelism & worktrees
+description: How /c-execute schedules work, using a dependency DAG of tasks run as parallel lanes in isolated git worktrees, guarded so two lanes never touch the same files at once.
+sidebar:
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+When you run **[/c-execute](/cadence/execute/)**, it doesn't grind through your plan one task after another. It works out which tasks can safely run *at the same time* and runs them in parallel (in separate, isolated copies of your repo) then merges the results back together. This page explains how that works without you needing to manage any of it.
+
+## Step one: build a dependency map
+
+Every task in a plan can declare what it depends on, via a `Depends:` line. Task 2.1 might say it depends on Task 1.1, because it can't start until that earlier work exists.
+
+`/c-execute` reads all of those edges and builds a **dependency DAG**: a map of what must come before what. A task is *ready* the moment every task it depends on has landed. Everything that's ready and doesn't depend on each other can, in principle, run together.
+
+## Step two: group ready work into lanes
+
+The unit of parallel work is a **lane**. A lane is one **phase file**. Here "phase" correctly means a subdivision of the plan, the `01-…md`, `02-…md` files that break a big plan into chunks. Each ready phase file becomes one lane, run by one implementer agent.
+
+<Aside type="note" title="One word, two meanings, and this is the right one">
+Across Cadence, the six-step pipeline is made of **stages** (brainstorm, design, plan, execute, audit, validate). "Phase" is reserved for *plan subdivisions*: the numbered phase files inside a single plan. On this page, lanes map to those phase files, so "phase" is being used in its correct, narrow sense.
+</Aside>
+
+## Step three: the touches-conflict guard
+
+Running things in parallel is only safe if they don't step on each other. Each task declares a `Touches:` list: the files it will modify. The scheduler enforces a hard rule:
+
+> Two lanes run concurrently **only if their `Touches:` file sets are disjoint** (no file in common).
+
+If two ready lanes both want to touch the same file, they don't run together. The later one waits until the first has landed and merged. This **touches-conflict guard** is never overridden and never auto-resolved. If the file sets overlap, the lanes are serialized, full stop. (A conflict that slips through means a `Touches:` list was wrong, and `/c-execute` stops and tells you rather than guessing.)
+
+## Step four: each lane gets its own worktree
+
+A lane doesn't run in your main checkout. It runs in its own **git worktree**: a separate working directory on its own branch, created from the current tip of your work. Worktrees live under `.cadence/worktrees/` and are created and removed automatically.
+
+This is what makes true parallelism safe: each lane has a private copy of the repo, so concurrent lanes can't clobber each other's files mid-flight. The combination of *separate worktrees* plus the *touches-conflict guard* is the belt-and-suspenders that lets multiple agents work at once without corrupting the result.
+
+<Aside type="tip" title="You confirm once, then it's automatic">
+Before opening the first worktree, `/c-execute` shows you the plan and asks once for the go-ahead. After you confirm, worktree creation, merging, and cleanup are fully automatic, with no per-lane prompts. The completion gate even refuses to finish if any stray worktree is left behind.
+</Aside>
+
+## How many at once, and how they merge
+
+- **Cap.** At most `execute.max_parallel` lanes run concurrently (default **4**). If more work is ready than slots are free, the extra lanes wait their turn.
+- **Merge.** When a lane finishes and passes review, it's integrated per `execute.integrate`. The default is **`rebase-ff`**: the lane's branch is rebased onto the current tip and fast-forwarded in, keeping a clean linear history with each task's commits preserved. Repos that forbid history rewriting can set `merge-commit` instead.
+
+A single phase file can even become two or three lanes over a run: if only part of it is ready now, the ready part dispatches immediately and the rest forms a follow-up lane once its blockers clear.
+
+<Aside type="caution" title="Opting out">
+Set `execute.parallel: false` in your config and `/c-execute` runs everything sequentially with no worktrees at all. Older plans that predate the `Touches:` format also fall back to sequential automatically.
+</Aside>
+
+## Reference
+
+- Full command behavior: **[/c-execute reference](/cadence/reference/c-execute/)**.
+- The `execute.*` settings (`max_parallel`, `integrate`, `parallel`, `worktree_dir`): **[Configuration reference](/cadence/reference/config/)**.

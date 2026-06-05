@@ -1,6 +1,7 @@
 # Cadence config for the Cadence plugin source repo (dogfooding).
 # Overrides only what differs from defaults/config.default.yaml.
 
+config_version: 3
 paths:
   designs: docs/designs
   plans:   docs/plans
@@ -17,7 +18,63 @@ execute:
   auto_resolve_drift: false
   max_parallel: 5
   resume_on_dirty_tree: false
+  parallel: true           # master switch; false => sequential, no worktrees
+  worktree_dir: .cadence/worktrees   # where lane worktrees live
+  worktree_confirm: true   # one-time pre-flight worktree confirmation
+  integrate: rebase-ff     # rebase-ff | merge-commit (history-rewrite policy)
 
 advisors:
   enabled: false
   roster: []
+
+naming:
+  date_format: "YYYY-MM-DD"
+  slug_case: kebab
+
+status:
+  design: [draft, in-review, approved, completed, superseded, on-hold]
+  plan:   [draft, in-progress, implemented, completed, superseded, on-hold]
+
+frontmatter:
+  required: [title, created, updated, status, tags]
+
+authoring:
+  max_parallel: 6          # concurrent doc-generator agents (no worktrees; cheap)
+  design_mode: ask         # ask | all-at-once | one-by-one (standing default for /c-design)
+
+audits:
+  default:
+    - checkbox-completeness
+    - oos-justification
+    - deferred-comment-scan
+    - code-behind-checkbox
+    - design-intent-alignment
+    - build-validator
+    - merge-integrity
+  warnings:
+    - file-map-honesty
+    - design-plan-consistency
+    - validation-doc-presence
+  optional: []
+  build_validator:
+    command: null
+    expect_zero_exit: true
+
+plain_english:
+  section_callout: true
+  always_write_00a: true
+  length_target: "400-700"
+
+oos:
+  require_rationale: true
+  require_wikilink: true
+
+validate:
+  reset_checkboxes_on_rerun: true
+  browser_driver: auto                     # auto | playwright | manual
+  browser_command: "npx playwright test"   # CLI test invocation Cadence delegates to
+  browser_env_preamble: null               # optional shell snippet run before the command; null = none
+
+find_bugs:
+  default_baseline: main
+  exclude: [node_modules, dist, build, __pycache__, target, .next, vendor]

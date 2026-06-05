@@ -1,0 +1,58 @@
+---
+title: Advisors
+description: Repo-specific agents you register once, consulted opt-in during brainstorm and design on genuinely architectural questions. Their opinions feed the Q&A, never the artifact.
+sidebar:
+  order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Advisors are **repo-specific agents you register** so Cadence can ask them for a second opinion during the thinking stages. Think of them as named experts on your codebase (a "database advisor," a "security advisor") that you can pull into a brainstorm or design conversation when a question is genuinely architectural.
+
+They are entirely opt-in, off by default, and they never write into your documents.
+
+## Registering advisors
+
+Advisors live in your repo's `.cadence/config.yaml` under the `advisors:` key. There are two settings:
+
+```yaml
+advisors:
+  enabled: false   # master switch: true to allow consultation at all
+  roster: []       # the named agents Cadence may consult
+```
+
+- `advisors.enabled`: the master switch. While it's `false` (the default), Cadence never offers to consult anyone.
+- `advisors.roster`: the list of agents available to consult. Add the names of the repo-specific agents you want on call.
+
+To turn the feature on, set `enabled: true` and add one or more names to `roster`. That's all the configuration there is.
+
+<Aside type="note" title="Off until you opt in">
+Out of the box `advisors.enabled` is `false` and `roster` is empty, so a fresh repo never sees an advisor prompt. You decide if and when advisors become part of your workflow.
+</Aside>
+
+## When advisors are consulted
+
+Advisors come up in exactly two stages (**[/c-brainstorm](/cadence/brainstorm/)** and **[/c-design](/cadence/design/)**) and only at the right moment.
+
+During the Q&A, when a question is **genuinely architectural** ("does this approach scale?", "is this the right boundary?"), Cadence offers to consult your advisors. It's an explicit, case-by-case offer, something like:
+
+> *Want me to consult `database-advisor`, `security-advisor`? Token-heavy.*
+
+You opt in (or not) for that one question. The offer is flagged as **token-heavy** on purpose: consulting advisors dispatches additional agents and costs more, so Cadence makes the cost visible and lets you decide it's worth it for this particular decision.
+
+<Aside type="caution" title="Not for every question">
+Advisors are reserved for real architectural forks, not routine choices. Cadence won't offer them on small decisions, and you shouldn't reach for them there either: the value (and the cost) is in the hard calls.
+</Aside>
+
+## Their opinions feed the Q&A, never the artifact
+
+This is the load-bearing rule. When you opt in, Cadence dispatches the advisors (in parallel) and their opinions flow **back into the question-and-answer conversation**. They inform what gets asked next and what trade-offs surface.
+
+They do **not** get written into the stub or design directly. If two advisors disagree, Cadence surfaces both views. It doesn't pick a winner. **You adjudicate.** The advisor is a consultant in the room, not an author with edit rights.
+
+That keeps the artifact yours: every decision recorded in a design's decisions log is one *you* made, possibly informed by an advisor, but never authored by one.
+
+## Reference
+
+- Full config schema and defaults: **[Configuration reference](/cadence/reference/config/)**.
+- The stages that consult advisors: **[/c-brainstorm](/cadence/reference/c-brainstorm/)** and **[/c-design](/cadence/reference/c-design/)**.
