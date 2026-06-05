@@ -8,6 +8,7 @@
 
 # Local-only Claude Code state
 .claude/local/
+.claude/launch.json
 
 # Obsidian editor config (machine-specific)
 .obsidian/

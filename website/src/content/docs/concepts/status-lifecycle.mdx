@@ -15,6 +15,7 @@ A design moves through four working statuses on its way to done:
 
 ```mermaid
 stateDiagram-v2
+    state "in-review" as in_review
     [*] --> draft
     draft --> in_review: /c-design self-review
     in_review --> approved: you say "approved"
@@ -36,6 +37,7 @@ A plan moves through its own four statuses as it gets built and verified:
 
 ```mermaid
 stateDiagram-v2
+    state "in-progress" as in_progress
     [*] --> draft
     draft --> in_progress: /c-execute starts
     in_progress --> implemented: /c-execute after audit passes

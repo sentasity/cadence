@@ -45,6 +45,24 @@ If a change starts to drift from the plan (the work doesn't fit, the spec is amb
 
 It never silently picks one. The decision is always yours.
 
+The whole loop, from the PM dispatching a task to the change landing (or stopping for you on drift):
+
+```mermaid
+flowchart TB
+    pm["PM = your session<br/>(never writes code)"] -->|one task at a time| sub["fresh sub-agent<br/>sees only its task + named files"]
+    sub --> change["writes the change"]
+    change --> spec["spec reviewer:<br/>matches the plan's task?"]
+    change --> code["code reviewer:<br/>follows repo conventions?"]
+    spec --> verdict{"verdict"}
+    code --> verdict
+    verdict -->|both approve| land["lands & commits on its own"]
+    verdict -->|"they disagree"| specwins["spec reviewer wins"]
+    specwins --> land
+    land --> drift{"drift from the plan?"}
+    drift -->|no| pm
+    drift -->|yes| stop["STOP and ask you:<br/>fix · mark out of scope · abort"]
+```
+
 <Aside type="caution" title="What execute never does">
 It never auto-deploys your code. It never rewrites history by amending commits. And it never skips the repository's safety checks. If a check fails, it fixes the cause and makes a new commit. It doesn't paper over the failure.
 </Aside>

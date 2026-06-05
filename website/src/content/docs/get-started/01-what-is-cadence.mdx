@@ -41,6 +41,19 @@ Cadence runs your idea through six core stages, in order. Each one has a slash c
 
 There are also three **diagnostic** commands you can run any time, off to the side of the pipeline: `/c-check`, `/c-find-bugs`, and `/c-explain`. That's nine commands in total. You meet the diagnostics in the last deep dive.
 
+The whole pipeline, with the gate on each arrow (the thing *you* do to let the work advance):
+
+```mermaid
+flowchart TB
+    idea(["your idea"]) --> B
+    B["Brainstorm<br/>/c-brainstorm"] -->|you run design| D["Design<br/>/c-design"]
+    D -->|you approve| P["Plan<br/>/c-plan"]
+    P -->|you run execute| E["Execute<br/>/c-execute"]
+    E -->|audit runs| A["Audit<br/>/c-audit"]
+    A -->|you deploy + validate| V["Validate<br/>/c-validate"]
+    V --> done(["validated"])
+```
+
 <Aside type="tip" title="The through-line">
 You never have to trust the code by reading it. You trust the **gate**: the explicit, human-approved pause between every stage. That's what makes Cadence usable by someone who can't (or won't) read diffs.
 </Aside>

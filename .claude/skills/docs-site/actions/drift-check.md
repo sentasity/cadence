@@ -33,6 +33,8 @@ For each command, read the source `SKILL.md` and the reference page, then check 
 
 These four facts map directly onto the reference template fields (Purpose, Invocation/Inputs, Gates & guarantees, What it produces), so checking them is the same as checking the page is still accurate field by field.
 
+**Mermaid diagrams count as claims too.** If a page (reference or course) renders a ```` ```mermaid ```` diagram of the command's flow, its nodes and edges assert the same four facts — steps, order, gates, outputs. Read the diagram as part of the page and check it against the source `SKILL.md`: a flowchart that still shows an old step order, a dropped gate, or a renamed status is drift, and the proposed patch edits the diagram source, not just the prose around it.
+
 ## Behavior: report and propose, never auto-fix
 
 For every divergence you find, you do two things and only those two things:
