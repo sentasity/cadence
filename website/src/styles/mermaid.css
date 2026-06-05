@@ -109,9 +109,21 @@
 }
 .mermaid .edgeLabel span,
 .mermaid span.edgeLabel {
+  /* inline-block so the chip is ONE box. The span defaults to display:inline
+   * and wraps a block <p>; an inline element's rounded border then fragments
+   * into two rounded "caps" (one at the start, one at the end) instead of a
+   * single pill. inline-block collapses it to a single clean background. */
+  display: inline-block;
   color: var(--sl-color-gray-2) !important;
   background: var(--sl-color-bg) !important;
   padding: 0.08rem 0.5rem;
+  /* Mermaid sizes the label box to the bare text and centers the line on it.
+   * Horizontal padding would push the chip's layout width past that box, so it
+   * grows rightward — shifting the pill off the line and clipping the right
+   * cap. Equal negative horizontal margins cancel the padding's layout width,
+   * so the box stays text-width (centered on the line) while the background
+   * still extends symmetrically past the text on both sides. */
+  margin: 0 -0.5rem;
   border: 1px solid var(--sl-color-hairline);
   border-radius: 12px;
   /* No white-space override: let long transition labels wrap within the box
@@ -134,12 +146,12 @@
   font-weight: 600 !important;
 }
 
-/* ---- A small, modern hover lift on nodes ------------------------------- */
-.mermaid .node {
-  transition: transform 0.12s ease;
-}
-.mermaid .node:hover {
-  transform: translateY(-1.5px);
+/* ---- A subtle hover accent on nodes. No transform: moving the node on hover
+ *      shifts it out from under the cursor, which un-hovers it and causes an
+ *      infinite flicker loop. Only the border brightens, so the node stays put. */
+.mermaid .node rect.basic,
+.mermaid .node polygon {
+  transition: stroke 0.12s ease;
 }
 .mermaid .node:hover rect.basic,
 .mermaid .node:hover polygon {
