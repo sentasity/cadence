@@ -10,6 +10,7 @@ const {
   detectMissingKeys,
   mergeMissing,
   bumpOrInsertVersion,
+  relocationsFor,
   main,
 } = require('./migrate-config.js');
 
@@ -405,4 +406,143 @@ test('main: missing defaults file -> warn, no write, no throw', () => {
   assert.match(warns[0], /plugin defaults not found/);
   const after = fs.readFileSync(path.join(projectDir, '.cadence', 'config.yaml'), 'utf8');
   assert.strictEqual(after, before);
+});
+
+// ---- v3 -> v4 worktree relocation (value-move) ----
+
+// Mirrors the worktree: block in defaults/config.default.yaml (v4) so these
+// tests exercise the exact text the real migration appends.
+const V4_DEFAULTS = [
+  '# Cadence plugin defaults.',
+  'config_version: 4          # schema version',
+  'paths:',
+  '  designs: docs/designs',
+  'execute:',
+  '  branch_check: true',
+  '  max_parallel: 4          # concurrent implementer lanes (= worktrees); reviewers uncapped',
+  '  worktree_confirm: true   # one-time pre-flight worktree confirmation',
+  'worktree:',
+  '  dir: .cadence/worktrees     # canonical home (relocated from execute.worktree_dir)',
+  '  integrate: rebase-ff        # rebase-ff | merge-commit (relocated from execute.integrate)',
+  '  merge_lock: true            # on by default; both /c-worktree and /c-execute acquire it',
+  '  lock_stale_threshold: 600   # seconds; past this a held lock surfaces "steal it?" (never auto-steal)',
+  '  hooks:                      # all null by default -> generic behavior; null hook = phase absent',
+  '    provision:    null        # runs after `git worktree add`',
+  '    port_assign:  null        # allocates a dev port for the worktree; MUST print the port to stdout',
+  "    port_release: null        # frees the worktree's port at cleanup",
+  "    dev_server:   null        # starts the worktree's dev server (Sentasity-only in practice)",
+  '    deploy_guard: null        # exits non-zero if a deploy is not allowed from here (Sentasity-only)',
+].join('\n') + '\n';
+
+test('relocation: whole-block append copies customized legacy values into worktree (load-bearing)', () => {
+  // A real v3 config has NO worktree: block, so migration takes the
+  // whole-block append path. Customized execute.worktree_dir /
+  // execute.integrate must land in the new block; defaults must not shadow.
+  const proj = [
+    'config_version: 4',
+    'execute:',
+    '  branch_check: true',
+    '  worktree_dir: .claude/worktrees   # custom home',
+    '  integrate: merge-commit     # repo forbids history rewriting',
+  ].join('\n') + '\n';
+  const missing = detectMissingKeys(proj, V4_DEFAULTS);
+  assert.ok(missing.missingBlocks.includes('worktree'), 'v3 config is missing the whole worktree block');
+  const out = mergeMissing(proj, V4_DEFAULTS, missing);
+  // Legacy values carried into the new keys (defaults comment preserved).
+  assert.match(out, /^ {2}dir: \.claude\/worktrees\b/m);
+  assert.match(out, /^ {2}integrate: merge-commit {3}# rebase-ff \| merge-commit \(relocated from execute\.integrate\)$/m);
+  // Defaults did NOT shadow the customized values.
+  assert.doesNotMatch(out, /^ {2}dir: \.cadence\/worktrees\b/m);
+  assert.doesNotMatch(out, /^ {2}integrate: rebase-ff\b/m);
+  // Non-relocated keys keep their defaults; hooks come along verbatim.
+  assert.match(out, /^ {2}merge_lock: true\b/m);
+  assert.match(out, /^ {2}lock_stale_threshold: 600\b/m);
+  assert.match(out, /^ {4}provision: {4}null\b/m);
+  // The legacy keys are never deleted.
+  assert.match(out, /^ {2}worktree_dir: \.claude\/worktrees {3}# custom home$/m);
+});
+
+test('relocation: a default-valued v3 config ends at the defaults', () => {
+  // No legacy keys at all -> pure defaults.
+  const bare = 'execute:\n  branch_check: true\n';
+  const outBare = mergeMissing(bare, V4_DEFAULTS, detectMissingKeys(bare, V4_DEFAULTS));
+  assert.match(outBare, /^ {2}dir: \.cadence\/worktrees\b/m);
+  assert.match(outBare, /^ {2}integrate: rebase-ff\b/m);
+  // Legacy keys present at default values -> the value-copy lands the same defaults.
+  const dflt = [
+    'execute:',
+    '  worktree_dir: .cadence/worktrees',
+    '  integrate: rebase-ff',
+  ].join('\n') + '\n';
+  const outDflt = mergeMissing(dflt, V4_DEFAULTS, detectMissingKeys(dflt, V4_DEFAULTS));
+  assert.match(outDflt, /^ {2}dir: \.cadence\/worktrees\b/m);
+  assert.match(outDflt, /^ {2}integrate: rebase-ff\b/m);
+});
+
+test('relocation: nested insert into an existing worktree block carries legacy values', () => {
+  // Hand-built partial worktree block: dir/integrate arrive as missingNested
+  // keys, not a whole-block append. The same value-copy applies on this path.
+  const proj = [
+    'execute:',
+    '  branch_check: true',
+    '  worktree_dir: .claude/worktrees',
+    '  integrate: merge-commit',
+    'worktree:',
+    '  merge_lock: true',
+  ].join('\n') + '\n';
+  const missing = detectMissingKeys(proj, V4_DEFAULTS);
+  assert.ok(
+    missing.missingNested.some((e) => e.block === 'worktree' && e.key === 'dir'),
+    'dir is a missing nested key under the existing worktree block'
+  );
+  const out = mergeMissing(proj, V4_DEFAULTS, missing);
+  const lines = out.split('\n');
+  const wt = lines.slice(lines.indexOf('worktree:'));
+  assert.ok(wt.some((l) => /^ {2}dir: \.claude\/worktrees\b/.test(l)), 'dir carried into worktree block');
+  assert.ok(wt.some((l) => /^ {2}integrate: merge-commit\b/.test(l)), 'integrate carried into worktree block');
+  assert.ok(!wt.some((l) => /^ {2}integrate: rebase-ff\b/.test(l)), 'default did not shadow the legacy value');
+});
+
+test('relocationsFor: names only the relocations backed by a legacy project key', () => {
+  const proj = [
+    'execute:',
+    '  integrate: merge-commit   # custom',
+  ].join('\n') + '\n';
+  const missing = detectMissingKeys(proj, V4_DEFAULTS);
+  assert.deepStrictEqual(relocationsFor(proj, missing), [
+    'execute.integrate -> worktree.integrate',
+  ]);
+});
+
+function setupTempV4(projConfigText) {
+  const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cad-proj-'));
+  const pluginRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cad-plugin-'));
+  fs.mkdirSync(path.join(pluginRoot, 'defaults'), { recursive: true });
+  fs.writeFileSync(path.join(pluginRoot, 'defaults', 'config.default.yaml'), V4_DEFAULTS);
+  fs.mkdirSync(path.join(projectDir, '.cadence'), { recursive: true });
+  fs.writeFileSync(path.join(projectDir, '.cadence', 'config.yaml'), projConfigText);
+  return { projectDir, pluginRoot };
+}
+
+test('main: 3->4 carries customized values and advises removing the legacy keys', () => {
+  const proj = [
+    'config_version: 3',
+    'execute:',
+    '  branch_check: true',
+    '  worktree_dir: .claude/worktrees   # custom home',
+    '  integrate: merge-commit',
+  ].join('\n') + '\n';
+  const { projectDir, pluginRoot } = setupTempV4(proj);
+  const { logs, warns } = runMain(projectDir, pluginRoot);
+  assert.deepStrictEqual(warns, []);
+  assert.strictEqual(logs.length, 1);
+  assert.match(logs[0], /execute\.worktree_dir -> worktree\.dir/);
+  assert.match(logs[0], /execute\.integrate -> worktree\.integrate/);
+  assert.match(logs[0], /remove them manually/);
+  const after = fs.readFileSync(path.join(projectDir, '.cadence', 'config.yaml'), 'utf8');
+  assert.match(after, /^config_version: 4/m);
+  assert.match(after, /^ {2}dir: \.claude\/worktrees\b/m);
+  assert.match(after, /^ {2}integrate: merge-commit {3}# rebase-ff \| merge-commit \(relocated from execute\.integrate\)$/m);
+  // Legacy keys left in place (the migrator never deletes).
+  assert.match(after, /^ {2}worktree_dir: \.claude\/worktrees/m);
 });
