@@ -223,3 +223,60 @@ before stealing. So when YOUR hold runs long during conflict resolution, expect
 other sessions to be shown the steal prompt; and when YOU see `STALE`, remember
 the holder may be a live human mid-conflict — which is exactly why you never
 steal without the user's explicit yes.
+
+## Cleanup phase
+
+Run after a merge lands (outside the lock), or on request for an abandoned
+worktree.
+
+1. **Stop the dev server first** — otherwise it lingers (RAM + a held port) and
+   its cwd is about to be deleted. Kill by the worktree's **own** recorded port,
+   never `:3000`:
+   ```bash
+   port="$(git config branch.<branch>.devPort 2>/dev/null || true)"
+   if [ -n "$port" ]; then pids="$(lsof -ti tcp:"$port" 2>/dev/null)"; [ -n "$pids" ] && kill $pids; fi
+   ```
+2. **Remove the worktree:** `git worktree remove <worktree.dir>/<branch>` — from
+   outside the directory being removed (see the topology notes in
+   `references/merging.md`).
+3. **Delete the branch:** `git branch -d <branch>` — or `-D` only after the user
+   confirmed a squash captured everything (`references/merging.md` §4).
+4. **Run the `port_release` hook** if set (cwd `$MAIN_ROOT` — the worktree is
+   already gone).
+5. **Unset the branch config:**
+   ```bash
+   git config --unset branch.<branch>.parent  2>/dev/null || true
+   git config --unset branch.<branch>.devPort 2>/dev/null || true
+   ```
+
+## Deploy phase
+
+**Absent unless the `deploy_guard` hook is set** — the plugin owns no deploy
+logic, and **this skill never deploys** either way.
+
+When the hook is set and a deploy is requested from a worktree context: run
+`deploy_guard` (cwd = the directory the deploy was attempted from; that location
+is what it judges). On non-zero exit, **refuse the deploy** and explain the flow:
+merge the feature home first (merge phase), then deploy from the main worktree.
+A repo's guard may also fire inside its own build targets independently of this
+skill; the hook is then a second line of defense plus a better explanation, not
+the enforcement.
+
+## What `/c-worktree` doesn't do
+
+- Doesn't deploy — ever. `deploy_guard` only judges and refuses.
+- Doesn't auto-steal a stale lock, auto-resolve conflicts, or auto-stash /
+  auto-switch the target worktree.
+- Doesn't touch `/c-execute`'s lane worktrees (`cadence/lane-*`) — those belong
+  to the execution engine, even when they share `worktree.dir`.
+- Doesn't require any Cadence design, plan, or other `/c-*` skill.
+
+## References
+
+- **Shared lifecycle authority: `skills/_shared/worktree-lifecycle.md`** —
+  naming, the lock as a shared step, the config hook points, the lock's
+  `--wait-budget` default, and the `cadence/lane-*`-only prune scoping both
+  skills honor. If this skill and that doc ever read differently, the shared doc
+  wins.
+- Merge mechanics: `references/merging.md`.
+- Design source: [[../../designs/2026-06-09-c-worktree/03-c-worktree-skill]].
