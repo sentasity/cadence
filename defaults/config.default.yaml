@@ -1,7 +1,7 @@
 # Cadence plugin defaults. Per-repo .cadence/config.yaml overrides only what differs.
 # No assumption of obsidian or any specific repo layout.
 
-config_version: 3          # schema version; drives migration detection
+config_version: 4          # schema version; drives migration detection
 
 paths:
   designs: docs/designs
@@ -31,10 +31,20 @@ execute:
   auto_resolve_drift: false
   parallel: true           # master switch; false => sequential, no worktrees
   max_parallel: 4          # concurrent implementer lanes (= worktrees); reviewers uncapped
-  worktree_dir: .cadence/worktrees   # where lane worktrees live
   worktree_confirm: true   # one-time pre-flight worktree confirmation
-  integrate: rebase-ff     # rebase-ff | merge-commit (history-rewrite policy)
   resume_on_dirty_tree: false
+
+worktree:
+  dir: .cadence/worktrees     # canonical home (relocated from execute.worktree_dir)
+  integrate: rebase-ff        # rebase-ff | merge-commit (relocated from execute.integrate)
+  merge_lock: true            # on by default; both /c-worktree and /c-execute acquire it
+  lock_stale_threshold: 600   # seconds; past this a held lock surfaces "steal it?" (never auto-steal)
+  hooks:                      # all null by default -> generic behavior; null hook = phase absent
+    provision:    null        # runs after `git worktree add`
+    port_assign:  null        # allocates a dev port for the worktree; MUST print the port to stdout
+    port_release: null        # frees the worktree's port at cleanup
+    dev_server:   null        # starts the worktree's dev server (Sentasity-only in practice)
+    deploy_guard: null        # exits non-zero if a deploy is not allowed from here (Sentasity-only)
 
 authoring:
   max_parallel: 6          # concurrent doc-generator agents (no worktrees; cheap)
