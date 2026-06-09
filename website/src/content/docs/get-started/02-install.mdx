@@ -1,6 +1,6 @@
 ---
 title: Install Cadence
-description: Install the plugin in Claude Code and confirm the nine commands are available.
+description: Install the plugin in Claude Code and confirm the ten commands are available.
 sidebar:
   order: 2
 ---
@@ -20,7 +20,7 @@ With the mental model in hand (six stages, readable artifacts, gates you approve
 ```
   </TabItem>
   <TabItem label="What you'll see">
-After a session restart, all nine `/c-*` commands are available. There's no separate setup step. The first time you run `/c-brainstorm` in a fresh repo, Cadence offers to scaffold its config for you (you'll do that in the next lesson).
+After a session restart, all ten `/c-*` commands are available. There's no separate setup step. The first time you run `/c-brainstorm` in a fresh repo, Cadence offers to scaffold its config for you (you'll do that in the next lesson).
   </TabItem>
 </Tabs>
 
@@ -28,15 +28,15 @@ After a session restart, all nine `/c-*` commands are available. There's no sepa
 The commands appear only after you restart your Claude Code session. If `/c-brainstorm` isn't recognized, restart and try again.
 </Aside>
 
-## Confirm the nine commands are there
+## Confirm the ten commands are there
 
 <Walkthrough title="Confirm Cadence is installed">
   <Fragment slot="step-1-title">Restart your Claude Code session</Fragment>
   <Fragment slot="step-1-body">After `/plugin install cadence@cadence`, fully restart the session so the plugin's commands register.</Fragment>
   <Fragment slot="step-2-title">Type a slash and look for `/c-`</Fragment>
-  <Fragment slot="step-2-body">Begin typing `/c-` in the prompt. You should see the six core commands (`/c-brainstorm`, `/c-design`, `/c-plan`, `/c-execute`, `/c-audit`, `/c-validate`) and the three diagnostics (`/c-check`, `/c-find-bugs`, `/c-explain`).</Fragment>
+  <Fragment slot="step-2-body">Begin typing `/c-` in the prompt. You should see the six core commands (`/c-brainstorm`, `/c-design`, `/c-plan`, `/c-execute`, `/c-audit`, `/c-validate`), the three diagnostics (`/c-check`, `/c-find-bugs`, `/c-explain`), and the `/c-worktree` utility.</Fragment>
   <Fragment slot="step-3-title">You're ready</Fragment>
-  <Fragment slot="step-3-body">Nine commands visible means the plugin is live in this repo and every other repo on your machine. Move on to your first brainstorm.</Fragment>
+  <Fragment slot="step-3-body">Ten commands visible means the plugin is live in this repo and every other repo on your machine. The tenth, `/c-worktree`, is a worktree utility, not a pipeline stage; the course doesn't use it. Move on to your first brainstorm.</Fragment>
 </Walkthrough>
 
 Throughout the rest of Get Started you'll build one tiny feature (a function that prints the current time) and at the end compare your output against the finished worked example shipped with Cadence at `examples/hello-cadence/`. Same shape of artifacts means you did it right.

@@ -39,7 +39,7 @@ Cadence runs your idea through six core stages, in order. Each one has a slash c
 5. **Audit** (`/c-audit`): an independent check proves the code matches the plan.
 6. **Validate** (`/c-validate`): a post-deploy walkthrough confirms the live thing actually works, then marks the work done.
 
-There are also three **diagnostic** commands you can run any time, off to the side of the pipeline: `/c-check`, `/c-find-bugs`, and `/c-explain`. That's nine commands in total. You meet the diagnostics in the last deep dive.
+There are also three **diagnostic** commands you can run any time, off to the side of the pipeline: `/c-check`, `/c-find-bugs`, and `/c-explain`. That's nine commands in total. You meet the diagnostics in the last deep dive. The plugin also installs one **utility** command that sits outside the pipeline entirely: `/c-worktree`, for driving isolated git worktrees by hand.
 
 The whole pipeline, with the gate on each arrow (the thing *you* do to let the work advance):
 
