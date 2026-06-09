@@ -1,7 +1,7 @@
 # Cadence config for the Cadence plugin source repo (dogfooding).
 # Overrides only what differs from defaults/config.default.yaml.
 
-config_version: 3
+config_version: 4
 paths:
   designs: docs/designs
   plans:   docs/plans
@@ -19,9 +19,19 @@ execute:
   max_parallel: 5
   resume_on_dirty_tree: false
   parallel: true           # master switch; false => sequential, no worktrees
-  worktree_dir: .cadence/worktrees   # where lane worktrees live
   worktree_confirm: true   # one-time pre-flight worktree confirmation
-  integrate: rebase-ff     # rebase-ff | merge-commit (history-rewrite policy)
+
+worktree:
+  dir: .cadence/worktrees     # canonical home (relocated from execute.worktree_dir)
+  integrate: rebase-ff        # rebase-ff | merge-commit (relocated from execute.integrate)
+  merge_lock: true            # on by default; both /c-worktree and /c-execute acquire it
+  lock_stale_threshold: 600   # seconds; past this a held lock surfaces "steal it?" (never auto-steal)
+  hooks:                      # all null by default -> generic behavior; null hook = phase absent
+    provision:    null        # runs after `git worktree add`
+    port_assign:  null        # allocates a dev port for the worktree; MUST print the port to stdout
+    port_release: null        # frees the worktree's port at cleanup
+    dev_server:   null        # starts the worktree's dev server (Sentasity-only in practice)
+    deploy_guard: null        # exits non-zero if a deploy is not allowed from here (Sentasity-only)
 
 advisors:
   enabled: false
