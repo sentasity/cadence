@@ -1,0 +1,49 @@
+---
+title: /c-worktree
+sidebar:
+  order: 10
+---
+
+Source of truth: `skills/c-worktree/SKILL.md`. `/c-worktree` is a **utility command**, not a pipeline stage. For the worktree model it shares with `/c-execute`, read [Parallelism & worktrees](/cadence/concepts/parallelism-and-worktrees/).
+
+## Purpose
+
+Drives the interactive git-worktree lifecycle by hand: create an isolated worktree on its own branch, optionally run its dev server, merge the work back behind a shared lock, and clean everything up. It needs no design, no plan, and no other `/c-*` command to be useful.
+
+## When to use it
+
+Use `/c-worktree` whenever you want isolated feature work in its own working directory: a side experiment, parallel sessions on one repo, or any branch you'd rather not develop in your main checkout. It works in any git repo. With no `worktree:` config at all it still runs the full generic lifecycle (plain `git worktree add`, a lock-guarded merge, cleanup); a repo's config hooks add the repo-specific parts (provisioning, a dev port, a dev server, a deploy guard).
+
+## Invocation forms
+
+- `/c-worktree` or `/c-worktree create [<branch>]`: create a new worktree. The base branch is chosen by an explicit question, never assumed; a base you name is honored.
+- `/c-worktree merge [<feature>]`: from inside a feature worktree, merge the current branch back into its recorded parent (fallback: the branch checked out in the main worktree). From the main/target worktree, `<feature>` merges into the current branch.
+- `/c-worktree cleanup [<feature>]`: stop the dev server, remove the worktree, delete the branch, and release the port.
+
+The dev-server and deploy phases have no invocation of their own: the dev server starts only when the `worktree.hooks.dev_server` hook is configured, and the deploy guard fires only when a deploy is requested from a worktree context.
+
+## Inputs & preconditions
+
+Any git repo. It refuses to nest: creating a worktree from inside another worktree is detected (by comparing `git-dir` with `git-common-dir`) and rejected. The `worktree:` config section is optional; every hook is `null` by default, and a `null` hook means that lifecycle phase simply does not exist. Worktrees are created under `worktree.dir` (default `.cadence/worktrees`, the same directory `/c-execute`'s lanes use), which is added to `.gitignore` if absent.
+
+## What it produces
+
+- **Create:** a worktree at `<worktree.dir>/<branch>` on a new branch cut from the base you chose, with the base recorded as `git config branch.<branch>.parent`. When a `port_assign` hook is configured, the assigned dev port persists as `git config branch.<branch>.devPort` so a later session can find it without repo-specific files.
+- **Merge:** the feature branch integrated into its target per the merge type you pick (squash, merge commit, or fast-forward; the default policy comes from `worktree.integrate`), performed under the shared merge lock.
+- **Cleanup:** the dev server stopped (killed by the recorded `devPort`, never an assumed port), the worktree removed, the branch deleted, and the `parent` / `devPort` git-config entries unset.
+
+## Gates & guarantees
+
+- Base selection asks, never assumes: if you didn't name a base, it gathers candidates and asks, with a reasoned recommendation.
+- All merge interaction happens **before** the lock: source/target resolution, the what-will-move review, and the merge-type menu come first, so the lock is held only for the git operations.
+- The shared merge lock (`worktree.merge_lock`, on by default) serializes concurrent merges into the same integration branch, including against `/c-execute`'s lane landings.
+- A lock held past `worktree.lock_stale_threshold` is never stolen automatically: it shows you the holder's branch, worktree path, and age, and asks whether to steal.
+- Merge conflicts are never auto-resolved.
+- It never deploys. The `deploy_guard` hook can only refuse a deploy and explain the merge-first-then-deploy-from-main flow.
+- A failed `provision` hook never leaves a silently broken worktree: the failure is surfaced with an offer to remove the half-created worktree.
+
+## Related commands
+
+- **[`/c-execute`](/cadence/reference/c-execute/)** uses the same `worktree.dir`, the same `worktree.integrate` policy, and the same merge lock for its autonomous lanes.
+- **Configuration:** the [`worktree` section](/cadence/reference/config/#worktree) of the config reference documents `dir`, `integrate`, `merge_lock`, `lock_stale_threshold`, and the five hooks with their execution contract.
+- **Concept:** [Parallelism & worktrees](/cadence/concepts/parallelism-and-worktrees/) for the worktree model.
