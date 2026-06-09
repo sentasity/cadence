@@ -220,10 +220,150 @@ function defaultValueOf(defaultsText, block, key) {
 }
 
 /**
+ * Key relocations applied during migration. Maps a NEW '<block>.<key>' path
+ * to the legacy [block, key] it relocates from. When the new key is being
+ * inserted (whole-block append or nested insert) and the legacy key exists
+ * in the project config, the legacy VALUE is copied into the new key
+ * (value-move); the default value is used only when no legacy key exists.
+ * The migrator never deletes the legacy keys.
+ *
+ * Matching is by key name within the named block's lines; the current map
+ * has no grandchild key (e.g. under worktree.hooks) that collides with a
+ * relocated key name.
+ */
+const RELOCATIONS = {
+  'worktree.dir': ['execute', 'worktree_dir'],
+  'worktree.integrate': ['execute', 'integrate'],
+};
+
+/**
+ * Read the project's VALUE for a child key under a block, with any trailing
+ * inline comment stripped and surrounding whitespace trimmed. Returns null
+ * if the block or key is absent, or the key has no scalar value text.
+ *
+ * @param {string} projectText
+ * @param {string} block
+ * @param {string} key
+ * @returns {string | null}
+ */
+function projectValueOf(projectText, block, key) {
+  const lines = splitLines(projectText);
+  const span = findBlockSpan(lines, block);
+  if (!span) {
+    return null;
+  }
+  for (let i = span.start + 1; i < span.bodyEnd; i++) {
+    const m = lines[i].match(/^\s+([A-Za-z0-9_-]+):(.*)$/);
+    if (m && m[1] === key) {
+      const value = m[2].replace(/\s+#.*$/, '').trim();
+      return value === '' ? null : value;
+    }
+  }
+  return null;
+}
+
+/**
+ * The legacy project value for a new `block.key` path, or null when the
+ * path has no relocation or the legacy key is absent.
+ *
+ * @param {string} projectText
+ * @param {string} block
+ * @param {string} key
+ * @returns {string | null}
+ */
+function relocatedValueOf(projectText, block, key) {
+  const legacy = RELOCATIONS[`${block}.${key}`];
+  if (!legacy) {
+    return null;
+  }
+  return projectValueOf(projectText, legacy[0], legacy[1]);
+}
+
+/**
+ * Rewrite one to-be-inserted `  key: value   # comment` line so the VALUE
+ * is the project's legacy value when a relocation applies. The defaults'
+ * inline comment is preserved; non-relocated lines pass through untouched.
+ *
+ * @param {string} line
+ * @param {string} block
+ * @param {string} projectText
+ * @returns {string}
+ */
+function relocateLine(line, block, projectText) {
+  const m = line.match(/^(\s+)([A-Za-z0-9_-]+):(.*)$/);
+  if (!m) {
+    return line;
+  }
+  const legacyValue = relocatedValueOf(projectText, block, m[2]);
+  if (legacyValue === null) {
+    return line;
+  }
+  const cm = m[3].match(/^\s*([^#]*?)\s*(#.*)?$/);
+  const comment = cm && cm[2] ? `   ${cm[2]}` : '';
+  return `${m[1]}${m[2]}: ${legacyValue}${comment}`;
+}
+
+/**
+ * Apply relocations to every child line of a verbatim defaults block before
+ * it is appended to the project config.
+ *
+ * @param {string} blockText
+ * @param {string} block
+ * @param {string} projectText
+ * @returns {string}
+ */
+function applyRelocationsToBlock(blockText, block, projectText) {
+  return blockText
+    .split('\n')
+    .map((line) => relocateLine(line, block, projectText))
+    .join('\n');
+}
+
+/**
+ * Which relocations will carry a legacy project value during this
+ * migration. Returns entries like 'execute.integrate -> worktree.integrate'
+ * for every RELOCATIONS path that (a) is about to be inserted per `missing`
+ * and (b) has its legacy key present in the project. Used for the
+ * migration notice.
+ *
+ * @param {string} projectText
+ * @param {{ missingBlocks: string[], missingNested: Array<{block: string, key: string}> }} missing
+ * @returns {string[]}
+ */
+function relocationsFor(projectText, missing) {
+  const missingPaths = new Set();
+  for (const block of missing.missingBlocks) {
+    for (const newPath of Object.keys(RELOCATIONS)) {
+      if (newPath.startsWith(`${block}.`)) {
+        missingPaths.add(newPath);
+      }
+    }
+  }
+  for (const { block, key } of missing.missingNested) {
+    missingPaths.add(`${block}.${key}`);
+  }
+  const applied = [];
+  for (const newPath of Object.keys(RELOCATIONS)) {
+    if (!missingPaths.has(newPath)) {
+      continue;
+    }
+    const [legacyBlock, legacyKey] = RELOCATIONS[newPath];
+    if (projectValueOf(projectText, legacyBlock, legacyKey) !== null) {
+      applied.push(`${legacyBlock}.${legacyKey} -> ${newPath}`);
+    }
+  }
+  return applied;
+}
+
+/**
  * Additive text merge. Inserts missing nested keys inside their existing
  * blocks (at the block's child indentation, with the default value) and
  * appends whole missing top-level blocks verbatim at EOF (single blank-line
  * separated). Never reorders or rewrites existing lines.
+ *
+ * Relocated keys (RELOCATIONS) are the one exception to "default value":
+ * when the project still carries the legacy key, its value is copied into
+ * the inserted new key (value-move), on both insert paths.
  *
  * @param {string} projectText
  * @param {string} defaultsText
@@ -251,8 +391,12 @@ function mergeMissing(projectText, defaultsText, missing) {
       // skip defensively.
       continue;
     }
-    const newLines = byBlock[block].map(
-      (key) => `${indent}${key}:${defaultValueOf(defaultsText, block, key)}`
+    const newLines = byBlock[block].map((key) =>
+      relocateLine(
+        `${indent}${key}:${defaultValueOf(defaultsText, block, key)}`,
+        block,
+        projectText
+      )
     );
     lines = lines
       .slice(0, span.bodyEnd)
@@ -260,10 +404,15 @@ function mergeMissing(projectText, defaultsText, missing) {
       .concat(lines.slice(span.bodyEnd));
   }
 
-  // 2. Whole blocks: append at EOF, single blank-line separated.
+  // 2. Whole blocks: append at EOF, single blank-line separated, with
+  //    relocated child values copied from the project's legacy keys.
   let text = lines.join('\n');
   for (const block of missing.missingBlocks) {
-    const blockText = extractBlock(defaultsText, block);
+    const blockText = applyRelocationsToBlock(
+      extractBlock(defaultsText, block),
+      block,
+      projectText
+    );
     // Ensure the existing text ends with exactly one newline, then one blank
     // line, then the block.
     text = text.replace(/\n*$/, '\n');
@@ -328,6 +477,8 @@ module.exports = {
   mergeMissing,
   bumpOrInsertVersion,
   assertParseable,
+  projectValueOf,
+  relocationsFor,
   main,
 };
 
@@ -366,10 +517,12 @@ function main() {
 
   let merged;
   let missing;
+  let relocated = [];
   try {
     assertParseable(proj);
     merged = bumpOrInsertVersion(proj, defVer);
     missing = detectMissingKeys(merged, def);
+    relocated = relocationsFor(merged, missing);
     merged = mergeMissing(merged, def, missing);
   } catch (err) {
     console.warn(
@@ -392,9 +545,11 @@ function main() {
   for (const { block, key } of missing.missingNested) {
     added.push(`${block}.${key}`);
   }
-  console.log(
-    `Cadence config migrated to v${defVer}: added ${added.join(', ')} (defaults). Edit .cadence/config.yaml to tune.`
-  );
+  let notice = `Cadence config migrated to v${defVer}: added ${added.join(', ')} (defaults). Edit .cadence/config.yaml to tune.`;
+  if (relocated.length > 0) {
+    notice += ` Carried over ${relocated.join(', ')}. The legacy keys are no longer read now that worktree: carries their values; you can remove them manually.`;
+  }
+  console.log(notice);
 }
 
 if (require.main === module) {
