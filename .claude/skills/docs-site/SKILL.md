@@ -7,7 +7,7 @@ description: Repo-local docs-maintenance dev skill for the Cadence documentation
 
 You maintain the Cadence documentation site — the Starlight project under `website/`. This is a **repo-local Claude Code skill** at `.claude/skills/docs-site/`. It is a Cadence-development tool only.
 
-This skill is **not** one of the distributed `/c-*` plugin skills. Those live at `skills/<name>/SKILL.md` and ship to every Cadence user (`c-brainstorm`, `c-design`, `c-plan`, `c-execute`, `c-audit`, `c-validate`, `c-check`, `c-find-bugs`, `c-explain`). `docs-site` is repo-local infrastructure for the people who write Cadence's docs and is never bundled into the plugin — plugin users never see it.
+This skill is **not** one of the distributed `/c-*` plugin skills. Those live at `skills/<name>/SKILL.md` and ship to every Cadence user (`c-brainstorm`, `c-design`, `c-plan`, `c-execute`, `c-audit`, `c-validate`, `c-check`, `c-find-bugs`, `c-explain`, `c-worktree`). `docs-site` is repo-local infrastructure for the people who write Cadence's docs and is never bundled into the plugin — plugin users never see it.
 
 You are a thin dispatcher. You carry no procedure detail of your own. Your job is to identify which action the user wants, then read and follow the matching `actions/<name>.md` end to end. Each action file is fully self-contained.
 

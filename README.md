@@ -9,7 +9,7 @@
 
 > **Docs:** [sentasity.github.io/cadence](https://sentasity.github.io/cadence/) — a guided course and per-command reference.
 
-Cadence is a Claude Code plugin that turns "I want to build X" into a working, validated implementation through nine slash commands: six core-flow (`/c-brainstorm` → `/c-design` → `/c-plan` → `/c-execute` → `/c-audit` → `/c-validate`) plus three diagnostic (`/c-check`, `/c-find-bugs`, `/c-explain`). Each stage produces a tangible artifact. Each gate is explicit. No atomic chains. No silent drift. No deferred TODOs in code.
+Cadence is a Claude Code plugin that turns "I want to build X" into a working, validated implementation through nine slash commands: six core-flow (`/c-brainstorm` → `/c-design` → `/c-plan` → `/c-execute` → `/c-audit` → `/c-validate`) plus three diagnostic (`/c-check`, `/c-find-bugs`, `/c-explain`). A tenth command, `/c-worktree`, ships alongside them as a standalone utility for the interactive git-worktree lifecycle, not a pipeline stage. Each stage produces a tangible artifact. Each gate is explicit. No atomic chains. No silent drift. No deferred TODOs in code.
 
 Built for users who are strong on operations and ideation but can't verify code by reading diffs — Cadence's audit and validation layers carry that load.
 
@@ -20,7 +20,7 @@ Built for users who are strong on operations and ideation but can't verify code 
 /plugin install cadence@cadence
 ```
 
-After session restart, all nine `/c-*` commands work in every repo on your machine. First time you run `/c-brainstorm` in a fresh repo, Cadence detects there's no config and offers to scaffold one with three questions — no separate setup step.
+After session restart, all ten `/c-*` commands work in every repo on your machine (the tenth, `/c-worktree`, is a standalone worktree utility, not a pipeline stage). First time you run `/c-brainstorm` in a fresh repo, Cadence detects there's no config and offers to scaffold one with three questions — no separate setup step.
 
 ## Demo
 
@@ -58,7 +58,7 @@ $ 1
 
 You then run `/c-design` (writes child docs one at a time, with "look good?" pauses), `/c-plan` (translates the approved design into an execution-ordered plan), `/c-execute` (PM-and-sub-agents drives the plan to completion with two-stage review per task), and `/c-validate` (walks the post-deploy validation doc).
 
-## The eight skills
+## The ten skills
 
 **Core flow** — the lifecycle of one piece of work:
 
@@ -78,6 +78,12 @@ You then run `/c-design` (writes child docs one at a time, with "look good?" pau
 | `/c-check <path>` | Substance review of a design or plan: accuracy, completeness, gaps. Asks: "is this good?" |
 | `/c-find-bugs <target>` | Concrete defect hunting. Targets: design, plan, branch, file, or `--repo`. |
 | `/c-explain <path>` | Interactive discussion of an existing design or plan. Orientation + open Q&A, grounded in doc and code. Asks: "what does it say & how does it work?" |
+
+**Utility** (outside the pipeline, works in any git repo):
+
+| Skill | What it does |
+|---|---|
+| `/c-worktree` | Interactive git-worktree lifecycle: create (base chosen by an explicit question), optional dev server via config hooks, lock-guarded merge back, cleanup. Shares its merge lock and `worktree:` config with `/c-execute`. |
 
 ## When to use which diagnostic
 

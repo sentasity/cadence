@@ -31,6 +31,7 @@ Real code committed to the branch (one commit per task), every plan checkbox fli
 
 - Two-stage review on every change: a spec review then a code review; on conflict, spec wins.
 - Parallel work runs in isolated worktrees scheduled by each task's dependencies, with a guard that serializes any two tasks touching the same files.
+- Merging a lane back (merge-on-land) acquires the shared merge lock, so cross-session merges into the same working branch (for example, a concurrent `/c-worktree` merge) serialize instead of colliding (gated by `worktree.merge_lock`).
 - A completion audit must pass before the status can flip to `implemented`.
 - On any block it surfaces three explicit paths (fix, mark out of scope, or abort) and never works around a blocker silently.
 - It never auto-deploys, never amends commits, never skips commit hooks, and never reads the whole repo on every worker dispatch.
