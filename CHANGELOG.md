@@ -2,6 +2,26 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.7.0 (2026-06-09)
+
+Worktree unification: one config-driven git-worktree lifecycle, shared by the new interactive `/c-worktree` utility command and `/c-execute`'s parallel lanes.
+
+### Added
+
+- **`/c-worktree` skill** (`skills/c-worktree/SKILL.md` + `skills/c-worktree/references/merging.md`): the interactive git-worktree lifecycle as a standalone utility command, not a pipeline stage. Create (base selection asks, never assumes; the base is recorded as `git config branch.<branch>.parent`), optional dev server, lock-guarded merge back (all interaction happens before the lock; merge-type menu from `references/merging.md`), cleanup (dev server killed by the recorded `devPort`, never an assumed port), and a config-gated deploy guard that refuses and explains but never deploys. The generic core works in any git repo with no `worktree:` config at all.
+- **Top-level `worktree:` config section** (`config_version` 3 → 4): `dir` and `integrate` (relocated from `execute.worktree_dir` / `execute.integrate`), `merge_lock` (default `true`), `lock_stale_threshold` (default `600` seconds), and five optional shell-command hooks (`provision`, `port_assign`, `port_release`, `dev_server`, `deploy_guard`) with a pinned execution contract (exported `WT_PATH` / `MAIN_ROOT` / `BRANCH` / `DEV_PORT` env, per-hook cwd, stdout semantics, per-hook failure semantics). A `null` hook means that lifecycle phase does not exist.
+- **Shared merge lock** (`scripts/merge-lock.sh` + `scripts/test-merge-lock.sh`): a repo-global lock in the git common dir, acquired by both `/c-worktree` merges and `/c-execute` merge-on-land, so an untracked concurrent merge into the same integration branch serializes instead of colliding. On by default; a stale lock is surfaced with the holder's branch, worktree path, and age, and is never stolen automatically.
+
+### Changed
+
+- **`/c-execute` merge-on-land acquires the shared merge lock** (gated by `worktree.merge_lock`), with WAITING-poll and stale-quiesce paths. Lane formation, the DAG, the `Touches:` guard, and the two-stage review model are unchanged.
+- **The `config_version` 3 → 4 migration is a value-move, not a plain insert.** `execute.worktree_dir` / `execute.integrate` relocate to `worktree.dir` / `worktree.integrate`, and customized legacy values are carried across so an inserted default can never shadow them. Skills read the new keys with a one-release fallback to the legacy `execute.*` keys; the migrator never deletes the legacy keys, and its console message advises removing them manually.
+- **Docs site**: new `/c-worktree` reference page; the config reference gains the `worktree` section (including the hook execution contract) and drops the relocated `execute.*` rows behind a fallback note; the parallelism concept page points at `worktree.integrate` and notes the shared lock; install-page command counts move nine → ten with a note that the tenth is a utility, not a pipeline stage.
+
+### Why
+
+Two unrelated worktree systems existed side by side: `/c-execute`'s autonomous lane worktrees (config-driven, shipped in the plugin) and a user-global interactive `/wt` skill (full lifecycle with dev server and deploy guard, repo specifics hardcoded in prose, never published). Unifying them yields one config-driven lifecycle core: the interactive flow ships in the plugin as `/c-worktree`, repo-specific behavior moves into the `worktree.hooks.*` config, and the shared merge lock lets a human-driven merge and an autonomous lane landing into the same branch serialize instead of colliding. The user-global `/wt` skill retires once behavior parity is confirmed.
+
 ## v0.6.0 (2026-05-29)
 
 Parallelism amendment: lane = phase file. Fewer, fatter worktrees; chunkier authoring.
