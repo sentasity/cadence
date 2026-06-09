@@ -76,3 +76,82 @@ everything a hook may rely on (the public config reference restates it):
   unavailable). `dev_server` failure → surface it. `port_release` failure →
   surface it but continue cleanup. `deploy_guard` failure → refuse the deploy and
   explain the merge-first-then-deploy-from-main flow.
+
+## Create phase
+
+1. **Detect existing isolation first.** Don't nest worktrees.
+   ```bash
+   GIT_DIR=$(cd "$(git rev-parse --git-dir)" && pwd -P)
+   GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" && pwd -P)
+   ```
+   If they differ (and `git rev-parse --show-superproject-working-tree` is empty,
+   i.e. not a submodule), you're already in a linked worktree — **refuse to
+   nest**: say so and stop the create. Work here instead, or run the merge or
+   cleanup phases; never create a worktree from inside one.
+2. **Choose the base branch — ask, never assume.** A worktree branches off some
+   base; pick the wrong one and you silently build the feature on the wrong code.
+   Do NOT decide this on your own.
+   - **If the user already named a base** (in their request, as `BASE=…`, or e.g.
+     "new worktree off `develop`"), honor it — no question needed.
+   - **Otherwise gather the candidates and ask.** Two almost always matter; find
+     them, don't guess:
+     - the **integration branch** — where features go home before release: the
+       repo's documented flow (CLAUDE.md / CONTRIBUTING), else the remote HEAD
+       (`git symbolic-ref --short refs/remotes/origin/HEAD` → strip `origin/`),
+       else `git config --get init.defaultBranch`.
+     - the **current branch** — `git rev-parse --abbrev-ref HEAD`.
+   - **Recommend one, then ask with `AskUserQuestion`** (single-select; the hard
+     gate in `skills/_shared/ask-user-question.md` applies). Default
+     recommendation is the integration branch — fresh, isolated work that merges
+     back there. Recommend the **current branch** instead when either holds:
+     - the new work depends on un-merged commits that live on it, or
+     - **the current branch's name reads as related to the intended work** — i.e.
+       the new task looks like a continuation or sub-task of what that branch is
+       already for (e.g. on `alerts-platform`, asked to "add the alert-rule
+       editor"). A shared topic/prefix is a strong signal; the bare integration
+       branch name (`develop`/`main`) never counts.
+
+     Either way, say *why* in that option's description so the user can judge the
+     call. Put the recommended option first, suffixed `(Recommended)`, and include
+     both candidates (plus any other live local branch that's a plausible base).
+     The user can always type their own via "Other".
+   - The branch the user picks is `<base>` below.
+3. **Create off the chosen base.** `<branch>` is the user-named branch, or a
+   short kebab-case name you propose from the task (confirm it before creating):
+   ```bash
+   git worktree add -b <branch> <worktree.dir>/<branch> <base>
+   ```
+4. **Record the integration target** so the merge phase knows where this branch
+   goes home: `git config branch.<branch>.parent <base>`.
+5. **Gitignore the worktree home.** Add the `<worktree.dir>/` line to the repo's
+   `.gitignore` if it is absent (same behavior as `/c-execute` lanes).
+6. **Run the create hooks (each only when set).** First `provision` (cwd
+   `$WT_PATH`); on non-zero exit, surface it and offer to remove the half-created
+   worktree. Then `port_assign` (cwd `$WT_PATH`); capture its stdout as the
+   assigned port and persist it:
+   ```bash
+   git config branch.<branch>.devPort <port>
+   ```
+   so cleanup — possibly in a different session — can find the port without
+   repo-specific files. On `port_assign` failure, surface it and continue without
+   a port (the dev-server phase is then unavailable).
+
+## Dev-server phase
+
+**Absent unless the `dev_server` hook is set.** With a null hook this phase does
+not exist — do not improvise a server or guess at an `npm run dev`.
+
+When set:
+
+1. Resolve the port: the `port_assign` stdout captured at create, or read it back
+   with `git config branch.<branch>.devPort`. No port recorded → this phase is
+   unavailable; say so (re-running `port_assign` is the fix, never guessing a
+   port).
+2. Run the `dev_server` hook in the worktree (cwd `$WT_PATH`) with `DEV_PORT`
+   exported alongside the standard hook env. It is long-running — run it in the
+   background and tell the user where it listens (`http://localhost:$DEV_PORT`).
+3. On non-zero exit, surface the failure and the hook's output.
+4. Never hardcode or assume port 3000 — that belongs to the main worktree.
+
+Stop the server when the user is done with it, and **always** before cleanup.
+Kill by the worktree's own recorded port (see the cleanup phase), never `:3000`.
