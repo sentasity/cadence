@@ -1,6 +1,6 @@
 ---
 name: c-worktree
-description: "Full git-worktree lifecycle for isolated interactive sessions — create an isolated worktree, optionally run its dev server on a dedicated port, merge it back behind a shared lock, and clean up. Generic and standalone: works in any git repo with no Cadence design, plan, or other /c-* skill; merges are lock-guarded so they serialize with /c-execute lane landings and other sessions. Use whenever starting isolated or parallel feature work, spinning up a worktree, asking which port a worktree's dev server runs on, or merging/integrating a worktree branch back to its base — from the feature session OR from the main worktree. Use it even when the user just says 'new worktree', 'isolate this', 'merge my branch back', or 'serialize these merges'."
+description: Full git-worktree lifecycle for isolated interactive sessions — create an isolated worktree, optionally run its dev server on a dedicated port, merge it back behind a shared lock, and clean up. Generic and standalone: works in any git repo with no Cadence design, plan, or other /c-* skill; merges are lock-guarded so they serialize with /c-execute lane landings and other sessions. Use whenever starting isolated or parallel feature work, spinning up a worktree, asking which port a worktree's dev server runs on, or merging/integrating a worktree branch back to its base — from the feature session OR from the main worktree. Use it even when the user just says 'new worktree', 'isolate this', 'merge my branch back', or 'serialize these merges'.
 ---
 
 # `/c-worktree`
@@ -279,4 +279,4 @@ the enforcement.
   skills honor. If this skill and that doc ever read differently, the shared doc
   wins.
 - Merge mechanics: `references/merging.md`.
-- Design source: [[../../designs/2026-06-09-c-worktree/03-c-worktree-skill]].
+- Design source: [[designs/2026-06-09-c-worktree/03-c-worktree-skill]].
