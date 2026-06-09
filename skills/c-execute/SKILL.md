@@ -95,8 +95,12 @@ The DAG must be acyclic; a cycle is a plan defect — surface it, never guess an
 Lane isolation and integration follow `skills/_shared/worktree-lifecycle.md`.
 
 - **Open** a worktree per lane at lane start (`git worktree add` from the current working tip).
-- **Merge-on-land:** when a lane's implementer returns DONE and both reviewers approve the cumulative lane diff, the PM integrates per `execute.integrate` — default `rebase-ff` (**rebase the lane branch onto the current working tip and fast-forward**; linear history, per-task commits preserved), or `merge-commit` (`--no-ff` per lane) for repos that forbid history rewriting.
-- **Per-lane clean-merge check (mandatory):** the rebase must report no conflict, the lane commits must be present, and there must be no conflict residue. A conflict here means a `Touches:` declaration was wrong — STOP and surface; never auto-resolve.
+- **Acquire the merge lock before integrating (gated by `worktree.merge_lock`, default true):** when a lane is ready to land, run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh acquire --target <working-branch> --threshold <worktree.lock_stale_threshold>` from the repo root. The lock is repo-global (one lock in the git common dir, not per branch), so a concurrent `/c-worktree` merge or hand merge in another session serializes with lane landings regardless of target branch. With `worktree.merge_lock: false`, skip acquire/release entirely and integrate exactly as before the lock existed (the single PM session serializes its own merges).
+  - `ACQUIRED` (exit 0): integrate (next bullet), run the per-lane clean-merge check, then `bash ${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh release`. Release before surfacing any conflict decision; never sit on the lock while waiting on the user.
+  - `WAITING holder=<branch> age=<s>` (exit 3): an external holder, still fresh. Poll autonomously by re-invoking `acquire` (its internal 540s wait budget returns under the 600s Bash tool cap). No user prompt.
+  - `STALE holder=<branch> age=<s>` (exit 2): held past the threshold. Quiesce per [Quiesce-on-block](#quiesce-on-block) (no new dispatch, in-flight lanes finish and land, landed checkboxes flushed per `skills/_shared/progress-checkpoint.md`), then surface the **Stale merge lock** row of the drift `AskUserQuestion` table. Read `holder.json` inside `<git-common-dir>/worktree-merge.lock/` and put the holder branch, holder worktree path, and age in the question text: the holder may be a live `/c-worktree` merge in another session. Never auto-steal.
+- **Merge-on-land:** when a lane's implementer returns DONE and both reviewers approve the cumulative lane diff, the PM integrates per `worktree.integrate` (for one release, fall back to the legacy `execute.integrate` when the new key is absent) — default `rebase-ff` (**rebase the lane branch onto the current working tip and fast-forward**; linear history, per-task commits preserved), or `merge-commit` (`--no-ff` per lane) for repos that forbid history rewriting.
+- **Per-lane clean-merge check (mandatory):** the rebase must report no conflict, the lane commits must be present, and there must be no conflict residue. A conflict here means a `Touches:` declaration was wrong — STOP and surface; never auto-resolve (release the lock first).
 - **Remove** the worktree + lane branch on land. **Preserve** it on block.
 
 ## Resume protocol
@@ -222,6 +226,7 @@ Each option's `description` is the corresponding "What happens next" cell (one s
 - **Plan ambiguity** → "Clarify" is `(Recommended)`.
 - **Design contradiction** → "Update plan only" is `(Recommended)` (matches the default drift policy).
 - **Scope overflow** → "Fix (expand task in place)" is `(Recommended)` when overflow is small; "Mark out of scope" when significant.
+- **Stale merge lock** → "Wait" is `(Recommended)` (the holder may be a live merge in another session; steal only after the user verifies the holder is dead).
 
 | Trigger | User's choice | What happens next |
 |---|---|---|
@@ -234,6 +239,9 @@ Each option's `description` is the corresponding "What happens next" cell (one s
 | | Split into new task | PM appends new task to same phase file with `Depends: [<current>]`. Current task marked complete. |
 | | Mark out of scope | PM writes entry to plan-side `99-out-of-scope.md` with rationale + wikilink. Current task marked complete. |
 | | Abort | Plan stays `in-progress`. |
+| **Stale merge lock** — merge-on-land found the shared lock held past `worktree.lock_stale_threshold` (prompt shows holder branch, holder worktree path, and age from `holder.json`) | Wait | PM re-invokes `acquire` and keeps polling; integration proceeds when the holder releases. |
+| | Steal | PM runs `${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh steal --target <working-branch>`, then integrates and releases. Safe only when the holder is verified dead. |
+| | Abort | Plan stays `in-progress`; landed lanes' checkboxes are already flushed to disk; resume later. |
 
 ## Completion-time gate: dispatch `cadence-completion-auditor` directly
 
