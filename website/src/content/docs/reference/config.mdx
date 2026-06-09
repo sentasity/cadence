@@ -1,7 +1,7 @@
 ---
 title: .cadence/config.yaml
 sidebar:
-  order: 10
+  order: 11
 ---
 
 import { Aside } from '@astrojs/starlight/components';
@@ -20,7 +20,7 @@ A single top-level integer that records which config schema this file was writte
 
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
-| `config_version` | Schema version of this file; used to detect when a migration is needed. | `3` | Integer |
+| `config_version` | Schema version of this file; used to detect when a migration is needed. | `4` | Integer |
 
 ## `paths`
 
@@ -55,12 +55,46 @@ How `/c-execute` drives a plan to implemented code, including the parallel-lane 
 | `execute.auto_resolve_drift` | Auto-resolve drift between plan and code instead of surfacing it for a decision. | `false` | `true` \| `false` |
 | `execute.parallel` | Master switch for parallel execution. When `false`, execution is sequential and no worktrees are created. | `true` | `true` \| `false` |
 | `execute.max_parallel` | Maximum concurrent implementer lanes (one worktree per lane). Reviewers are uncapped. | `4` | Positive integer |
-| `execute.worktree_dir` | Where lane worktrees are created. | `.cadence/worktrees` | Repo-relative path |
 | `execute.worktree_confirm` | Show a one-time pre-flight confirmation before creating worktrees. | `true` | `true` \| `false` |
-| `execute.integrate` | History-rewrite policy when integrating a lane's work back. | `rebase-ff` | `rebase-ff` \| `merge-commit` |
 | `execute.resume_on_dirty_tree` | Allow resuming execution when the working tree is dirty. | `false` | `true` \| `false` |
 
-See [Parallelism and worktrees](/cadence/concepts/parallelism-and-worktrees/) for the model behind lanes, the `max_parallel` cap, and the integrate policy.
+<Aside type="note" title="Relocated in config_version 4">
+`execute.worktree_dir` and `execute.integrate` moved to [`worktree.dir` and `worktree.integrate`](#worktree). For one release, commands fall back to the legacy `execute.*` keys when the new ones are absent, so configs that haven't migrated keep working. The migration carries customized values into the new keys and never deletes the legacy ones; remove them by hand once migrated.
+</Aside>
+
+See [Parallelism and worktrees](/cadence/concepts/parallelism-and-worktrees/) for the model behind lanes and the `max_parallel` cap. Where lane worktrees live and how they merge back is governed by the [`worktree`](#worktree) section below.
+
+## `worktree`
+
+The shared git-worktree lifecycle: where worktrees live, how branches merge back, the merge lock, and the optional repo-specific hooks. Two commands read this section: [`/c-worktree`](/cadence/reference/c-worktree/) (the interactive lifecycle) and `/c-execute` (its parallel lanes use `dir` and `integrate`, and its merge-on-land honors the lock).
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `worktree.dir` | Where worktrees are created: interactive `/c-worktree` worktrees and `/c-execute` lane worktrees alike. Relocated from `execute.worktree_dir`. | `.cadence/worktrees` | Repo-relative path |
+| `worktree.integrate` | History policy when a worktree branch merges back. Relocated from `execute.integrate`. | `rebase-ff` | `rebase-ff` \| `merge-commit` |
+| `worktree.merge_lock` | Whether merges acquire the shared repo-global merge lock, so concurrent merges into the same integration branch serialize instead of colliding. Honored by both `/c-worktree` and `/c-execute`. | `true` | `true` \| `false` |
+| `worktree.lock_stale_threshold` | Seconds after which a held lock is reported stale and surfaced as a "steal it?" question. Never auto-stolen. | `600` | Positive integer (seconds) |
+
+### Hooks
+
+Five optional shell-command hooks let a repo plug its own scripts into fixed lifecycle points. Every hook is `null` by default, and a `null` hook means that lifecycle phase simply does not exist; with all hooks empty, `/c-worktree` runs its generic core only.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `worktree.hooks.provision` | Runs after `git worktree add` (dependency install, env files, similar setup). | `null` | Shell command string or `null` |
+| `worktree.hooks.port_assign` | Allocates a dev port for the worktree. Must print the port to stdout. | `null` | Shell command string or `null` |
+| `worktree.hooks.port_release` | Frees the worktree's port at cleanup. | `null` | Shell command string or `null` |
+| `worktree.hooks.dev_server` | Starts the worktree's dev server. | `null` | Shell command string or `null` |
+| `worktree.hooks.deploy_guard` | Exits non-zero when a deploy is not allowed from the current location; the deploy is then refused. | `null` | Shell command string or `null` |
+
+### How hooks run
+
+- **Environment.** Every hook runs with `WT_PATH` (absolute worktree path), `MAIN_ROOT` (absolute main-worktree path), and `BRANCH` (the worktree's branch) exported. `dev_server` additionally gets `DEV_PORT`, captured from `port_assign`'s stdout or read back from `git config branch.<branch>.devPort`.
+- **Working directory.** `provision`, `port_assign`, and `dev_server` run with cwd = `$WT_PATH`. `port_release` runs with cwd = `$MAIN_ROOT` (the worktree may already be removed). `deploy_guard` runs in the directory the deploy was attempted from: that location is what it judges.
+- **Stdout.** Only `port_assign`'s stdout carries meaning (the assigned port, persisted as `git config branch.<branch>.devPort`). Every other hook's output is informational and shown to you.
+- **Non-zero exit.** `provision`: surfaced, with an offer to remove the half-created worktree. `port_assign`: surfaced; the lifecycle continues without a port, and the dev-server phase is then unavailable. `dev_server`: surfaced. `port_release`: surfaced, but cleanup continues. `deploy_guard`: the deploy is refused, with an explanation of the merge-first-then-deploy-from-main flow.
+
+See the [/c-worktree reference](/cadence/reference/c-worktree/) for the phase-by-phase lifecycle these keys drive.
 
 ## `authoring`
 
@@ -161,10 +195,10 @@ Defaults for `/c-find-bugs`.
 
 ## A realistic config
 
-This repo dogfoods Cadence, and its own `.cadence/config.yaml` is a good example of the "override only what differs" pattern. It keeps the default paths and audits, bumps `execute.max_parallel` to `5`, and opts into `plan.parallel_grain: in-file`:
+This repo dogfoods Cadence, and its own `.cadence/config.yaml` is a good example of the "override only what differs" pattern. It keeps the default paths and audits, bumps `execute.max_parallel` to `5`, and opts into `plan.parallel_grain: in-file`. As of `config_version: 4` the worktree keys live in their own `worktree:` block:
 
 ```yaml
-config_version: 3
+config_version: 4
 paths:
   designs: docs/designs
   plans:   docs/plans
@@ -182,8 +216,10 @@ execute:
   max_parallel: 5
   resume_on_dirty_tree: false
   parallel: true
-  worktree_dir: .cadence/worktrees
   worktree_confirm: true
+
+worktree:
+  dir: .cadence/worktrees
   integrate: rebase-ff
 
 advisors:
