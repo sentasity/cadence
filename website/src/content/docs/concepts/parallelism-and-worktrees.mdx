@@ -51,7 +51,7 @@ flowchart TB
     guard -->|"no — files overlap"| wait["serialize:<br/>later lane waits its turn"]
     run --> wt["each lane in its own<br/>git worktree (isolated copy)"]
     wt --> review["lane passes two-stage review"]
-    review --> merge["merge back per execute.integrate<br/>(default rebase-ff)"]
+    review --> merge["merge back per worktree.integrate<br/>(default rebase-ff)"]
     merge --> tip(["tip advances;<br/>next ready lanes dispatch"])
     wait -.->|blocker landed| dag
 ```
@@ -59,7 +59,7 @@ flowchart TB
 ## How many at once, and how they merge
 
 - **Cap.** At most `execute.max_parallel` lanes run concurrently (default **4**). If more work is ready than slots are free, the extra lanes wait their turn.
-- **Merge.** When a lane finishes and passes review, it's integrated per `execute.integrate`. The default is **`rebase-ff`**: the lane's branch is rebased onto the current tip and fast-forwarded in, keeping a clean linear history with each task's commits preserved. Repos that forbid history rewriting can set `merge-commit` instead.
+- **Merge.** When a lane finishes and passes review, it's integrated per `worktree.integrate`. The default is **`rebase-ff`**: the lane's branch is rebased onto the current tip and fast-forwarded in, keeping a clean linear history with each task's commits preserved. Repos that forbid history rewriting can set `merge-commit` instead.
 
 A single phase file can even become two or three lanes over a run: if only part of it is ready now, the ready part dispatches immediately and the rest forms a follow-up lane once its blockers clear.
 
@@ -70,4 +70,9 @@ Set `execute.parallel: false` in your config and `/c-execute` runs everything se
 ## Reference
 
 - Full command behavior: **[/c-execute reference](/cadence/reference/c-execute/)**.
-- The `execute.*` settings (`max_parallel`, `integrate`, `parallel`, `worktree_dir`): **[Configuration reference](/cadence/reference/config/)**.
+- The `execute.*` lane settings (`max_parallel`, `parallel`, `worktree_confirm`): **[Configuration reference](/cadence/reference/config/)**.
+- The shared `worktree.*` settings (`dir`, `integrate`, `merge_lock`, `lock_stale_threshold`, the `hooks.*` map): **[Configuration reference](/cadence/reference/config/#worktree)**.
+
+<Aside type="note" title="Worktrees aren't only for lanes anymore">
+The same worktree machinery is also driven interactively by the **[/c-worktree](/cadence/reference/c-worktree/)** utility command: you create a worktree by hand, work in it, and merge it back yourself. A shared merge lock (`worktree.merge_lock`, on by default) serializes any two concurrent merges into the same integration branch, so a `/c-worktree` merge and a `/c-execute` lane landing cannot collide.
+</Aside>
