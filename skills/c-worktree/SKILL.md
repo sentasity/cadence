@@ -155,3 +155,71 @@ When set:
 
 Stop the server when the user is done with it, and **always** before cleanup.
 Kill by the worktree's own recorded port (see the cleanup phase), never `:3000`.
+
+## Merge phase
+
+All merges serialize through one repo-global lock — `scripts/merge-lock.sh` at
+the plugin root, invoked as `"${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh"`. It
+is the same lock `/c-execute` takes around its lane landings, so an interactive
+merge and an autonomous land can never collide. The lock is one per repo, not per
+branch: merges into different branches also take turns (accepted over-caution;
+merges are short). **Read `references/merging.md` before merging** — it has the
+squash / merge-commit / fast-forward menu, conflict handling, branch deletion,
+and the topology edge cases.
+
+**Resolve source + target:**
+
+- *From a feature worktree, no branch arg (usual):* source = current branch;
+  target = its `branch.<branch>.parent` (fallback: the branch checked out in the
+  main worktree). `cd "$MAIN_ROOT"` first — the merge mutates the main worktree.
+- *From the main/target worktree with `/c-worktree merge <feature>`:* source =
+  `<feature>`; target = current branch; operate in place.
+
+**All interaction happens BEFORE the lock.** Gather every decision first, so the
+lock is held only for the git operations and an interactive holder never sits on
+it while a human deliberates:
+
+1. Show what will move (`references/merging.md` §1 — both sides of the
+   merge-base).
+2. Ask the merge-type menu (`references/merging.md` §2). The recommended option
+   comes from `worktree.integrate`: `rebase-ff` → fast-forward (rebase the source
+   onto the target first if history isn't linear); `merge-commit` → merge commit.
+3. Only when the user has answered, acquire the lock.
+
+**Acquire** (when `worktree.merge_lock: false`, skip acquire and release and run
+the merge unlocked):
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh" acquire --target <target> --threshold <worktree.lock_stale_threshold>
+```
+
+| Result | Response |
+|---|---|
+| `ACQUIRED` | Proceed. |
+| `WAITING holder=<b> age=<n>s` | Another merge is in flight; re-run acquire (it polls and returns under the Bash tool timeout). |
+| `STALE holder=<b> age=<n>s` | **Stop and ask the user — never auto-steal.** The prompt must include everything `holder.json` knows — holder branch, holder worktree path, and age (read `$(git rev-parse --git-common-dir)/worktree-merge.lock/holder.json`) — so the user can check whether the holder is genuinely dead before answering. On an explicit yes: `"${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh" steal --target <target>`. On no: wait or abort. |
+
+**Under the lock:**
+
+4. In the **target worktree**, confirm it's clean and on `<target>`. If it's
+   dirty or on a different branch, surface it — never auto-stash, never
+   auto-switch (it may hold a human's dev server or in-progress state).
+5. Run the chosen merge (`references/merging.md`). **Conflicts are surfaced,
+   never auto-resolved.** Conflict resolution requires user input while the lock
+   is held — that's unavoidable; see the note below.
+6. Release: `"${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh" release`.
+
+Cleanup (the next phase) happens outside the lock.
+
+### Stale threshold vs interactive holds
+
+The "merges are short, a long-held lock almost always means a dead holder"
+rationale was written for autonomous merges. Interactive merges make long *live*
+holds possible: a human resolving conflicts can legitimately exceed
+`worktree.lock_stale_threshold`. Two mitigations are designed in: the
+ask-before-acquire ordering above keeps the deliberation window out of the hold
+entirely, and the holder-info-rich steal prompt lets the other party verify
+before stealing. So when YOUR hold runs long during conflict resolution, expect
+other sessions to be shown the steal prompt; and when YOU see `STALE`, remember
+the holder may be a live human mid-conflict — which is exactly why you never
+steal without the user's explicit yes.
