@@ -44,6 +44,12 @@ merge.
 ## 4. Branch deletion after cleanup
 
 - Fast-forward / merge commit: `git branch -d <source>` (git sees it as merged).
+  **HEAD caveat:** git's merged-check anchors to the CURRENT HEAD, not the merge
+  target. If the main checkout sits on a branch that doesn't contain the
+  target's new commits (e.g. on `develop` after merging into a different parent
+  branch), `-d` refuses with "not fully merged" even after a clean merge. The
+  fix is to briefly check out `<target>` (which contains the merge) and delete
+  from there; do not escalate to `-D` for this case.
 - **Squash:** `git branch -d` fails (git can't see the squashed commits as
   reachable). Confirm with the user that the squash commit contains everything,
   then `git branch -D <source>`.

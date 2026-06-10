@@ -242,7 +242,10 @@ worktree.
    outside the directory being removed (see the topology notes in
    `references/merging.md`).
 3. **Delete the branch:** `git branch -d <branch>` — or `-D` only after the user
-   confirmed a squash captured everything (`references/merging.md` §4).
+   confirmed a squash captured everything (`references/merging.md` §4). If `-d`
+   refuses after a clean merge because the current HEAD doesn't contain the
+   target's new commits, briefly check out `<target>` and delete from there
+   (merged-check anchors to HEAD); that is not a `-D` case.
 4. **Run the `port_release` hook** if set (cwd `$MAIN_ROOT` — the worktree is
    already gone).
 5. **Unset the branch config:**
