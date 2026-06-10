@@ -36,7 +36,7 @@ authoring:
 Keys intended for local override are the per-person, per-machine ones: `execute.max_parallel`, `execute.worktree_confirm`, `authoring.max_parallel`, `authoring.design_mode`, and the `validate.browser_*` and `advisors.*` keys. Everything else (paths, statuses, audits, plan policy, the whole `worktree:` section) is team policy: a local override of those still works, but Cadence prints a one-line notice so the divergence is never silent.
 
 <Aside type="caution" title="Keep it gitignored">
-A committed "local" file is just a second team config with a confusing name. `.cadence/config.local.yaml` must be in your repo's `.gitignore`; when Cadence finds the file present but not ignored, it adds the ignore line for you and says so.
+A committed "local" file is just a second team config with a confusing name. `.cadence/config.local.yaml` must be in your repo's `.gitignore`; when Cadence finds the file present but the repo's `.gitignore` lacks the line, it adds it for you and says so. The repo line matters even if your personal global excludes file already covers the pattern: the global entry protects only your machine, while the repo line protects every clone.
 </Aside>
 
 ## `config_version`

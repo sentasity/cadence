@@ -35,7 +35,7 @@ authoring:
 
 ## Gitignore is mandatory
 
-`.cadence/config.local.yaml` must be gitignored: a committed "local" file is just a second team config with a confusing name. When a skill resolves config and finds the local file present but **not** ignored (`git check-ignore` fails), add a `.cadence/config.local.yaml` line to the repo's `.gitignore` and tell the user (same add-if-absent behavior as `worktree.dir`).
+`.cadence/config.local.yaml` must be gitignored: a committed "local" file is just a second team config with a confusing name. When a skill resolves config and finds the local file present but the **repo's `.gitignore` lacks a `.cadence/config.local.yaml` line**, add the line and tell the user (same add-if-absent behavior as `worktree.dir`). Check the `.gitignore` content, NOT `git check-ignore`: a user's global excludes file can make `check-ignore` pass on their machine while every other clone of the repo stays unprotected, and the repo line is the protection that travels.
 
 ## Personal keys vs team policy
 
