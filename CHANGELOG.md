@@ -2,6 +2,18 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.8.0 (2026-06-10)
+
+Personal config overrides: a gitignored `.cadence/config.local.yaml` overlay for preferences that legitimately differ per person or per machine, now that team repos can commit their `.cadence/config.yaml`.
+
+### Added
+
+- **`config.local.yaml` personal-override layer.** Config now resolves through three layers, last definition winning per key path: plugin defaults, the repo's `.cadence/config.yaml`, then a personal `.cadence/config.local.yaml`. The new `skills/_shared/config-resolution.md` is the single authority; every config-reading skill and agent cites it. The local file is sparse (overrides only), carries no `config_version`, is never touched by `scripts/migrate-config.js`, and must be gitignored (Cadence adds the ignore line when it finds the file un-ignored). Overrides of team-policy keys (paths, audits, plan policy, the `worktree:` section) are honored but surfaced with a one-line notice; the intended local keys are the per-person/per-machine ones (`execute.max_parallel`, `execute.worktree_confirm`, `authoring.max_parallel`, `authoring.design_mode`, `validate.browser_*`, `advisors.*`). Documented in the config reference's new "Local overrides" section.
+
+### Fixed
+
+- **`/c-worktree` branch-deletion guidance covers the HEAD-anchored merged-check.** `git branch -d` can refuse after a clean ff/merge-commit merge when the current HEAD doesn't contain the target's new commits; `references/merging.md` and the cleanup phase now document the briefly-check-out-the-target fix (and that this is not a `-D` case). Found during the worktree-unification validation walk.
+
 ## v0.7.0 (2026-06-09)
 
 Worktree unification: one config-driven git-worktree lifecycle, shared by the new interactive `/c-worktree` utility command and `/c-execute`'s parallel lanes.
