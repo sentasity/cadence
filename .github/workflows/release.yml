@@ -1,0 +1,77 @@
+name: Tag and publish GitHub Release
+
+# The version bump landing on main IS the release signal. When
+# .claude-plugin/plugin.json's version has no matching tag, this workflow
+# creates the annotated tag at the pushed commit and publishes a GitHub
+# Release whose notes are the matching CHANGELOG.md section. A missing
+# changelog section fails the run loudly: no entry, no release.
+#
+# Idempotent: re-runs (or pushes that touch plugin.json without changing
+# the version) no-op when the tag and Release already exist.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.claude-plugin/plugin.json'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with tags)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: version
+        run: |
+          v="$(jq -r .version .claude-plugin/plugin.json)"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "tag=v$v" >> "$GITHUB_OUTPUT"
+
+      - name: Extract changelog section
+        id: notes
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          awk -v v="$tag" 'index($0, "## " v) == 1 {f=1; next} /^## v/{f=0} f' CHANGELOG.md > /tmp/notes.md
+          if ! grep -q '[^[:space:]]' /tmp/notes.md; then
+            echo "::error::CHANGELOG.md has no '## $tag' section. Add the changelog entry; the release is gated on it." >&2
+            exit 1
+          fi
+          headline="$(grep -m1 '[^[:space:]]' /tmp/notes.md | cut -c1-90)"
+          echo "headline=$headline" >> "$GITHUB_OUTPUT"
+
+      - name: Create annotated tag (if missing)
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
+            echo "Tag $tag already exists; skipping tag creation."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "$tag - ${{ steps.notes.outputs.headline }}" "$GITHUB_SHA"
+          git push origin "$tag"
+
+      - name: Publish GitHub Release (if missing)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "Release $tag already exists; nothing to do."
+            exit 0
+          fi
+          gh release create "$tag" --verify-tag \
+            --title "$tag — ${{ steps.notes.outputs.headline }}" \
+            --notes-file /tmp/notes.md

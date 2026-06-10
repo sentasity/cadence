@@ -26,6 +26,16 @@ Cadence is a phase-aware system; the contribution flow follows the same phases.
 
 No automated test suite ships with Cadence (no code to test). Validation lives in each plan's `98-validation.md` / `96-validation.md` and is walked manually via `/c-validate`. If you change a skill or agent, walk the relevant plan's validation doc as part of your PR.
 
+## Releasing
+
+A release is three edits landing on `main` together; everything after the push is automated.
+
+1. Add the `## vX.Y.Z (YYYY-MM-DD)` entry at the top of `CHANGELOG.md` (one-line summary, then `### Added` / `### Changed` / `### Fixed` / `### Why` as applicable).
+2. Bump `version` in `.claude-plugin/plugin.json` (`marketplace.json` carries no version; leave it alone).
+3. Merge/push to `main`.
+
+The `release.yml` workflow then creates the annotated `vX.Y.Z` tag at that commit and publishes a GitHub Release whose notes are the changelog section. A bump with no matching changelog entry fails the workflow on purpose: no entry, no release. Don't hand-create tags or Releases unless the workflow is broken; if you must, match its shape (annotated tag `vX.Y.Z - <headline>`, Release notes from the changelog section).
+
 ## What we don't take PRs for
 
 - **Renaming skills** (`/c-brainstorm` → `/c-bs`, etc.). The names are part of the v0.1 contract; breaking them breaks every plan that references them. Naming changes need an explicit migration plan.
