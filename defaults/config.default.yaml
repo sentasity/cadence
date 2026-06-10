@@ -1,4 +1,6 @@
 # Cadence plugin defaults. Per-repo .cadence/config.yaml overrides only what differs.
+# Personal per-machine overrides go in .cadence/config.local.yaml (gitignored, sparse,
+# never migrated); resolution order is defined in skills/_shared/config-resolution.md.
 # No assumption of obsidian or any specific repo layout.
 
 config_version: 4          # schema version; drives migration detection

@@ -488,6 +488,9 @@ function main() {
   if (!projectRoot || !pluginRoot) {
     return;
   }
+  // Migration scope is deliberately .cadence/config.yaml only. The personal
+  // overlay (.cadence/config.local.yaml) is sparse, versionless, and never
+  // read, written, or migrated here — see skills/_shared/config-resolution.md.
   const projectPath = path.join(projectRoot, '.cadence', 'config.yaml');
   const defaultsPath = path.join(pluginRoot, 'defaults', 'config.default.yaml');
 
