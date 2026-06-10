@@ -24,7 +24,7 @@ You run an interactive discussion of an existing design or plan. The user drives
 Before the first user question, all in parallel:
 
 - Read the target doc(s). For a folder target, read the overview + all child docs. For a section anchor, scope the read to that section but still load the parent doc's frontmatter for context.
-- Read `.cadence/config.yaml` (resolve paths, naming, advisor list).
+- Read the resolved config per `skills/_shared/config-resolution.md` (resolve paths, naming, advisor list).
 - Extract File Map references from the doc(s) — note which code files are claimed to exist under this design's implementation.
 - `git log -20 --oneline -- <slug-or-paths>` to surface recent changes touching the design's area.
 - Read the repo's `CLAUDE.md` if any.

@@ -4,7 +4,7 @@ How Cadence delegates a plan's Category B "manual workflow" steps to the project
 
 ## Config keys (`validate.*`)
 
-Three flat keys under `validate:` in `defaults/config.default.yaml` (overridable in a repo's `.cadence/config.yaml`):
+Three flat keys under `validate:` in `defaults/config.default.yaml` (overridable in a repo's `.cadence/config.yaml`, or per-person in `.cadence/config.local.yaml` — the `validate.browser_*` keys are intended local overrides; resolution per `skills/_shared/config-resolution.md`):
 
 - **`browser_driver`** — `auto | playwright | manual`. Default `auto`.
   - `auto` — detect a suite (rule below) and delegate; if none, degrade to `manual` for the walk with a one-line note.
@@ -41,7 +41,7 @@ Resolve `browser_driver` once, at the start of the Category B pass, to **delegat
 
 **`auto` suite detection** — a suite is considered present when **either** holds (precedence top-down; both yield "delegate"):
 
-1. **Explicit `command` override** — `validate.browser_command` is set in the repo's `.cadence/config.yaml` to a value *other than* the default `npx playwright test`. (The default value does not fire this clause.)
+1. **Explicit `command` override** — `validate.browser_command` resolves (from the repo config or the personal `.cadence/config.local.yaml`) to a value *other than* the default `npx playwright test`. (The default value does not fire this clause.)
 2. **Playwright config at repo root** — a file matching `playwright.config.{ts,js,mjs,cjs}` exists at the repo root.
 
 If neither holds, detection fails and `auto` degrades to `manual` for the walk. Detection is conservative: a false negative degrades to a manual hand-off (safe, slower); it errs toward not firing when unsure.

@@ -2,7 +2,7 @@
 
 Authoritative reference for the self-managed git worktree lifecycle Cadence uses to isolate concurrent implementer lanes (/c-execute) and to host interactive feature worktrees (/c-worktree). Cadence drives these commands itself; it never invokes the superpowers `using-git-worktrees` skill at runtime.
 
-Config keys live in the top-level `worktree:` section of `.cadence/config.yaml` (`worktree.dir`, `worktree.integrate`, `worktree.merge_lock`, `worktree.lock_stale_threshold`, `worktree.hooks.*`). For one release, skills fall back to the legacy `execute.worktree_dir` / `execute.integrate` when the new keys are absent.
+Config keys live in the top-level `worktree:` section of `.cadence/config.yaml` (`worktree.dir`, `worktree.integrate`, `worktree.merge_lock`, `worktree.lock_stale_threshold`, `worktree.hooks.*`), resolved per `skills/_shared/config-resolution.md` (every `worktree.*` key is team policy; a `.cadence/config.local.yaml` override is honored but surfaced). For one release, skills fall back to the legacy `execute.worktree_dir` / `execute.integrate` when the new keys are absent.
 
 ## Naming
 

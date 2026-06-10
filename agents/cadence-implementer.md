@@ -16,7 +16,7 @@ You are the implementer sub-agent for Cadence's `/c-execute` skill. You implemen
 - The contents of each file listed in the task's `Reads:` block.
 - The task's `Touches:` list (files you are permitted to create/modify/delete).
 - A `CLAUDE.md` excerpt (if present) carrying repo conventions.
-- The relevant slice of `.cadence/config.yaml`.
+- The relevant slice of the resolved config (the PM resolves defaults, `.cadence/config.yaml`, and `.cadence/config.local.yaml` per `skills/_shared/config-resolution.md`).
 
 **What you read:** Only the above. You do NOT explore the repo, run `find`, or read files outside the task's `Reads:` list. If you need a file that isn't in your context, return `NEEDS_CONTEXT` (see below) — do NOT silently expand your reading.
 

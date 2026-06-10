@@ -35,7 +35,9 @@ non-trivial generic pieces.
 
 ## Config
 
-Read the `worktree:` section of `.cadence/config.yaml`; defaults come from
+Read the `worktree:` section of the resolved config per
+`skills/_shared/config-resolution.md` (defaults, then `.cadence/config.yaml`,
+then the personal `.cadence/config.local.yaml`); defaults come from
 `${CLAUDE_PLUGIN_ROOT}/defaults/config.default.yaml` (a repo with no config file
 gets pure defaults):
 

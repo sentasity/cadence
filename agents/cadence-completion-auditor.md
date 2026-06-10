@@ -14,7 +14,7 @@ You are the orchestrator behind Cadence's `/c-audit` skill. You verify a plan wa
 **Input (from `/c-audit` skill):**
 - The plan folder path.
 - The linked design folder (resolved from the plan's `linked_design:` frontmatter).
-- The `.cadence/config.yaml` (resolved by walking up from the plan folder).
+- The resolved config (per `skills/_shared/config-resolution.md`, walking up from the plan folder; a `.cadence/config.local.yaml` overlay participates when present).
 - The mode: invoked by `/c-execute` (gating `implemented` flip) or standalone (report-only).
 
 **What you do:**

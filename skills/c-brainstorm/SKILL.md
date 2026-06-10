@@ -50,14 +50,14 @@ Before entering Q&A, walk up from the current working directory looking for `.ca
    - **Paths:** *"Where should designs and plans live?"* — options: `docs/designs` (default), `docs/obsidian/designs`, or other (free text).
    - **TDD default:** *"Should plans default to TDD-shaped tasks (test → fail → impl → pass → commit)?"* — yes / no.
    - **Advisors:** *"Any repo-specific agents to register as advisors?"* — comma-separated names or "none."
-3. Read `${CLAUDE_PLUGIN_ROOT}/defaults/config.default.yaml` as the source of truth, then write `.cadence/config.yaml` to the repo root: take its `config_version` verbatim, fold the user's three brainstorm answers (paths, TDD default, advisors) over the corresponding default keys, and write the merged result with every other default key included as-is. Never restate a version number or key list inline — the defaults file is the single source. Confirm the file was created.
+3. Read `${CLAUDE_PLUGIN_ROOT}/defaults/config.default.yaml` as the source of truth, then write `.cadence/config.yaml` to the repo root: take its `config_version` verbatim, fold the user's three brainstorm answers (paths, TDD default, advisors) over the corresponding default keys, and write the merged result with every other default key included as-is. Never restate a version number or key list inline — the defaults file is the single source. Confirm the file was created, and mention that personal per-machine overrides can later go in `.cadence/config.local.yaml` (gitignored; see `skills/_shared/config-resolution.md`).
 4. Enter the regular Q&A loop (below) for the user's brainstorm input.
 5. **If user says no,** exit cleanly with a one-line note: *"Config required to proceed. Run /c-brainstorm again when ready."* No error, no pointer dump.
 
 ## Q&A loop mechanics
 
 **Step 1 — Parallel context scan + pre-flight** (before the first question, all in parallel):
-- Read `.cadence/config.yaml` (resolve paths, naming, status vocab, advisors).
+- Read the resolved config per `skills/_shared/config-resolution.md` (resolve paths, naming, status vocab, advisors).
 - Read recent commits: `git log -20 --oneline`.
 - Read related artifacts under `paths.designs` and `paths.plans` that match the idea's slug or topic.
 - Read the repo's `CLAUDE.md` (if any).

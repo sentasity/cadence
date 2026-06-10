@@ -35,7 +35,7 @@ This means: if you ever change audit behavior, change the agent. Changing this s
 Dispatch the `cadence-completion-auditor` agent (via `Task` tool) with:
 - Plan folder path.
 - Linked design folder path.
-- `.cadence/config.yaml` content (specifically `audits.*` keys).
+- Resolved config content per `skills/_shared/config-resolution.md` (specifically `audits.*` keys; `audits.*` is team policy, so a local override is honored but surfaced).
 - Mode: `standalone` (this skill ALWAYS passes `standalone`; the `gating` mode is for `/c-execute`'s direct-dispatch path).
 - Diff range (`base_sha`..HEAD).
 

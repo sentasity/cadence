@@ -119,7 +119,7 @@ Use the `Task` tool with one of these named agents:
 
 | Agent | When | What PM passes |
 |---|---|---|
-| `cadence-implementer` | Per task | Task block + linked files extracted from task's `Reads:` block + `Touches:` list + CLAUDE.md excerpt + `.cadence/config.yaml` slice |
+| `cadence-implementer` | Per task | Task block + linked files extracted from task's `Reads:` block + `Touches:` list + CLAUDE.md excerpt + resolved-config slice (per `skills/_shared/config-resolution.md`) |
 | `cadence-spec-reviewer` | After implementer DONE | Task spec + diff |
 | `cadence-code-reviewer` | After spec-review ✓ | Diff + repo conventions |
 
@@ -249,7 +249,7 @@ Once every task in every phase file is complete:
 
 1. Verify: every step `- [x]` + both reviews ✓ + commit visible in `git log`.
 2. **Worktree-cleanup sweep (pre-dispatch):** run `git worktree list` and confirm no `cadence/lane-*` worktrees remain; run `git branch --list 'cadence/lane-*'` and confirm no lane branches remain. If any do, remove them (`git worktree remove --force <path>` and `git branch -D <branch>`) before dispatching the auditor. A dirty worktree at this stage is a plan-execution defect — surface it to the user if removal fails.
-3. Dispatch the `cadence-completion-auditor` agent **directly** (via the `Task` tool) — same agent the standalone `/c-audit` skill dispatches, same parameters: plan path, linked design folder (from `linked_design:` frontmatter), `.cadence/config.yaml` content, diff range (`git diff <base_sha>..HEAD`), mode: `gating`. The default audit roster includes `merge-integrity` (verifies each task's commit landed cleanly and the lane history is linear). Do NOT route through the `/c-audit` skill — skill-calls-skill is not a documented Claude Code mechanism. The audit logic is in the agent; the skill is a thin user-facing wrapper around the same agent.
+3. Dispatch the `cadence-completion-auditor` agent **directly** (via the `Task` tool) — same agent the standalone `/c-audit` skill dispatches, same parameters: plan path, linked design folder (from `linked_design:` frontmatter), resolved config content (per `skills/_shared/config-resolution.md`), diff range (`git diff <base_sha>..HEAD`), mode: `gating`. The default audit roster includes `merge-integrity` (verifies each task's commit landed cleanly and the lane history is linear). Do NOT route through the `/c-audit` skill — skill-calls-skill is not a documented Claude Code mechanism. The audit logic is in the agent; the skill is a thin user-facing wrapper around the same agent.
 4. Read the agent's report.
 
 | Auditor result | `/c-execute` response |
