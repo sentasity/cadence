@@ -14,6 +14,31 @@ The canonical default for every key (with inline comments) ships at `defaults/co
 On your first `/c-brainstorm` in a repo that has no `.cadence/config.yaml`, Cadence notices the missing file and offers to scaffold one inline. It asks three short questions, writes a minimal config from your answers, and then continues into the Q&A. A missing config is a prompt, not a hard blocker.
 </Aside>
 
+## Local overrides: `config.local.yaml`
+
+When a team commits `.cadence/config.yaml` to share settings, personal preferences need somewhere else to live. That place is `.cadence/config.local.yaml`: a gitignored sibling file holding only the keys you personally override. Resolution reads three layers in order, and the last layer that defines a key wins for that key:
+
+1. Plugin defaults (`defaults/config.default.yaml`)
+2. The repo's `.cadence/config.yaml` (the team's settings)
+3. Your `.cadence/config.local.yaml` (yours alone, never committed)
+
+The local file is sparse: it contains only overrides, carries no `config_version`, and the config migrator never touches it. A typical one is a few lines:
+
+```yaml
+# .cadence/config.local.yaml
+execute:
+  max_parallel: 2        # this laptop can't take the team default
+  worktree_confirm: false
+authoring:
+  design_mode: all-at-once
+```
+
+Keys intended for local override are the per-person, per-machine ones: `execute.max_parallel`, `execute.worktree_confirm`, `authoring.max_parallel`, `authoring.design_mode`, and the `validate.browser_*` and `advisors.*` keys. Everything else (paths, statuses, audits, plan policy, the whole `worktree:` section) is team policy: a local override of those still works, but Cadence prints a one-line notice so the divergence is never silent.
+
+<Aside type="caution" title="Keep it gitignored">
+A committed "local" file is just a second team config with a confusing name. `.cadence/config.local.yaml` must be in your repo's `.gitignore`; when Cadence finds the file present but not ignored, it adds the ignore line for you and says so.
+</Aside>
+
 ## `config_version`
 
 A single top-level integer that records which config schema this file was written against. It drives migration detection when Cadence's schema changes.
