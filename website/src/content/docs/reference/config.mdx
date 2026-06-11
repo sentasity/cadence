@@ -102,11 +102,12 @@ The shared git-worktree lifecycle: where worktrees live, how branches merge back
 
 ### Hooks
 
-Five optional shell-command hooks let a repo plug its own scripts into fixed lifecycle points. Every hook is `null` by default, and a `null` hook means that lifecycle phase simply does not exist; with all hooks empty, `/c-worktree` runs its generic core only.
+Six optional shell-command hooks let a repo plug its own scripts into fixed lifecycle points. Every hook is `null` by default, and a `null` hook means that lifecycle phase simply does not exist; with all hooks empty, `/c-worktree` runs its generic core only.
 
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
 | `worktree.hooks.provision` | Runs after `git worktree add` (dependency install, env files, similar setup). | `null` | Shell command string or `null` |
+| `worktree.hooks.provision_verify` | Runs after `provision` to assert the worktree environment is usable; non-zero surfaces the output and offers repair / remove / keep. | `null` | Shell command string or `null` |
 | `worktree.hooks.port_assign` | Allocates a dev port for the worktree. Must print the port to stdout. | `null` | Shell command string or `null` |
 | `worktree.hooks.port_release` | Frees the worktree's port at cleanup. | `null` | Shell command string or `null` |
 | `worktree.hooks.dev_server` | Starts the worktree's dev server. | `null` | Shell command string or `null` |
@@ -115,9 +116,9 @@ Five optional shell-command hooks let a repo plug its own scripts into fixed lif
 ### How hooks run
 
 - **Environment.** Every hook runs with `WT_PATH` (absolute worktree path), `MAIN_ROOT` (absolute main-worktree path), and `BRANCH` (the worktree's branch) exported. `dev_server` additionally gets `DEV_PORT`, captured from `port_assign`'s stdout or read back from `git config branch.<branch>.devPort`.
-- **Working directory.** `provision`, `port_assign`, and `dev_server` run with cwd = `$WT_PATH`. `port_release` runs with cwd = `$MAIN_ROOT` (the worktree may already be removed). `deploy_guard` runs in the directory the deploy was attempted from: that location is what it judges.
-- **Stdout.** Only `port_assign`'s stdout carries meaning (the assigned port, persisted as `git config branch.<branch>.devPort`). Every other hook's output is informational and shown to you.
-- **Non-zero exit.** `provision`: surfaced, with an offer to remove the half-created worktree. `port_assign`: surfaced; the lifecycle continues without a port, and the dev-server phase is then unavailable. `dev_server`: surfaced. `port_release`: surfaced, but cleanup continues. `deploy_guard`: the deploy is refused, with an explanation of the merge-first-then-deploy-from-main flow.
+- **Working directory.** `provision`, `provision_verify`, `port_assign`, and `dev_server` run with cwd = `$WT_PATH`. `port_release` runs with cwd = `$MAIN_ROOT` (the worktree may already be removed). `deploy_guard` runs in the directory the deploy was attempted from: that location is what it judges.
+- **Stdout.** Only `port_assign`'s stdout carries meaning (the assigned port, persisted as `git config branch.<branch>.devPort`). Every other hook's output is informational and shown to you. `provision`'s stderr is shown at create time even on a zero exit, so a best-effort provisioner's warnings surface immediately rather than at the first push.
+- **Non-zero exit.** `provision`: surfaced, with an offer to remove the half-created worktree. `provision_verify`: surfaced, with an offer to repair (re-run `provision`, then re-verify), remove the worktree, or keep it as-is. `port_assign`: surfaced; the lifecycle continues without a port, and the dev-server phase is then unavailable. `dev_server`: surfaced. `port_release`: surfaced, but cleanup continues. `deploy_guard`: the deploy is refused, with an explanation of the merge-first-then-deploy-from-main flow.
 
 See the [/c-worktree reference](/cadence/reference/c-worktree/) for the phase-by-phase lifecycle these keys drive.
 
