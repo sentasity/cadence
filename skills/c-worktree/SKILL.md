@@ -47,7 +47,7 @@ gets pure defaults):
 | `worktree.integrate` | `rebase-ff` | integrate policy (`rebase-ff` \| `merge-commit`); sets the merge menu's recommended option |
 | `worktree.merge_lock` | `true` | acquire the shared merge lock around the merge's git operations |
 | `worktree.lock_stale_threshold` | `600` | seconds before a held lock surfaces "steal it?" (never auto-steal) |
-| `worktree.hooks.*` | all `null` | the five optional repo hooks (`provision`, `port_assign`, `port_release`, `dev_server`, `deploy_guard`) |
+| `worktree.hooks.*` | all `null` | the six optional repo hooks (`provision`, `provision_verify`, `port_assign`, `port_release`, `dev_server`, `deploy_guard`) |
 
 **One-release legacy fallback:** if `worktree.dir` is absent, read the legacy
 `execute.worktree_dir`; if `worktree.integrate` is absent, read the legacy
@@ -66,18 +66,24 @@ everything a hook may rely on (the public config reference restates it):
   `MAIN_ROOT` (absolute main-worktree path), and `BRANCH` (the worktree's branch)
   exported. `dev_server` additionally gets `DEV_PORT` (captured from
   `port_assign` stdout, or read back from `git config branch.<branch>.devPort`).
-- **Working directory:** `provision`, `port_assign`, and `dev_server` run with
-  cwd = `$WT_PATH`. `port_release` runs with cwd = `$MAIN_ROOT` (the worktree may
-  already be removed). `deploy_guard` runs in the directory the deploy was
-  attempted from (that location is what it judges).
+- **Working directory:** `provision`, `provision_verify`, `port_assign`, and
+  `dev_server` run with cwd = `$WT_PATH`. `port_release` runs with cwd =
+  `$MAIN_ROOT` (the worktree may already be removed). `deploy_guard` runs in the
+  directory the deploy was attempted from (that location is what it judges).
 - **Stdout:** only `port_assign`'s stdout is contract-bearing (the assigned
   port). Other hooks' output is informational and surfaced to the user.
+  `provision`'s stderr is **always** surfaced at create time, even on a zero
+  exit, so a best-effort provisioner's `WARNING:` lines are visible immediately
+  instead of at the first push.
 - **Non-zero exit:** `provision` failure → surface it and offer to remove the
-  half-created worktree (never leave one silently broken). `port_assign` failure
-  → surface it and continue without a port (the dev-server phase is then
-  unavailable). `dev_server` failure → surface it. `port_release` failure →
-  surface it but continue cleanup. `deploy_guard` failure → refuse the deploy and
-  explain the merge-first-then-deploy-from-main flow.
+  half-created worktree (never leave one silently broken). `provision_verify`
+  failure → surface its output and offer the user **repair** (re-run `provision`,
+  which a self-healing provisioner rebuilds from, then re-run `provision_verify`),
+  **remove** (tear the worktree down), or **keep** (proceed as-is, warned).
+  `port_assign` failure → surface it and continue without a port (the dev-server
+  phase is then unavailable). `dev_server` failure → surface it. `port_release`
+  failure → surface it but continue cleanup. `deploy_guard` failure → refuse the
+  deploy and explain the merge-first-then-deploy-from-main flow.
 
 ## Create phase
 
@@ -129,8 +135,15 @@ everything a hook may rely on (the public config reference restates it):
    `.gitignore` if it is absent (same behavior as `/c-execute` lanes).
 6. **Run the create hooks (each only when set).** First `provision` (cwd
    `$WT_PATH`); on non-zero exit, surface it and offer to remove the half-created
-   worktree. Then `port_assign` (cwd `$WT_PATH`); capture its stdout as the
-   assigned port and persist it:
+   worktree. Always surface `provision`'s stderr at this point, even on a zero
+   exit, so a best-effort provisioner's warnings are visible now rather than at
+   first push. Then `provision_verify` (cwd `$WT_PATH`): it asserts the
+   provisioned environment is actually usable, independent of `provision`'s exit
+   code. On non-zero, surface its output and offer **repair** (re-run
+   `provision`, then re-run `provision_verify`), **remove** (tear the worktree
+   down), or **keep** (proceed as-is, warned); it runs before `port_assign` so a
+   broken environment is caught before a port is allocated. Then `port_assign`
+   (cwd `$WT_PATH`); capture its stdout as the assigned port and persist it:
    ```bash
    git config branch.<branch>.devPort <port>
    ```

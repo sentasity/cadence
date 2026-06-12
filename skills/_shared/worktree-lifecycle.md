@@ -57,6 +57,7 @@ Both consumers serialize merges through `${CLAUDE_PLUGIN_ROOT}/scripts/merge-loc
 | Hook | Fires |
 |---|---|
 | `provision` | after `git worktree add` |
+| `provision_verify` | after `provision` at create, to assert the env is usable (non-zero = surface + offer repair/remove/keep) |
 | `port_assign` | at create, to allocate a dev port (stdout = the assigned port) |
 | `port_release` | at cleanup, to free the worktree's port |
 | `dev_server` | when the user asks to run the worktree's dev server |

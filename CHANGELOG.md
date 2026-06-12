@@ -2,6 +2,18 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.9.0 (2026-06-11)
+
+A post-provision health check for `/c-worktree`: the new `provision_verify` hook lets a repo assert a freshly-provisioned worktree's environment is actually usable, instead of trusting the `provision` hook's exit code.
+
+### Added
+
+- **`provision_verify` worktree hook** (`worktree.hooks.provision_verify`, default `null`): a sixth optional hook `/c-worktree` runs at create time, after `provision` and before `port_assign`. It asserts the provisioned environment is usable (for example, `cd backend && uv run python -c "import yaml, moto"`), independent of what `provision`'s own exit code claimed. On a non-zero exit the skill surfaces the output and offers repair (re-run `provision`, then re-verify), remove, or keep. Additive and backward compatible: no `config_version` bump, and a repo that does not set it keeps today's behavior. Documented across `skills/c-worktree/SKILL.md`, `skills/_shared/worktree-lifecycle.md`, and the config and `/c-worktree` reference pages.
+
+### Changed
+
+- **`/c-worktree` always surfaces the `provision` hook's stderr at create time, even on a zero exit.** A best-effort provisioner that warns and exits 0 no longer hides the warning until the first push. The config reference also documents the post-checkout-git-hook versus skill double-run interaction that `provision_verify` makes moot for correctness.
+
 ## v0.8.0 (2026-06-10)
 
 Personal config overrides: a gitignored `.cadence/config.local.yaml` overlay for preferences that legitimately differ per person or per machine, now that team repos can commit their `.cadence/config.yaml`.

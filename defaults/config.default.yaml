@@ -41,12 +41,13 @@ worktree:
   integrate: rebase-ff        # rebase-ff | merge-commit (relocated from execute.integrate)
   merge_lock: true            # on by default; both /c-worktree and /c-execute acquire it
   lock_stale_threshold: 600   # seconds; past this a held lock surfaces "steal it?" (never auto-steal)
-  hooks:                      # all null by default -> generic behavior; null hook = phase absent
-    provision:    null        # runs after `git worktree add`
-    port_assign:  null        # allocates a dev port for the worktree; MUST print the port to stdout
-    port_release: null        # frees the worktree's port at cleanup
-    dev_server:   null        # starts the worktree's dev server (Sentasity-only in practice)
-    deploy_guard: null        # exits non-zero if a deploy is not allowed from here (Sentasity-only)
+  hooks:                          # all null by default -> generic behavior; null hook = phase absent
+    provision:        null        # runs after `git worktree add`
+    provision_verify: null        # after provision: assert the env is usable; non-zero => surface + offer repair/remove/keep
+    port_assign:      null        # allocates a dev port for the worktree; MUST print the port to stdout
+    port_release:     null        # frees the worktree's port at cleanup
+    dev_server:       null        # starts the worktree's dev server (Sentasity-only in practice)
+    deploy_guard:     null        # exits non-zero if a deploy is not allowed from here (Sentasity-only)
 
 authoring:
   max_parallel: 6          # concurrent doc-generator agents (no worktrees; cheap)
