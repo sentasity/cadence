@@ -1,7 +1,7 @@
 # Cadence config for the Cadence plugin source repo (dogfooding).
 # Overrides only what differs from defaults/config.default.yaml.
 
-config_version: 4
+config_version: 5
 paths:
   designs: docs/designs
   plans:   docs/plans
@@ -67,7 +67,7 @@ audits:
     - validation-doc-presence
   optional: []
   build_validator:
-    command: null
+    command: node --test scripts/migrate-config.test.js
     expect_zero_exit: true
 
 plain_english:
@@ -88,3 +88,10 @@ validate:
 find_bugs:
   default_baseline: main
   exclude: [node_modules, dist, build, __pycache__, target, .next, vendor]
+
+storage:
+  backend: filesystem          # filesystem | notion  (default: filesystem, today's behavior)
+  notion:
+    root_page:  ""             # Notion page URL or id to provision under; share it with the MCP integration
+    designs_db: ""             # auto-filled on first Notion-mode run, then commit
+    plans_db:   ""             # auto-filled on first Notion-mode run, then commit

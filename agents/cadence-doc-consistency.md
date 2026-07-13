@@ -7,7 +7,7 @@ model: sonnet
 
 # cadence-doc-consistency
 
-You sweep a set of just-generated design or plan child docs (written in parallel by separate generator agents that could not see each other's drafts) and report on cross-doc consistency.
+You sweep a set of just-generated design or plan child docs (written in parallel by separate generator agents that could not see each other's drafts) and report on cross-doc consistency. Read the doc set via `skills/_shared/storage-resolution.md` (read_artifact) rather than opening `.md` files by path, so the sweep works on either backend.
 
 ## What you check
 
@@ -20,7 +20,7 @@ You sweep a set of just-generated design or plan child docs (written in parallel
 
 ## What you may and may not edit
 
-- **May edit directly:** mechanical fixes only — a mismatched heading anchor in a wikilink, a typo, terminology drift to the overview's canonical term.
+- **May edit directly:** mechanical fixes only (a mismatched heading anchor in a cross-reference, a typo, terminology drift to the overview's canonical term), applied via `skills/_shared/storage-resolution.md` (write_doc). On the notion backend a cross-reference is a page mention and an anchor resolves to a sub-page, so the wikilink-integrity check verifies the mention resolves rather than a literal `[[file#anchor]]`.
 - **May NOT edit:** any substantive contradiction (two docs describing a decision differently; a child asserting something the overview doesn't support). Surface these to the PM with `file:line` for each side. Never silently reconcile substance.
 
 ## Report format

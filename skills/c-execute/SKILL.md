@@ -24,7 +24,7 @@ Before scheduling, detect the plan format per-plan:
 
 1. Path resolves to a plan folder with `00-overview.md`.
 2. Status is `draft` (becomes `in-progress` once you start) OR `in-progress` (resuming).
-3. Linked design (from `linked_design:` frontmatter) exists with `status: approved` or later.
+3. Linked design exists with `status: approved` or later — resolve and read it via `skills/_shared/storage-resolution.md` (read_artifact) rather than reading a raw `linked_design:` frontmatter line.
 4. Working tree is clean (no unstaged or uncommitted changes).
 5. Current branch — print branch and ask before proceeding if it's `main`/`master`/`develop`.
 6. **Worktree confirmation (new-format plans only; skip if `execute.worktree_confirm: false`).** Before opening the first lane worktree, print the worktree plan and ask once via `AskUserQuestion`:
@@ -33,21 +33,21 @@ Before scheduling, detect the plan format per-plan:
 
 ## On first flip from `draft` to `in-progress`: record `base_sha`
 
-Before starting any task, record the current HEAD SHA into the plan's `00-overview.md` frontmatter as `base_sha: <sha>`. This is the anchor `/c-audit` will use to compute the diff range (`git diff <base_sha>..HEAD`). **On resume (status already `in-progress`), preserve the existing `base_sha` — never re-anchor, even if HEAD has moved.**
+Before starting any task, record the current HEAD SHA on the plan overview as `base_sha` per `skills/_shared/storage-resolution.md` (set_property). This is the anchor `/c-audit` will use to compute the diff range (`git diff <base_sha>..HEAD`). **On resume (status already `in-progress`), read the existing `base_sha` via read_artifact and preserve it — never re-anchor, even if HEAD has moved.**
 
 SHA-based pinning is robust against rebases, merges, and unrelated commits that timestamp-based diffing would miss.
 
 ## PM responsibilities
 
-1. Read the plan once: overview + every phase file + 96-validation + 97/98/99.
+1. Read the plan once via `skills/_shared/storage-resolution.md` (read_artifact): a single pass materializes the overview + every phase doc + 96-validation + 97/98/99 into the in-memory task list. This is the only plan read, and only the PM issues it; do not read phase-file markdown by path.
 2. Build an internal task list — every `### Task N.M` becomes a tracked item with its `Depends:` edges, `Reads:` block, `Touches:` list, and full step block extracted.
 3. Build the dependency DAG from each task's `Depends:` edges and form lanes per the scheduling loop in "Lane model and DAG scheduling".
 4. Dispatch lanes concurrently up to `execute.max_parallel`, respecting `Touches:` disjointness.
-5. **After each task lands** (spec ✓ + code ✓ + Invariant 3 clean), edit the phase file to flip every `- [ ]` step under `### Task N.M` to `- [x]`. See [Marking task complete](#marking-task-complete-mandatory--required-for-resume).
+5. **After each task lands** (spec ✓ + code ✓ + Invariant 3 clean), record the lane's progress by ticking every `- [ ]` step under `### Task N.M` per `skills/_shared/storage-resolution.md` (tick). See [Marking task complete](#marking-task-complete-mandatory--required-for-resume).
 6. Surface blockers to user — never work around silently.
-7. Run audit gate at the end; on pass, commit accumulated plan-file changes (status flip + all checkbox flips) in one commit, then mark `implemented`.
+7. Run audit gate at the end; on pass, set status to `implemented` per `skills/_shared/storage-resolution.md` (set_status). Committing accumulated plan-file changes in one commit is the filesystem backend's mechanism only; in Notion mode every tick and status write already landed live, so there is no plan file to commit (see [[../../docs/designs/2026-07-10-notion-mode/05-execute-integration]]).
 
-**The PM never reads the whole repo, never runs sub-agents on its own session context, never aggregates code commits, never amends commits, never skips hooks.**
+**The PM never reads the whole repo, never runs sub-agents on its own session context, never aggregates code commits, never amends commits, never skips hooks.** The PM is also the sole caller of `skills/_shared/storage-resolution.md`: it issues the one `read_artifact` and every `tick`/`set_status`/`set_property` write. Implementers and reviewers receive their task spec as plain text and touch git only; they stay storage-backend-blind exactly as today (see [[../../docs/designs/2026-07-10-notion-mode/05-execute-integration]]).
 
 ## Lane model and DAG scheduling
 
@@ -108,7 +108,7 @@ Lane isolation and integration follow `skills/_shared/worktree-lifecycle.md`.
 - Status `in-progress` = resumable. `/c-execute <plan-path>` on an `in-progress` plan resumes; does not restart.
 - On resume, rebuild the DAG from `Depends:` edges, run `git worktree prune` and remove any leftover `cadence/lane-*` worktrees and branches (per `skills/_shared/worktree-lifecycle.md`), compute the ready set from unchecked tasks, and continue scheduling.
 - **The lane is the resume unit.** A lane whose checkboxes were not all flipped to `- [x]` is considered incomplete and re-runs from scratch; any orphaned worktree work is discarded by the prune step.
-- The PM does NOT trust in-memory state across sessions. Plan file's checkbox state on disk (committed or not) is the only source of truth.
+- The PM does NOT trust in-memory state across sessions. The plan's checkbox state is the only source of truth — read it on resume via `skills/_shared/storage-resolution.md` (read_artifact) (the on-disk phase file on the filesystem backend, the to-do block state on the notion backend), cross-check unticked lanes against git history, and re-tick any whose commits already landed.
 - **Dirty tree handling on resume:**
   - Dirty with ONLY plan-file edits (checkbox flips on the plan being resumed) → expected mid-execution state; continue.
   - Dirty with any other files → surface and ask user to commit/stash/abort. Never silently resume on a dirty tree that contains code changes.
@@ -175,9 +175,8 @@ They run at the same time (no ordering barrier). Resolve the two reports:
 
 The unit of completion is the **lane**, not the individual task. After a lane lands (spec ✓ + code ✓ + clean-merge ✓ + Invariant 3 grep clean for the full lane diff), the PM **must** edit the plan's phase file:
 
-1. Open the phase file(s) containing the just-landed lane's tasks.
-2. Flip every `- [ ]` step under every `### Task N.M` in the lane to `- [x]`. All of the lane's task checkboxes flip together on land.
-3. Save. **Do NOT commit the plan-file edit per task or per lane.**
+1. For each `### Task N.M` in the just-landed lane, tick every `- [ ]` step per `skills/_shared/storage-resolution.md` (tick). All of the lane's task checkboxes tick together on land.
+2. On the filesystem backend a tick rewrites `- [ ]` to `- [x]` in the phase file (held uncommitted); on the notion backend it checks the to-do block live. **Do NOT commit the plan-file edit per task or per lane** (filesystem backend only; the notion backend has no plan file).
 
 This is the ONLY mechanism for tracking progress across sessions. Without it the resume protocol fails — re-invocation starts over from Task 1.1, and the completion-time gate (which checks for `- [x]`) will never let the plan flip to `implemented`.
 
@@ -205,7 +204,7 @@ grep -Ei "TODO|FIXME|XXX|// will|// later|# stub" <diff-range>
 ## Commits
 
 - **Code commits — cadence: per task.** Configurable via `config.plan.commit_cadence`. Driven by the implementer's final step.
-- **Plan-file commit — once, at end of execution.** Status flip from `in-progress` to `implemented` + every accumulated checkbox flip lands in one commit (default message: `chore: mark plan implemented`). Do NOT commit plan-file edits per task.
+- **Plan-file commit — filesystem backend only, once at end of execution.** On the filesystem backend the status flip from `in-progress` to `implemented` + every accumulated checkbox flip lands in one commit (default message: `chore: mark plan implemented`); do NOT commit plan-file edits per task. On the notion backend every `set_status` and `tick` already wrote live through storage-resolution, so there is no plan file and this commit is skipped.
 - No `--amend` unless user explicitly asks.
 - No `--no-verify`, no `--no-gpg-sign` unless user explicitly asks.
 - Hook failures → fix root cause → new commit (NOT amend).
@@ -254,7 +253,7 @@ Once every task in every phase file is complete:
 
 | Auditor result | `/c-execute` response |
 |---|---|
-| All pass (or warnings only) | Flip overview status to `implemented`, update `updated:`, print: *"Plan implemented. Deploy your changes, then run `/c-validate <path>`. If you want to re-run the audit later for spot-checks, use `/c-audit <plan-path>` standalone."* Then, per `skills/_shared/browser-validation.md`, append one informational line **only if** the just-implemented plan's `96-validation.md` has at least one Category B item with an `e2e:` reference AND no runner is configured or detected (`validate.browser_command` at default `npx playwright test` and `auto` detection finds no suite): recommend installing/configuring a runner (Playwright by default), else those steps fall back to manual. Once per run; a repo with a runner configured/detected prints nothing. |
+| All pass (or warnings only) | Set overview status to `implemented` per `skills/_shared/storage-resolution.md` (set_status), which bumps `updated:`, print: *"Plan implemented. Deploy your changes, then run `/c-validate <path>`. If you want to re-run the audit later for spot-checks, use `/c-audit <plan-path>` standalone."* Then, per `skills/_shared/browser-validation.md`, append one informational line **only if** the just-implemented plan's `96-validation.md` has at least one Category B item with an `e2e:` reference AND no runner is configured or detected (`validate.browser_command` at default `npx playwright test` and `auto` detection finds no suite): recommend installing/configuring a runner (Playwright by default), else those steps fall back to manual. Once per run; a repo with a runner configured/detected prints nothing. |
 | Any blocking failure | Leave status at `in-progress`. Surface failing audits. User picks fix / mark out of scope / abort. |
 
 ## What `/c-execute` doesn't do

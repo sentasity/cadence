@@ -46,11 +46,12 @@ After hearing the topic (and before any deep Q&A), pick a mode:
 Before entering Q&A, walk up from the current working directory looking for `.cadence/config.yaml`. If none found:
 
 1. Print: *"No `.cadence/config.yaml` found in this repo or any parent. Scaffold defaults to get started? (y/n)"*
-2. **If user says yes,** ask three focused questions (one at a time via `AskUserQuestion`):
+2. **If user says yes,** ask four focused questions (one at a time via `AskUserQuestion`):
    - **Paths:** *"Where should designs and plans live?"* — options: `docs/designs` (default), `docs/obsidian/designs`, or other (free text).
    - **TDD default:** *"Should plans default to TDD-shaped tasks (test → fail → impl → pass → commit)?"* — yes / no.
    - **Advisors:** *"Any repo-specific agents to register as advisors?"* — comma-separated names or "none."
-3. Read `${CLAUDE_PLUGIN_ROOT}/defaults/config.default.yaml` as the source of truth, then write `.cadence/config.yaml` to the repo root: take its `config_version` verbatim, fold the user's three brainstorm answers (paths, TDD default, advisors) over the corresponding default keys, and write the merged result with every other default key included as-is. Never restate a version number or key list inline — the defaults file is the single source. Confirm the file was created, and mention that personal per-machine overrides can later go in `.cadence/config.local.yaml` (gitignored; see `skills/_shared/config-resolution.md`).
+   - **Storage backend:** *"Store designs and plans on the filesystem (default) or in Notion?"* — filesystem / notion. When the user picks notion, ask one follow-up for `storage.notion.root_page` (the parent page under which Cadence provisions its databases); see [[../../docs/designs/2026-07-10-notion-mode/03-connection-provisioning]]. Filesystem needs no follow-up.
+3. Read `${CLAUDE_PLUGIN_ROOT}/defaults/config.default.yaml` as the source of truth, then write `.cadence/config.yaml` to the repo root: take its `config_version` verbatim, fold the user's four brainstorm answers (paths, TDD default, advisors, and — when the user chose notion — `storage.backend` plus `storage.notion.root_page`) over the corresponding default keys, and write the merged result with every other default key included as-is. Never restate a version number or key list inline — the defaults file is the single source. Confirm the file was created, and mention that personal per-machine overrides can later go in `.cadence/config.local.yaml` (gitignored; see `skills/_shared/config-resolution.md`).
 4. Enter the regular Q&A loop (below) for the user's brainstorm input.
 5. **If user says no,** exit cleanly with a one-line note: *"Config required to proceed. Run /c-brainstorm again when ready."* No error, no pointer dump.
 
@@ -59,7 +60,7 @@ Before entering Q&A, walk up from the current working directory looking for `.ca
 **Step 1 — Parallel context scan + pre-flight** (before the first question, all in parallel):
 - Read the resolved config per `skills/_shared/config-resolution.md` (resolve paths, naming, status vocab, advisors).
 - Read recent commits: `git log -20 --oneline`.
-- Read related artifacts under `paths.designs` and `paths.plans` that match the idea's slug or topic.
+- Enumerate and read related artifacts that match the idea's slug or topic per `skills/_shared/storage-resolution.md` (query to list each type's artifacts, read_artifact to pull a match); do not scan `paths.designs`/`paths.plans` directly.
 - Read the repo's `CLAUDE.md` (if any).
 
 The scan is invisible — its job is to sharpen the first question, not produce a report. No questions during the scan.
@@ -103,7 +104,7 @@ If the user picks "nothing," exit cleanly with no artifact. The conversation its
 
 When Q&A converges, confirm: *"I have enough — writing `00-overview.md`. Proceed?"*
 
-Stub structure (at `<paths.designs>/{yyyy-mm-dd-slug}/00-overview.md`):
+Stub structure — create the design artifact for slug `{yyyy-mm-dd-slug}` per `skills/_shared/storage-resolution.md` (create_artifact), which writes the `00-overview` overview with the frontmatter and sections below; do not compute a `<paths.designs>/…` path:
 
 - Frontmatter per `skills/_shared/frontmatter.md` (design overview shape, `linked_plan: null`).
 - **What we're building** — 2-4 sentences, plain English.

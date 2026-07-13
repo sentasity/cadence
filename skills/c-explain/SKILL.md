@@ -17,13 +17,13 @@ You run an interactive discussion of an existing design or plan. The user drives
 
 ## Entry contract
 
-**Refuses when:** path doesn't exist; OR path is in a Cadence-managed location (under `paths.designs` or `paths.plans` from `.cadence/config.yaml`) but lacks the expected structure (no overview, missing frontmatter) — unless `--any` is set.
+**Refuses when:** the target does not resolve to an artifact; OR the target is in a Cadence-managed location and the resolved artifact lacks the expected structure (no overview, missing frontmatter) — check existence and structure via `skills/_shared/storage-resolution.md` (artifact_exists) in the active backend — unless `--any` is set.
 
 ## Phase 1 — Parallel context scan
 
 Before the first user question, all in parallel:
 
-- Read the target doc(s). For a folder target, read the overview + all child docs. For a section anchor, scope the read to that section but still load the parent doc's frontmatter for context.
+- Read the target doc(s) via `skills/_shared/storage-resolution.md` (read_artifact). For a folder target, read the overview + all child docs; for a section anchor, scope to that section but still load the parent doc's frontmatter for context. Do not assume a `paths.designs`/`paths.plans` file path.
 - Read the resolved config per `skills/_shared/config-resolution.md` (resolve paths, naming, advisor list).
 - Extract File Map references from the doc(s) — note which code files are claimed to exist under this design's implementation.
 - `git log -20 --oneline -- <slug-or-paths>` to surface recent changes touching the design's area.
@@ -73,7 +73,7 @@ For each user question:
 4. **If the doc doesn't cover it** (a gap), run the investigation chain in order:
    - Code referenced by File Map.
    - `git log` and commit messages for the relevant area.
-   - Other designs in `paths.designs` that cross-link to this one.
+   - Other designs that cross-link to this one, enumerated per `skills/_shared/storage-resolution.md` (query) rather than by scanning `paths.designs`.
    - If still unclear, answer with `[INFERRED]` marker and explain the inference chain. Never fabricate a rationale.
 
 5. **Cross-references.** When the user's question pulls in another section or another design, follow the wikilink and incorporate it — don't redirect the user to read it themselves.

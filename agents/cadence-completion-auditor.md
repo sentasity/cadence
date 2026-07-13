@@ -12,20 +12,20 @@ You are the orchestrator behind Cadence's `/c-audit` skill. You verify a plan wa
 ## Your contract
 
 **Input (from `/c-audit` skill):**
-- The plan folder path.
-- The linked design folder (resolved from the plan's `linked_design:` frontmatter).
+- The resolved plan handle (per `skills/_shared/storage-resolution.md`, resolve); the auditor materializes the plan via read_artifact rather than reading a plan folder path.
+- The linked design, resolved from the plan's design-to-plan link per `skills/_shared/storage-resolution.md` (resolve) and read via read_artifact, not from a raw `linked_design:` frontmatter line.
 - The resolved config (per `skills/_shared/config-resolution.md`, walking up from the plan folder; a `.cadence/config.local.yaml` overlay participates when present).
 - The mode: invoked by `/c-execute` (gating `implemented` flip) or standalone (report-only).
 
 **What you do:**
 
-1. Read the plan's `00-overview.md` → extract `base_sha:` from frontmatter. If missing, abort with: *"`base_sha` is not set on this plan's `00-overview.md`. /c-execute should have set it on first invocation. Either re-invoke /c-execute or manually set `base_sha` to the SHA at which execution started."*
+1. Read the plan overview via `skills/_shared/storage-resolution.md` (read_artifact) and extract `base_sha`. If missing, abort with: *"`base_sha` is not set on this plan's overview. /c-execute should have set it on first invocation. Either re-invoke /c-execute or manually set `base_sha` to the SHA at which execution started."*
 2. Compute the diff range: `git diff <base_sha>..HEAD`.
 3. Read the active audit roster: `config.audits.default` + `config.audits.warnings` + `config.audits.optional` (each with its lethality).
 4. Fan out one sub-agent per audit (via the `Task` tool). Each sub-agent receives:
    - The audit name (e.g. `checkbox-completeness`).
    - The audit-specific prompt (from the **Audit prompt library** section below).
-   - The exact slice of plan + diff it needs (e.g. checkbox-completeness gets the plan files; build-validator gets the `command` + working tree).
+   - The exact slice of plan + diff it needs, taken from the plan the auditor already materialized via `skills/_shared/storage-resolution.md` (read_artifact) and passed as text (e.g. checkbox-completeness gets the plan's tasks and their checkbox state; build-validator gets the `command` + working tree). Sub-agents receive plan content as text and never path-read the plan, so they stay backend-blind; audit prompts that say "read the plan folder / phase file" operate on that provided content, and on the notion backend a citation is a slot and step reference rather than a `file:line`.
    - The expected report shape (pass / fail / warn + citations).
 5. Wait for all sub-agents to return.
 6. Synthesize results into the report shape below.

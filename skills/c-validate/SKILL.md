@@ -24,7 +24,7 @@ You walk a plan's post-deploy validation doc. You do NOT deploy. You verify depl
 
 **Recommendation note (once, at the start of the walk).** Per `skills/_shared/browser-validation.md`: if this plan's `96-validation.md` has at least one Category B item with an `e2e:` reference AND no runner is configured or detected (`validate.browser_command` left at default `npx playwright test` and `auto` detection finds no suite), print one informational line recommending a runner (Playwright by default), then proceed — those items take the manual fallback. A repo with a runner configured/detected prints nothing. Once per run; never nag.
 
-**1. Category C — Prerequisites first.** Read section C, print the prereq list, ask user to confirm each: *"Backend deployed? Migration run? Test users seeded? (y/each)"* Walk BLOCKS until every C item confirmed. No prereq = no validation.
+**1. Category C — Prerequisites first.** Read the plan's `96-validation` once via `skills/_shared/storage-resolution.md` (read_artifact); for section C print the prereq list, ask user to confirm each: *"Backend deployed? Migration run? Test users seeded? (y/each)"* Walk BLOCKS until every C item confirmed. No prereq = no validation.
 
 **2. Category A — Automated.** Run each item itself: `curl`, `psql`, `pytest`, etc. Mark `- [x]` as each passes. Stop on first failure; surface exact output for user resolution.
 
@@ -37,9 +37,9 @@ The C→A→B order is unchanged, and Tracking's checkpoint-before-yield flush a
 ## Tracking
 
 - Every entry in A/B/C carries `- [ ]` at plan-write time.
-- Check them off as you walk.
-- **Checkpoint before yielding.** Follow `skills/_shared/progress-checkpoint.md`: write each `- [x]` to `96-validation.md` the moment its check passes, and flush every passed item to disk BEFORE pausing — before asking the user to do a Category B manual step, before a clarifying question, and before stopping on a Category A failure. The just-passed checks must be on disk before control leaves you, or a context loss reruns them.
-- On re-runs (status already `completed`), reset checkboxes per `config.validate.reset_checkboxes_on_rerun` (default `true`).
+- Check them off as you walk: every `- [x]` mark in Categories A, B, and C (above) is performed per `skills/_shared/storage-resolution.md` (tick), which rewrites the markdown checkbox on the filesystem backend and checks the to-do block on the notion backend.
+- **Checkpoint before yielding.** Follow `skills/_shared/progress-checkpoint.md`: confirm each item's tick has landed the moment its check passes, and flush every passed item BEFORE pausing — before asking the user to do a Category B manual step, before a clarifying question, and before stopping on a Category A failure. The just-passed checks must be durable before control leaves you, or a context loss reruns them.
+- On re-runs (status already `completed`), clear the checkboxes with a tick-clearing pass per `skills/_shared/storage-resolution.md` (tick), gated by `config.validate.reset_checkboxes_on_rerun` (default `true`).
 
 ## Failure handling
 
@@ -53,10 +53,10 @@ Status NEVER advances to `completed` with any unchecked 96 item. No silent passe
 
 ## On full pass
 
-1. Flip this plan's overview status to `completed`. Update `updated:`.
+1. Set this plan's overview status to `completed` per `skills/_shared/storage-resolution.md` (set_status), which bumps `updated:`.
 2. Print: *"Validation walked clean. `<N>` automated, `<M>` manual workflows, `<P>` prereqs confirmed."*
-3. Read this plan's `linked_design:` frontmatter to find the parent design.
-4. Prompt: *"Flip design `[[...]]` to `completed` too?"* User picks. Default no — `approved` is the operational signal; `completed` is a formal close.
+3. Find the parent design through the design↔plan link: the plan overview already read via `skills/_shared/storage-resolution.md` (read_artifact) carries the link, and the design is then resolved via (resolve) — never by reading a raw `linked_design:` frontmatter line.
+4. Prompt: *"Flip design `[[...]]` to `completed` too?"* User picks. Default no — `approved` is the operational signal; `completed` is a formal close. On yes, set the design's status via `skills/_shared/storage-resolution.md` (set_status).
 
 **Linkage discipline:**
 - If `linked_design:` points to a design that doesn't exist, surface as a warning — don't silently drop.

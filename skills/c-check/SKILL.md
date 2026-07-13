@@ -17,7 +17,7 @@ You review designs and plans for substance — does this make sense, does it han
 
 ## Entry contract
 
-**Refuses when:** path doesn't exist; OR path is in a Cadence-managed location (under `paths.designs` or `paths.plans` from `.cadence/config.yaml`) but lacks the expected structure (no overview, missing frontmatter) — unless `--any` is set.
+**Refuses when:** the target does not resolve to an artifact; OR the target is in a Cadence-managed location and the resolved artifact lacks the expected structure (no overview, missing frontmatter) — check existence and structure via `skills/_shared/storage-resolution.md` (artifact_exists) in the active backend — unless `--any` is set.
 
 ## Default mode: substance checks
 
@@ -50,7 +50,7 @@ These duplicate what `/c-design` and `/c-plan` already run in their self-review 
 
 ## Dispatch model
 
-1. Read target doc(s) + the resolved config (per `skills/_shared/config-resolution.md`).
+1. Read the target doc(s) via `skills/_shared/storage-resolution.md` (read_artifact); read the resolved config per `skills/_shared/config-resolution.md`.
 2. For each enabled check, dispatch a fresh sub-agent (via `Task`) with the doc(s) + the check's specific prompt + the expected output shape.
 3. Sub-agents return findings with citations (file:line, section anchor).
 4. Synthesize findings into a report with one section per check.
@@ -100,7 +100,7 @@ Apply conservatively. **Default to Important when uncertain** — `Critical` is 
 
 ## Interactive finding application (optional follow-up)
 
-After the report is printed, ask via `AskUserQuestion` how to handle findings. Default is report-only; any application path is opt-in. Per [[designs/2026-05-17-cadence/00-overview#Decisions log]] TUI decision.
+After the report is printed, ask via `AskUserQuestion` how to handle findings. Default is report-only; any application path is opt-in. When a finding is applied, the edit to the reviewed doc is written via `skills/_shared/storage-resolution.md` (write_doc) — this is the only write `/c-check` ever performs, and only on this opt-in path; the default report-only flow makes no writes. Per [[designs/2026-05-17-cadence/00-overview#Decisions log]] TUI decision.
 
 > **Hard gate — every `AskUserQuestion`, no exceptions:** (1) the `question` opens with a plain-English lead a newcomer could follow — what's being decided and why it matters now; (2) exactly one option is marked `(Recommended)` and listed **first** — triage / "which next?" menus included ("your call" is a non-answer); (3) each option's `description` gives the one-sentence trade-off. Full spec: `skills/_shared/ask-user-question.md`.
 

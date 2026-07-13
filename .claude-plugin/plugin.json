@@ -1,6 +1,6 @@
 {
   "name": "cadence",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Phase-aware, sub-agent-driven design/plan/execute system with explicit OOS discipline and post-deploy validation.",
   "author": {
     "name": "sentasity",

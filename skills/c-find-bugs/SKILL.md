@@ -48,7 +48,7 @@ You hunt concrete, fixable defects. Each defect comes with a citation, severity,
 
 ## Dispatch model
 
-1. Read target (or the manifest of files in the target).
+1. Read target (or the manifest of files in the target). When the target is a Cadence design or plan, read it via `skills/_shared/storage-resolution.md` (read_artifact); code targets (branch / file / `--repo`), the diff scoping, and the vendored/generated exclusion logic are unchanged and never call resolution.
 2. Estimate token cost. On `--repo`, confirm before proceeding.
 3. Fan out sub-agents — one per defect category enabled in config (via `Task`).
 4. Each sub-agent reports defects with file:line citations, severity, one-line fix direction.

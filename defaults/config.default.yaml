@@ -3,13 +3,20 @@
 # never migrated); resolution order is defined in skills/_shared/config-resolution.md.
 # No assumption of obsidian or any specific repo layout.
 
-config_version: 4          # schema version; drives migration detection
+config_version: 5          # schema version; drives migration detection
 
 paths:
   designs: docs/designs
   plans:   docs/plans
   future:  docs/future
   config:  .cadence
+
+storage:
+  backend: filesystem          # filesystem | notion  (default: filesystem, today's behavior)
+  notion:
+    root_page:  ""             # Notion page URL or id to provision under; share it with the MCP integration
+    designs_db: ""             # auto-filled on first Notion-mode run, then commit
+    plans_db:   ""             # auto-filled on first Notion-mode run, then commit
 
 naming:
   date_format: "YYYY-MM-DD"

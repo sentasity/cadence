@@ -546,3 +546,59 @@ test('main: 3->4 carries customized values and advises removing the legacy keys'
   // Legacy keys left in place (the migrator never deletes).
   assert.match(after, /^ {2}worktree_dir: \.claude\/worktrees/m);
 });
+
+// ---- v4 -> v5 storage block (additive whole-block append) ----
+
+// scripts/migrate-config.js is intentionally NOT modified for the storage
+// block: mergeMissing already appends a whole missing top-level block verbatim
+// via extractBlock, and the nested notion.* grandchildren ride along because
+// they are deeper-indented (not column-0), not because of any per-key logic.
+// This test confirms that mechanism for the exact storage block shipped in
+// defaults/config.default.yaml (v5).
+const STORAGE_BLOCK = [
+  'storage:',
+  "  backend: filesystem          # filesystem | notion  (default: filesystem, today's behavior)",
+  '  notion:',
+  '    root_page:  ""             # Notion page URL or id to provision under; share it with the MCP integration',
+  '    designs_db: ""             # auto-filled on first Notion-mode run, then commit',
+  '    plans_db:   ""             # auto-filled on first Notion-mode run, then commit',
+].join('\n');
+
+test('storage: a v4 config migrates to v5 with the storage block appended verbatim (no migrate-config.js change)', () => {
+  // Defaults: version + paths + the verbatim storage block, storage last so
+  // extractBlock returns it exactly (trailing-blank trim lands on plans_db).
+  const def = [
+    'config_version: 5          # schema version; drives migration detection',
+    'paths:',
+    '  designs: docs/designs',
+    '  plans:   docs/plans',
+    STORAGE_BLOCK,
+  ].join('\n') + '\n';
+  // Synthetic v4 project config: paths only, no storage block.
+  const proj = [
+    'config_version: 4',
+    'paths:',
+    '  designs: docs/designs',
+    '  plans:   docs/plans',
+  ].join('\n') + '\n';
+  // Mirror main(): bump first, detect on the bumped text, then merge.
+  let out = bumpOrInsertVersion(proj, 5);
+  const missing = detectMissingKeys(out, def);
+  // storage is a WHOLE missing top-level block, not per-key nested inserts.
+  assert.ok(missing.missingBlocks.includes('storage'), 'storage is a whole missing top-level block');
+  assert.ok(
+    !missing.missingNested.some((e) => e.block === 'storage'),
+    'nested notion.* keys are NOT reported separately; they ride the whole-block append'
+  );
+  out = mergeMissing(out, def, missing);
+  // config_version bumped to 5.
+  assert.match(out, /^config_version: 5$/m);
+  // The whole storage block (header + backend + nested notion + all three db
+  // keys) landed as a contiguous verbatim chunk.
+  assert.ok(out.includes(STORAGE_BLOCK), 'storage block appended verbatim, nested notion.* included');
+  // Spot-check the nested grandchildren survived the append.
+  assert.match(out, /^ {2}notion:$/m);
+  assert.match(out, /^ {4}root_page: {2}""/m);
+  assert.match(out, /^ {4}designs_db: ""/m);
+  assert.match(out, /^ {4}plans_db: {3}""/m);
+});

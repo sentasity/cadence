@@ -45,7 +45,7 @@ A single top-level integer that records which config schema this file was writte
 
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
-| `config_version` | Schema version of this file; used to detect when a migration is needed. | `4` | Integer |
+| `config_version` | Schema version of this file; used to detect when a migration is needed. | `5` | Integer |
 
 ## `paths`
 
@@ -57,6 +57,23 @@ Where Cadence reads and writes documents. Paths are relative to the repo root. C
 | `paths.plans` | Folder that holds plan folders. | `docs/plans` | Repo-relative path |
 | `paths.future` | Folder for "future" / parking-lot notes (e.g. thought-partner `/c-brainstorm` notes). | `docs/future` | Repo-relative path |
 | `paths.config` | Folder that holds this config and Cadence's working state. | `.cadence` | Repo-relative path |
+
+## `storage`
+
+Where Cadence keeps its artifacts (brainstorm stubs, designs, and plans). The backend is filesystem by default, exactly today's behavior; setting `backend: notion` moves those artifacts into two Notion databases instead, leaving source code and git commits untouched. The whole `storage` block is **team policy**: it belongs in the committed `.cadence/config.yaml`, never in the personal `.cadence/config.local.yaml` overlay.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `storage.backend` | Which backend stores designs, plans, and stubs. `filesystem` keeps them as markdown folders under `paths.*`; `notion` stores them as rows in two Notion databases. | `filesystem` | `filesystem` \| `notion` |
+| `storage.notion.root_page` | The Notion page Cadence provisions the two databases under. A page URL or id you own, shared with your Notion MCP's integration. Required when `backend` is `notion`. | `""` (empty) | Notion page URL or id |
+| `storage.notion.designs_db` | The Designs database id. Left empty by you; auto-filled on the first Notion-mode run, then committed so the team shares it. | `""` (empty) | Notion database id (auto-filled) |
+| `storage.notion.plans_db` | The Plans database id. Left empty by you; auto-filled on the first Notion-mode run, then committed so the team shares it. | `""` (empty) | Notion database id (auto-filled) |
+
+With `backend: filesystem` (the default) the `notion.*` keys are ignored and nothing changes. To opt in, set `backend: notion`, fill `notion.root_page`, and leave the two `*_db` keys empty: the first Notion-mode run creates the databases and writes their ids back into the committed config. See the [Notion mode reference](/cadence/reference/notion-mode/) for the full setup walkthrough.
+
+<Aside type="caution" title="The whole storage block is team policy">
+`storage.backend`, `storage.notion.root_page`, and the two auto-filled database ids identify databases the whole team reads and writes. They belong in the committed `.cadence/config.yaml`, never in `.cadence/config.local.yaml`. A database id placed in the local overlay would point one person's Cadence at the databases while everyone else's config still shows empty ids and re-triggers provisioning.
+</Aside>
 
 ## `plan`
 
@@ -221,10 +238,10 @@ Defaults for `/c-find-bugs`.
 
 ## A realistic config
 
-This repo dogfoods Cadence, and its own `.cadence/config.yaml` is a good example of the "override only what differs" pattern. It keeps the default paths and audits, bumps `execute.max_parallel` to `5`, and opts into `plan.parallel_grain: in-file`. As of `config_version: 4` the worktree keys live in their own `worktree:` block:
+This repo dogfoods Cadence, and its own `.cadence/config.yaml` is a good example of the "override only what differs" pattern. It keeps the default paths and audits, bumps `execute.max_parallel` to `5`, and opts into `plan.parallel_grain: in-file`. As of `config_version: 5` the file also carries a `storage:` block at the filesystem default: the migrator appends that whole block verbatim on the `4 → 5` bump (it is a new top-level block, not an override), and the worktree keys live in their own `worktree:` block (relocated back in `config_version: 4`):
 
 ```yaml
-config_version: 4
+config_version: 5
 paths:
   designs: docs/designs
   plans:   docs/plans
@@ -251,4 +268,11 @@ worktree:
 advisors:
   enabled: false
   roster: []
+
+storage:
+  backend: filesystem
+  notion:
+    root_page:  ""
+    designs_db: ""
+    plans_db:   ""
 ```

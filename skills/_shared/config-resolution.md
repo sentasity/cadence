@@ -43,6 +43,6 @@ The local layer exists for preferences that legitimately differ per person or pe
 
 **Intended for local override:** `execute.max_parallel`, `execute.worktree_confirm`, `authoring.max_parallel`, `authoring.design_mode`, `validate.browser_driver`, `validate.browser_command`, `validate.browser_env_preamble`, `advisors.*`.
 
-**Team policy (overriding locally is silent drift):** `paths.*`, `naming.*`, `status.*`, `frontmatter.*`, `plan.*`, `audits.*`, `oos.*`, `worktree.integrate`, `worktree.merge_lock`, `worktree.lock_stale_threshold`, `worktree.hooks.*`, `worktree.dir`, `execute.branch_check`, `execute.auto_resolve_drift`.
+**Team policy (overriding locally is silent drift):** `paths.*`, `naming.*`, `status.*`, `frontmatter.*`, `plan.*`, `audits.*`, `oos.*`, `storage.backend`, `storage.notion.root_page`, `storage.notion.designs_db`, `storage.notion.plans_db`, `worktree.integrate`, `worktree.merge_lock`, `worktree.lock_stale_threshold`, `worktree.hooks.*`, `worktree.dir`, `execute.branch_check`, `execute.auto_resolve_drift`.
 
 **Divergence notice, never a block:** when resolution finds a local override of a team-policy key, honor it but print one line, once per session per key, e.g. *"Note: `.cadence/config.local.yaml` overrides team-policy key `audits.default`."* The user is in control; the notice just keeps the divergence from being silent.

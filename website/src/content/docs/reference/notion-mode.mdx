@@ -1,0 +1,49 @@
+---
+title: Notion mode
+sidebar:
+  order: 12
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Source of truth: `skills/_shared/storage-resolution.md` and the [`storage` section](/cadence/reference/config/#storage) of the config reference. Notion mode is a per-repo opt-in that stores Cadence's artifacts in Notion instead of the local filesystem.
+
+## What Notion mode is
+
+By default Cadence keeps brainstorm stubs, designs, and plans as markdown folders in your repo. Notion mode moves those three artifact types into two Notion databases instead: a **Designs** database and a **Plans** database, both under one Notion page you own. Every `/c-*` command then reads and writes its artifacts as Notion pages rather than files.
+
+Source code and git commits are unaffected. Only the Cadence artifacts (the docs, their frontmatter, and their checkboxes) move to Notion. In Notion mode Notion is canonical: there is no on-disk copy of a design or plan, and plan progress shows live on a Notion board as `/c-execute` ticks tasks off.
+
+<Aside type="note" title="Requires a Notion MCP">
+Notion mode drives whatever Notion MCP is configured in your session; Cadence ships no Notion code and stores no Notion token. If a repo is in Notion mode and no usable Notion MCP is found, Cadence stops with an actionable message. It never silently falls back to the filesystem.
+</Aside>
+
+## Setup in three steps
+
+1. **Point at a root page.** In `.cadence/config.yaml`, set `storage.backend: notion` and `storage.notion.root_page` to a Notion page URL or id you own. Leave `storage.notion.designs_db` and `storage.notion.plans_db` empty.
+2. **Share the page with your Notion integration.** In Notion, share that root page with the integration your Notion MCP uses, so the MCP can create databases and sub-pages under it. This grant is the one setup step Cadence cannot do for you.
+3. **Run any `/c-*` command.** On the first Notion-mode run, Cadence creates the two databases under the root page, writes their ids back into the committed `.cadence/config.yaml`, and reminds you to commit so the whole team shares them.
+
+See the [`storage` config keys](/cadence/reference/config/#storage) for the exact YAML. The entire `storage` block is team policy and belongs in the committed config, never in `.cadence/config.local.yaml`.
+
+## The two databases
+
+Cadence creates and owns both databases under your root page, including their property schema and any future schema changes.
+
+- **Designs** holds one row per brainstorm stub or design. Its frontmatter becomes properties: Title, Status (a Select), Created / Updated (Dates), Tags (a Multi-select), and a Slug (the stable, machine-owned handle Cadence uses to find the row again). Child docs hang off the row as sub-pages, keeping their `NN` prefix in the sub-page title so reading order stays legible.
+- **Plans** holds one row per plan, with the same property shape plus a Base SHA. The design-to-plan link is a two-way **Relation** between the databases (a design's Linked Plan and a plan's Linked Design are the two ends of one relation), replacing the `linked_plan` / `linked_design` frontmatter fields.
+
+Because designs and plans are database rows with real Status, Date, and Relation columns, Notion's own status boards, filtered views, and roadmap timelines work over them at no extra cost.
+
+## What changes and what does not
+
+Changes:
+
+- Designs, plans, and stubs live as Notion pages, not markdown folders. They lose git diff, blame, and PR review of the artifacts themselves; Notion's page history substitutes.
+- `/c-execute` writes plan progress to Notion. The PM (your main session) is the sole writer, ticking each task's to-do block and setting status and `base_sha` after the two-stage review. Notion mode requires network access through the MCP; there is no offline path.
+
+Does not change:
+
+- Source code, tests, and git commits. Implementers and reviewers stay Notion-blind: they receive a task spec as plain text and write code and commits to git exactly as on the filesystem backend.
+- The slug stays the human handle; Notion page ids hide behind resolution.
+- Filesystem repos. A repo that never sets `storage.backend: notion` behaves byte-for-byte as before. Existing on-disk artifacts in a repo that switches backends stay on disk: Notion mode applies to new artifacts (migrating old ones is out of scope).

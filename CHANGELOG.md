@@ -2,6 +2,17 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.10.0 (2026-07-10)
+
+Notion mode: a per-repo backend switch that stores Cadence's brainstorm stubs, designs, and plans in two Notion databases instead of the local filesystem, so the artifacts teams most want to review, board, and roadmap live where the humans already work. Filesystem behavior is byte-for-byte unchanged and stays the default.
+
+### Added
+
+- **`storage.backend: filesystem | notion` config switch** (`config_version` 4 → 5). A new top-level `storage:` block (`backend`, plus `notion.root_page` / `notion.designs_db` / `notion.plans_db`) opts a repo into Notion mode. The default `filesystem` is exactly today's behavior; the whole block is team policy and belongs in the committed `.cadence/config.yaml`. The `config_version` bump is additive: `scripts/migrate-config.js` appends the new block verbatim with no code change (confirmed by a new migration test), and this repo's own dogfood config migrates to v5 at the filesystem default.
+- **Two Notion databases, provisioned and owned by Cadence.** In Notion mode a Designs database and a Plans database are created under one configured root page on the first run. Each artifact is a row (frontmatter maps to Status / Date / Multi-select properties, plus a machine-owned Slug), child docs are sub-pages that keep their `NN` ordering prefix, and the design-to-plan link becomes a bidirectional Relation. Cadence auto-provisions the databases, writes their ids back into committed config, and owns the schema and future schema migrations.
+- **`skills/_shared/storage-resolution.md` storage-resolution layer.** A single shared doc defines the abstract artifact operations (read an artifact, write a doc, link, set status, tick a checkbox, resolve a slug) and branches filesystem-versus-Notion in exactly one place, following the `config-resolution.md` precedent. Every `/c-*` skill routes its artifact I/O through it and stays backend-agnostic. The Notion branch discovers whatever Notion MCP is present at runtime (no hardcoded tool names), hard-fails rather than falling back to the filesystem when none is usable, and confines all Notion writes in `/c-execute` to the PM so there are no concurrent writes.
+- **Notion mode docs.** A new `/reference/notion-mode/` page (what it is, the three-step setup, the two databases, what changes and what does not) plus a `storage` section in the config reference documenting the four keys and their team-policy status.
+
 ## v0.9.0 (2026-06-11)
 
 A post-provision health check for `/c-worktree`: the new `provision_verify` hook lets a repo assert a freshly-provisioned worktree's environment is actually usable, instead of trusting the `provision` hook's exit code.

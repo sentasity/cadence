@@ -9,7 +9,7 @@ You materialize a design folder from the `00-overview.md` stub. You write one ch
 
 ## Entry contract
 
-**Requires:** `<paths.designs>/{yyyy-mm-dd-slug}/00-overview.md` exists with `status: draft` and a populated Doc index.
+**Requires:** the design artifact for `{yyyy-mm-dd-slug}` exists — check via `skills/_shared/storage-resolution.md` (artifact_exists) — and its `00-overview`, read via read_artifact, carries `status: draft` and a populated Doc index; do not assume a `<paths.designs>/…/00-overview.md` file path.
 
 **Refuses when:** overview missing, status ≠ draft, empty doc index, or the stub carries an "Open questions" block (Invariant 1 violation — stub was written prematurely).
 
@@ -26,7 +26,7 @@ You materialize a design folder from the `00-overview.md` stub. You write one ch
     99-out-of-scope.md
 ```
 
-Reserved slots: 00-overview, 00a-plain-english, 97-infrastructure-inventory, 98-architecture-diagrams, 99-out-of-scope. Refuse to scaffold conflicting names.
+Reserved slots: 00-overview, 00a-plain-english, 97-infrastructure-inventory, 98-architecture-diagrams, 99-out-of-scope. Refuse to scaffold conflicting names. Each slot is materialized per `skills/_shared/storage-resolution.md` (write_doc), which the layer maps to a `<slot>.md` file on the filesystem backend and to a titled sub-page on the notion backend; the folder layout above is the filesystem view only.
 
 ## Frontmatter
 
@@ -34,8 +34,8 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 
 ## Writing flow
 
-1. **Read the stub.** List the proposed doc index. Confirm with user: *"Write `00a-plain-english.md` next, then `01-<x>`, `02-<y>`. Sound right?"* Then ask the generation-mode question (see Generation mode).
-2. **Write child docs per chosen mode.**
+1. **Read the stub** via `skills/_shared/storage-resolution.md` (read_artifact). List the proposed doc index. Confirm with user: *"Write `00a-plain-english.md` next, then `01-<x>`, `02-<y>`. Sound right?"* Then ask the generation-mode question (see Generation mode).
+2. **Write child docs per chosen mode.** Each doc is written to its reserved slot per `skills/_shared/storage-resolution.md` (write_doc); do not open or path-compute a `<paths.designs>/…/<slot>.md` file.
    - **All-at-once:** dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`); after all complete, dispatch `cadence-doc-consistency` once over the set for a consistency sweep (see Generation mode). Then generate `00a-plain-english.md` last.
    - **One-by-one:** write one child doc, then proceed to step 3.
 3. **Pause after each doc (one-by-one mode only).** *"`<filename>` written. Review and tell me to continue, revise, or stop."* Never auto-write the next file in this mode. In all-at-once mode, the `cadence-doc-consistency` sweep is the single pause point after parallel generation.
@@ -43,9 +43,9 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 5. **OOS additions during design.** Any decision-not-to-do lands in `99-out-of-scope.md` immediately with rationale + wikilink. Never deferred.
 6. **`00a-plain-english.md` is written last.** Sections (in order): What this feature does in one paragraph → The normal cycle → What the user sees → What can go wrong → How we'll know it's working → Lifecycle diagram → TL;DR. Length target: 400-700 lines for complex designs.
 7. **97 / 98.** Filled when the doc index includes them. 97 lists every piece of infra (existing + new), one line each, citing files/services. 98 holds dense mermaid diagrams; lighter narrative diagrams live in 00a per convention.
-8. **Self-review pass** (see below). Run a final pass on the whole folder.
-9. **Flip status to `in-review`.** Update `updated:`. Print: *"Design ready for review. Walk through it and tell me when to mark it `approved`."*
-10. **Status `approved`.** User-driven only. User says "approved" → flip status → print: *"Run `/c-plan` to write the implementation plan."*
+8. **Self-review pass** (see below). Read the written docs back via `skills/_shared/storage-resolution.md` (read_artifact) and run a final pass over the whole artifact.
+9. **Flip status to `in-review`** per `skills/_shared/storage-resolution.md` (set_status), which also bumps `updated:`. Print: *"Design ready for review. Walk through it and tell me when to mark it `approved`."*
+10. **Status `approved`.** User-driven only. User says "approved" → flip status per `skills/_shared/storage-resolution.md` (set_status) → print: *"Run `/c-plan` to write the implementation plan."*
 
 ## Generation mode
 

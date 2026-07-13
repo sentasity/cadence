@@ -19,10 +19,10 @@ This means: if you ever change audit behavior, change the agent. Changing this s
 
 ## Pre-flight (in order)
 
-1. **Plan folder exists** with `00-overview.md`.
-2. **Linked design exists.** Read `linked_design:` from plan's overview frontmatter. Confirm design folder exists with `status: approved` or later.
-3. **`base_sha:` is set.** Read from plan's overview frontmatter. If missing:
-   - Abort with: *"`base_sha` is not set on this plan's `00-overview.md`. /c-execute should have set it on first invocation. Either re-invoke /c-execute (which records `base_sha`) or manually set `base_sha` to the SHA at which execution started."*
+1. **Plan artifact exists** — resolve the plan slug via `skills/_shared/storage-resolution.md` (resolve); it must have an `00-overview`.
+2. **Linked design exists.** Read the plan overview via `skills/_shared/storage-resolution.md` (read_artifact), then resolve the linked design (resolve) and confirm it exists with `status: approved` or later — do not read a raw `linked_design:` frontmatter line or assume a design folder path.
+3. **`base_sha:` is set.** Read it from the plan overview via `skills/_shared/storage-resolution.md` (read_artifact). If missing:
+   - Abort with: *"`base_sha` is not set on this plan's overview. /c-execute should have set it on first invocation. Either re-invoke /c-execute (which records `base_sha`) or manually set `base_sha` to the SHA at which execution started."*
 4. **Diff range computable.** `git diff <base_sha>..HEAD` should not error. If it does (e.g. `base_sha` not in current branch's history), surface the git error verbatim.
 
 ## SHA-based diff range (NOT timestamp-based)
@@ -33,8 +33,8 @@ This means: if you ever change audit behavior, change the agent. Changing this s
 ## Dispatch model
 
 Dispatch the `cadence-completion-auditor` agent (via `Task` tool) with:
-- Plan folder path.
-- Linked design folder path.
+- The resolved plan handle per `skills/_shared/storage-resolution.md` (resolve); the agent reads the plan, its to-do state, and Base SHA via read_artifact. The `git diff <base_sha>..HEAD` range stays git-side and unchanged.
+- The resolved linked-design handle (resolve).
 - Resolved config content per `skills/_shared/config-resolution.md` (specifically `audits.*` keys; `audits.*` is team policy, so a local override is honored but surfaced).
 - Mode: `standalone` (this skill ALWAYS passes `standalone`; the `gating` mode is for `/c-execute`'s direct-dispatch path).
 - Diff range (`base_sha`..HEAD).

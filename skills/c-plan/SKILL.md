@@ -9,9 +9,9 @@ You translate an approved design into an execution-ordered plan folder. Plans ar
 
 ## Entry contract
 
-**Requires:** `<paths.designs>/{yyyy-mm-dd-slug}/00-overview.md` with `status: approved`. Read the entire design folder (overview + every child + 99-OOS) before drafting.
+**Requires:** the design artifact for `{yyyy-mm-dd-slug}` with `status: approved`. Read the entire design (overview + every child + 99-OOS) via `skills/_shared/storage-resolution.md` (read_artifact) before drafting; do not assume a `<paths.designs>/…` folder path.
 
-**Refuses when:** design status is `draft` or `in-review` (tell user to finish/approve the design first); or when a plan folder with the same slug already exists at non-draft status (would overwrite).
+**Refuses when:** design status is `draft` or `in-review` (tell user to finish/approve the design first); or when a plan artifact with the same slug already exists at non-draft status — check via `skills/_shared/storage-resolution.md` (artifact_exists) — which would overwrite.
 
 ## One design → one plan
 
@@ -37,8 +37,7 @@ Each phase file becomes the unit of worktree dispatch and the unit of per-lane r
 
 ## Bidirectional linkage
 
-- Plan's `00-overview.md` carries `linked_design: <design-slug>`.
-- Set the design's `linked_plan: <this-plan-slug>` (singular). Update the design's `updated:` date.
+- Establish the design↔plan link with a single call to `skills/_shared/storage-resolution.md` (link): it is bidirectional and idempotent, setting `linked_design` on the plan and `linked_plan` (singular) on the design in one step and bumping the design's `updated:`. Do not write the two `linked_*` frontmatter keys by hand.
 - The design flips to `completed` only when its `linked_plan` reaches status `completed` (gated by `/c-validate`).
 
 ## Folder layout
@@ -155,11 +154,11 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 
 1. Read approved design end-to-end (overview + every child + 99-OOS).
 2. Confirm phase decomposition (no split question — one plan always). Decompose into the **minimal coherent grouping** that covers the design — prefer one substantive topic per phase file (5–10+ tasks per file), not one phase file per design child-doc. A phase file is the unit of worktree dispatch and per-lane review under `/c-execute`'s lane = phase file rule; fragmented files create cold-start churn without parallelism gain. Confirm with the user: *"Plan files will be `01-<topic>`, `02-<topic>`, …. Sound right?"*
-3. Write `00-overview.md` first (frontmatter + phase index + File Map — generators need it).
-4. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`. Before each generator finalizes its doc, run the codebase verification pass (above) on every path, symbol, and import it cites. Fix inline.
+3. Create the plan artifact first via `skills/_shared/storage-resolution.md` (create_artifact), writing the `00-overview` (frontmatter + phase index + File Map — generators need it) with `base_sha` initialized empty; do not path-compute `<paths.plans>/…/00-overview.md`.
+4. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`; each generated doc is written to its slot per `skills/_shared/storage-resolution.md` (write_doc), never to a hand-computed `<paths.plans>/…` file. Before each generator finalizes its doc, run the codebase verification pass (above) on every path, symbol, and import it cites. Fix inline.
 5. **Invariant 2 in reverse.** If a phase reveals a gap or inconsistency in the design, surface it. Apply drift policy (default: update plan only; user-elective: update plan + design).
 6. Dispatch `cadence-doc-consistency` once over the full set. Reconcile trivial wording; surface substantive contradictions to the user via `AskUserQuestion`. Re-dispatch only affected generators on resolution. The plan is not finalized until the sweep is clean.
-7. **Bidirectional linkage write.** Set design's `linked_plan:` to this plan's slug (singular). Bump design's `updated:`.
+7. **Bidirectional linkage write.** Establish the design↔plan link via `skills/_shared/storage-resolution.md` (link) — one idempotent call sets `linked_plan` on the design and `linked_design` on the plan and bumps the design's `updated:`.
 8. **Self-review pass** (see below).
 9. Status stays `draft`. Print: *"Plan written. Run `/c-execute <path>` when ready."*
 
