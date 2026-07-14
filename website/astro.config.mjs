@@ -12,6 +12,15 @@ export { sidebar };
 export default defineConfig({
   site: 'https://sentasity.github.io',
   base: '/cadence/',
+  // Astro 6 stopped defaulting markdown.gfm in the resolved config (it is now
+  // supplied by the core processor when absent), but @astrojs/mdx 5.x still
+  // reads config.markdown.gfm and treats "absent" as off — so every .mdx page
+  // silently lost GFM tables/strikethrough/autolinks. Set it explicitly until
+  // Starlight moves to an @astrojs/mdx that handles the new default (the
+  // build prints a one-line deprecation warning for this key; that's expected).
+  markdown: {
+    gfm: true,
+  },
   integrations: [
     // astro-mermaid MUST come before starlight: it registers the rehype plugin
     // that turns ```mermaid code blocks into client-rendered diagrams, and that
