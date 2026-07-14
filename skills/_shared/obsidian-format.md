@@ -19,6 +19,10 @@ If a sentence doesn't earn a callout, it's just prose. No `> [!info]` flooding.
 
 Relative format: `[[../sibling-folder/00-overview]]` or `[[01-topic#Section heading]]`. Resolves within the obsidian vault. Never use absolute paths.
 
+## Tables
+
+GFM pipe tables. Do **not** put a literal `|` inside a cell: it is read as a column delimiter and breaks the row. There is no portable escape — GFM's `\|` and the `&#124;` entity both fail through the Notion MCP (verified: `\|` renders as a stray backslash and splits the cell; `&#124;` renders as literal text). Reword to avoid the pipe (`SfnStartResult` or `None`; `Optional[SfnStartResult]`); or, when a table genuinely needs a cell-internal pipe, author that one table as a Notion-flavored `<table>` block, where a raw `|` inside a `<td>` is plain text. Keep each cell on one line; use `<br>` for an intentional in-cell line break.
+
 ## Reserved file slots
 
 **Design folder:** `00-overview`, `00a-plain-english`, `97-infrastructure-inventory`, `98-architecture-diagrams`, `99-out-of-scope`.

@@ -2,6 +2,19 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.11.0 (2026-07-14)
+
+Notion mode renders natively: obsidian callouts, wikilink cross-references, and Mermaid diagrams become real Notion blocks instead of escaped text, and the mode now requires Notion's official MCP.
+
+### Changed
+
+- **Notion mode now requires Notion's official MCP** (previously: any Notion MCP, discovered by capability). Native rendering of Cadence's house syntax needs the official MCP's documented Notion-flavored Markdown format, so Notion mode targets it specifically, identified by its stable `notion-*` tool surface; the per-install server id is still resolved at runtime and never stored in config. A repo in Notion mode without the official MCP hard-fails with an actionable install message instead of driving an arbitrary MCP. Docs: `reference/notion-mode` and the `storage` config section updated accordingly.
+
+### Fixed
+
+- **A literal `|` in a table cell no longer breaks the table in Notion.** A GFM pipe-table cell containing a literal `|` (for example `` `SfnStartResult | None` ``) was read as a column delimiter and split the row. Neither GFM's `\|` escape nor the `&#124;` entity renders correctly through the Notion MCP, so Cadence now authors tables to avoid cell-internal pipes (reword, or emit that one table as a Notion-flavored `<table>` block); see `skills/_shared/obsidian-format.md` and `skills/_shared/notion-translation.md`.
+- **Obsidian callouts and wikilinks now render as native Notion blocks instead of escaped literal text.** The first cut of Notion mode handed raw obsidian-flavored markdown to the MCP, which escaped `> [!summary]` and `[[slug]]` into `> \[!summary\]` and `\[\[slug\]\]` and rendered callouts as plain quote blocks with no icon, color, or callout affordance, because `[`, `]`, `<`, `>` are must-escape characters in Notion-flavored Markdown. The notion backend now translates callouts to native `<callout>` blocks (per-type icon and background color, body kept inside) and wikilinks to `<mention-page>` page mentions via a two-pass `resolve_links` step, before handing the body to the MCP; Mermaid fences render as native diagrams. The mapping lives in the new `skills/_shared/notion-translation.md`. `resolve_links` was specified in the original design but never shipped; it is now built and invoked by `/c-design` and `/c-plan` after their batch writes. Verified by round-trip against the official Notion MCP.
+
 ## v0.10.0 (2026-07-10)
 
 Notion mode: a per-repo backend switch that stores Cadence's brainstorm stubs, designs, and plans in two Notion databases instead of the local filesystem, so the artifacts teams most want to review, board, and roadmap live where the humans already work. Filesystem behavior is byte-for-byte unchanged and stays the default.

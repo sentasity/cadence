@@ -14,7 +14,8 @@ Operations take an artifact type (`design` or `plan`) plus a slug; the type sele
 | `artifact_exists(type, slug)` | type, slug | boolean | is there a folder with a `00-overview.md`? | is there a matching row in the type's database? |
 | `create_artifact(type, slug, frontmatter)` | type, slug, overview frontmatter | location handle | make the folder, write `00-overview.md` with frontmatter | create a database row and set its title and initial properties |
 | `read_artifact(type, slug)` | type, slug | overview and each child doc | read every `.md` in the folder | fetch the row's properties and child sub-pages, translate blocks back to markdown |
-| `write_doc(type, slug, slot, content)` | type, slug, slot id, markdown body | nothing | write `<slot>.md` in the folder | upsert the slot's sub-page, translate markdown to Notion blocks |
+| `write_doc(type, slug, slot, content)` | type, slug, slot id, markdown body | nothing | write `<slot>.md` in the folder | translate obsidian syntax to Notion-flavored Markdown, upsert the slot's sub-page |
+| `resolve_links(type, slug)` | type, slug | nothing | no-op (obsidian resolves wikilinks in the vault) | second pass after a batch write: rewrite `[[slug]]` wikilinks to `<mention-page>` mentions |
 | `set_status(type, slug, status)` | type, slug, status value | nothing | set `status:` in the overview frontmatter | set the row's Status select property |
 | `set_property(type, slug, key, value)` | type, slug, frontmatter key, value | nothing | set that key in the overview frontmatter | set the row's mapped typed property |
 | `link(design_slug, plan_slug)` | design slug, plan slug | nothing | write `linked_plan:`/`linked_design:` on both overviews | set the design-to-plan Relation between the two rows |
@@ -31,7 +32,9 @@ Operations take an artifact type (`design` or `plan`) plus a slug; the type sele
 
 **`read_artifact(type, slug)`** returns a backend-neutral view: the overview's frontmatter and body, plus each child doc's slot id, frontmatter, and body. A caller that only needs the overview reads that entry and ignores the rest. This operation promises the shape of the return; the fidelity of Notion block-to-markdown reconstruction on read-back belongs to [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]].
 
-**`write_doc(type, slug, slot, content)`** replaces one slot's content wholesale. The filesystem writes `<slot>.md` in the artifact's folder; Notion upserts the slot's sub-page and translates the markdown body into Notion blocks. Partial edits are the caller's responsibility to assemble before the call; there is no append or patch form of this operation.
+**`write_doc(type, slug, slot, content)`** replaces one slot's content wholesale. The filesystem writes `<slot>.md` in the artifact's folder; Notion translates the body's obsidian callouts and wikilinks to Notion-flavored Markdown (per `skills/_shared/notion-translation.md`) and hands the result to the official MCP, which creates the Notion blocks. Wikilinks resolve to mentions in the `resolve_links` second pass, not here. Partial edits are the caller's responsibility to assemble before the call; there is no append or patch form of this operation.
+
+**`resolve_links(type, slug)`** runs only on the notion backend and only as the second pass of a batch write. Once all of an artifact's sub-pages exist (so the slug-to-page-URL map is complete), it rewrites each `[[slug#anchor]]` wikilink in the artifact's docs to a `<mention-page>` mention, degrading an unresolved target to readable text rather than literal `[[…]]`. It is idempotent, so it re-runs safely when a previously-missing cross-artifact target (a design's plan, say) later exists. On the filesystem backend it is a no-op: obsidian resolves wikilinks in the vault. The mapping and two-pass mechanics live in `skills/_shared/notion-translation.md`.
 
 **`set_status(type, slug, status)`** is a vocabulary-checked specialization of `set_property` for the one field with a controlled vocabulary and transition rules (`skills/_shared/frontmatter.md`). It stays separate because the Notion backend maps status to a Select whose options must already exist in the schema, so an out-of-vocabulary value is an error this operation catches rather than a silent free-text write. Both backends bump `updated:` to today whenever `set_status` runs.
 
@@ -69,25 +72,25 @@ When `storage.backend` is `filesystem`, the resolved behavior of every operation
 
 ## The notion backend
 
-The notion backend drives whatever Notion MCP the current session exposes; Cadence ships no Notion client of its own.
+The notion backend drives the official Notion MCP (Notion's first-party MCP, https://developers.notion.com/guides/mcp/overview). Cadence ships no Notion client of its own and requires this specific MCP; it does not attempt to drive an arbitrary Notion integration.
 
-### Runtime MCP discovery and binding
+### Locating and binding the official MCP
 
-In `notion` mode, the storage layer resolves an abstract operation to a concrete MCP tool call at runtime, never against a compiled-in list. Resolution has three parts:
+In `notion` mode, the storage layer binds each abstract operation to a tool on the official Notion MCP. Binding has three parts:
 
-1. **Locate a Notion MCP.** Enumerate the MCP tools exposed to the current session and identify those belonging to a Notion integration by server identity and tool surface, not by a single hardcoded server name; several distinct Notion MCPs exist and their server ids differ per install.
-2. **Inspect its capabilities.** Read the located MCP's advertised tools and their input schemas to learn which tool performs each primitive the storage layer needs: create-page, create-database, query, fetch, update, and append.
-3. **Bind operations to tools.** Map each abstract operation in [[#The abstract operation set]] onto the discovered tool and its parameters for the duration of the run. If one MCP exposes a single tool where another splits property-update from block-append, the binding absorbs that difference so callers stay backend-agnostic.
+1. **Locate the official Notion MCP.** Enumerate the MCP tools exposed to the current session and identify the official Notion MCP by its stable tool surface: the `notion-*` tools (`notion-create-pages`, `notion-update-page`, `notion-fetch`, `notion-search`, `notion-query-data-sources`, `notion-create-database`) and its Notion-flavored Markdown content format. The per-install `mcp__<server-id>__` prefix differs per machine and is read from the live tool list; only the MCP's identity is fixed, not its address.
+2. **Confirm the required tools are present.** Verify the located MCP exposes the primitives the storage layer needs (create page, create database, query or search, fetch, update page content and properties). A missing primitive is treated as "no usable Notion MCP" (see below), not worked around.
+3. **Bind operations to tools.** Map each abstract operation in [[#The abstract operation set]] onto the official MCP's documented tool: `create_artifact` and new-sub-page `write_doc` via `notion-create-pages`; edits, `resolve_links`, and `tick` via `notion-update-page`; `read_artifact` via `notion-fetch`; `query` and `resolve` via `notion-query-data-sources`; database creation via `notion-create-database`.
 
-No Notion tool name or parameter is hardcoded anywhere in Cadence; the mapping from operation to tool is derived per run from the live tool list, so the backend keeps working when a Notion MCP renames its tools or when a repo switches to a different Notion MCP entirely.
+Only the per-install server-id prefix is resolved at runtime; the tool identities are fixed because the MCP is fixed. No Notion server id is stored in config or frontmatter.
 
 ### Never fall back to the filesystem
 
-When `storage.backend` is `notion` and discovery finds no usable Notion MCP, or finds one whose capabilities do not cover the primitives named above, the run hard-fails with an actionable message. The message states that Notion mode is enabled for this repo, that no usable Notion MCP was found in the session, and that the user must install or configure one (and share `root_page` with its integration; see [[#The authentication boundary]]).
+When `storage.backend` is `notion` and the official Notion MCP is not present, or is present but missing a required primitive, the run hard-fails with an actionable message. The message states that Notion mode is enabled for this repo, that the official Notion MCP was not found in the session, and that the user must install it (https://developers.notion.com/guides/mcp/overview) and share `root_page` with its integration (see [[#The authentication boundary]]).
 
 The notion backend never degrades to the filesystem backend under any circumstance. A silent fallback would put some artifacts in Notion and some on disk, splitting the source of truth the whole design exists to avoid; a stop the user can act on is strictly better than a quiet write to the wrong place.
 
-Markdown-to-Notion-block translation on the way in, block-to-markdown reconstruction on read-back, wikilink resolution, and the `tick` checkbox mechanics are owned by [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]]; this layer fixes the operation contracts those implementations must satisfy and does not restate the block mapping.
+Obsidian-to-Notion-flavored-Markdown translation on the way in, the read-back inverse, and wikilink resolution are specified operationally in `skills/_shared/notion-translation.md` and by design in [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]]; the `tick` checkbox mechanics live there too. This layer fixes the operation contracts those implementations satisfy and does not restate the mapping.
 
 ## First-run provisioning
 
