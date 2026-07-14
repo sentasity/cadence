@@ -2,7 +2,7 @@
 
 Operational reference for translating Cadence's obsidian-flavored markdown to and from the official Notion MCP's Notion-flavored Markdown. The `notion` branch of `storage-resolution.md` applies this on every `write_doc` (obsidian to Notion-flavored Markdown, before the MCP call) and every `read_artifact` (Notion-flavored Markdown back to obsidian, after the fetch). The filesystem backend never runs any of this. Design rationale: [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]].
 
-Only two constructs are translated, because only two are obsidian extensions rather than standard markdown: **callouts** and **wikilinks**. Everything else (headings, paragraphs, bulleted and numbered lists, GFM tables, fenced code including ` ```mermaid `, task checkboxes `- [ ]` / `- [x]`, plain blockquotes) is standard markdown and passes to the MCP untouched. Do not rewrite those.
+Only two constructs are translated, because only two are obsidian extensions rather than standard markdown: **callouts** and **wikilinks**. Everything else (headings, paragraphs, bulleted and numbered lists, GFM tables, fenced code including ` ```mermaid `, task checkboxes `- [ ]` / `- [x]`, plain blockquotes) is standard markdown and passes to the MCP untouched, with one GFM-correctness fixup for table-cell pipes (below). Do not otherwise rewrite those.
 
 > **Why translate at all.** Notion-flavored Markdown treats `[`, `]`, `<`, and `>` as characters that must be escaped outside code blocks. A raw obsidian callout (`> [!summary]`) or wikilink (`[[slug]]`) handed to the MCP is escaped into literal text (`> \[!summary\]`, `\[\[slug\]\]`), and the callout renders as a plain quote block with no icon, color, or callout affordance. Emitting Notion-flavored tags avoids the escaping and produces native blocks. This was verified by round-trip against the official MCP.
 
@@ -53,6 +53,10 @@ A wikilink `[[NN-topic#Section]]` becomes `<mention-page url="URL">Title</mentio
 2. **Pass 2, `resolve_links`.** For each written doc, replace each `[[slug#anchor]]` with `<mention-page url="{resolved-url}">{display}</mention-page>` via `notion-update-page` (`update_content` search-and-replace, `old_str` = the literal `[[…]]` string). `{display}` is the target's human title or the slug. A `#anchor` is dropped: a `<mention-page>` addresses a page, not a block.
 
 Fallback: if a slug does not resolve (target not created yet, for example a design linking to a not-yet-created plan), leave the readable display text (the slug), never the literal `[[…]]`. `resolve_links` is idempotent and re-runs when the target later exists.
+
+## Table cells: escape literal pipes
+
+GFM pipe tables pass through to the MCP untouched, with one fixup: a literal `|` inside a cell must be escaped as `\|` (including inside inline code), or the MCP's GFM parser reads it as a column delimiter and mangles the row. Tables should be authored with `\|` per [[obsidian-format#Tables]]; when translating a body whose table cells contain an unescaped `|` (for example migrating a page authored before this rule), escape each in-cell `|` to `\|` before the MCP call. This is a GFM-correctness fixup, not an obsidian-to-Notion construct translation, and it has no read-back inverse (the escaped `\|` renders as a literal `|` in the Notion cell).
 
 ## Read-back inverse (`read_artifact`)
 

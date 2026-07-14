@@ -19,6 +19,10 @@ If a sentence doesn't earn a callout, it's just prose. No `> [!info]` flooding.
 
 Relative format: `[[../sibling-folder/00-overview]]` or `[[01-topic#Section heading]]`. Resolves within the obsidian vault. Never use absolute paths.
 
+## Tables
+
+GFM pipe tables. A literal `|` inside a cell must be escaped as `\|`, **including inside inline code** (a Python union type is written `` `SfnStartResult \| None` ``). An unescaped `|` is read as a column delimiter and breaks the row on both backends: obsidian on the filesystem, and the Notion MCP's GFM parser on the notion backend. Keep each cell on one line; use `<br>` for an intentional in-cell line break.
+
 ## Reserved file slots
 
 **Design folder:** `00-overview`, `00a-plain-english`, `97-infrastructure-inventory`, `98-architecture-diagrams`, `99-out-of-scope`.
