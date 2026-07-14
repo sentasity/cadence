@@ -8,7 +8,7 @@ sidebar:
 import { Aside } from '@astrojs/starlight/components';
 import Quiz from '../../components/Quiz.astro';
 
-Audit is the stage that proves the work is really done: not "the workers said so", but checked independently against the plan. It's the safety net that lets a non-coder believe "implemented" actually means implemented.
+Audit is the stage that proves the work is really done: not "the workers said so", but checked independently against the plan. It's the safety net that lets you believe "implemented" actually means implemented without reading a line of the code.
 
 ## An independent check, not the builder's word
 
@@ -36,7 +36,7 @@ If any of these fail, the plan does *not* flip to done; it stays open and Cadenc
 One specific check is worth calling out, because it's a favorite hiding place for half-done work: the audit scans the change for **deferred comments**: leftover notes like "TODO", "FIXME", or "will do later" that quietly signal a step was skipped.
 
 <Aside type="caution" title="Why this rule matters to you">
-A "TODO: handle this later" buried in the code is exactly the kind of silent gap a non-coder would never catch by reading. The audit treats any *new* unjustified deferral as a failure, so the only way to legitimately defer something is to mark it out of scope, in writing, where you can see it.
+A "TODO: handle this later" buried in the code is exactly the kind of silent gap nobody catches once line-by-line review is out of the loop. The audit treats any *new* unjustified deferral as a failure, so the only way to legitimately defer something is to mark it out of scope, in writing, where you can see it.
 </Aside>
 
 <Quiz

@@ -20,7 +20,7 @@ Run drift-check across all nine pages by default. If the user names specific com
 
 ## Semantic, not textual
 
-The comparison is **semantic, not a textual diff.** The reference page is intentionally worded differently from the source `SKILL.md` — it is hand-polished for a non-coder reader — so a line-by-line diff would be pure noise. Do not diff the files. Instead, read both and ask: *does this page still correctly describe what the command actually does?*
+The comparison is **semantic, not a textual diff.** The reference page is intentionally worded differently from the source `SKILL.md` — it is hand-polished for an intent-level reader — so a line-by-line diff would be pure noise. Do not diff the files. Instead, read both and ask: *does this page still correctly describe what the command actually does?*
 
 ## The four load-bearing facts to check
 

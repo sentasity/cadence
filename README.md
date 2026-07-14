@@ -11,7 +11,7 @@
 
 Cadence is a Claude Code plugin that turns "I want to build X" into a working, validated implementation through nine slash commands: six core-flow (`/c-brainstorm` → `/c-design` → `/c-plan` → `/c-execute` → `/c-audit` → `/c-validate`) plus three diagnostic (`/c-check`, `/c-find-bugs`, `/c-explain`). A tenth command, `/c-worktree`, ships alongside them as a standalone utility for the interactive git-worktree lifecycle, not a pipeline stage. Each stage produces a tangible artifact. Each gate is explicit. No atomic chains. No silent drift. No deferred TODOs in code.
 
-Built for users who are strong on operations and ideation but can't verify code by reading diffs — Cadence's audit and validation layers carry that load.
+Built for the AI-driven coding age: reviewing every line of AI-written code is the old world's habit, and it doesn't scale. Cadence moves your attention up a level (business case, UI/UX, intent) while its audit and validation layers verify the low-level specifics.
 
 ## Install
 
@@ -73,7 +73,7 @@ See [`examples/hello-cadence/`](examples/hello-cadence/) for a complete design +
 
 ## What makes Cadence different from `superpowers`
 
-[`superpowers`](https://github.com/obra/superpowers) atomically chains brainstorm → write-plan → execute and produces one AI-generated artifact (the spec) that serves as both brainstorm output and plan input. For users who can't read code, that artifact often looks "complete" enough to approve without real review — bugs only surface during execution.
+[`superpowers`](https://github.com/obra/superpowers) atomically chains brainstorm → write-plan → execute and produces one AI-generated artifact (the spec) that serves as both brainstorm output and plan input. When nobody is reviewing line by line, that artifact often looks "complete" enough to approve without real review; bugs only surface during execution.
 
 Cadence's `/c-brainstorm` → `/c-design` split is deliberate: the design is a separate human-readable artifact, written child-doc-by-child-doc with explicit "look good?" pauses, plain-English callouts at every H2 section, and a mandatory plain-English narrative (`00a-plain-english.md`). It's meant to be reviewable by someone who isn't going to read implementation diffs. The plan is then written for AI consumption from the approved design — exact paths, exact commands, no narrative.
 
