@@ -122,4 +122,4 @@ MIT.
 
 ## Maintainer
 
-[github.com/sentasity](https://github.com/sentasity). Contributions welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for the process (open an issue first, run `/c-check` on any design changes before submitting a PR).
+Cadence is built by [Sentasity](https://sentasity.com) ([github.com/sentasity](https://github.com/sentasity)). Contributions welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for the process (open an issue first, run `/c-check` on any design changes before submitting a PR).

@@ -1,13 +1,13 @@
 ---
 title: Parallelism & worktrees
-description: How /c-execute schedules work, using a dependency DAG of tasks run as parallel lanes in isolated git worktrees, guarded so two lanes never touch the same files at once.
+description: How Cadence isolates work in git worktrees. /c-execute's parallel lanes and the /c-worktree utility share one opinionated model, guarded so two merges never collide.
 sidebar:
   order: 3
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-When you run **[/c-execute](/cadence/execute/)**, it doesn't grind through your plan one task after another. It works out which tasks can safely run *at the same time* and runs them in parallel (in separate, isolated copies of your repo) then merges the results back together. This page explains how that works without you needing to manage any of it.
+When you run **[/c-execute](/cadence/execute/)**, it doesn't grind through your plan one task after another. It works out which tasks can safely run *at the same time* and runs them in parallel (in separate, isolated copies of your repo) then merges the results back together. This page explains how that works without you needing to manage any of it, and then introduces **[/c-worktree](/cadence/reference/c-worktree/)**: the same machinery, driven by hand, and the opinionated way to handle worktrees on Cadence.
 
 ## Step one: build a dependency map
 
@@ -67,12 +67,24 @@ A single phase file can even become two or three lanes over a run: if only part 
 Set `execute.parallel: false` in your config and `/c-execute` runs everything sequentially with no worktrees at all. Older plans that predate the `Touches:` format also fall back to sequential automatically.
 </Aside>
 
+## The same machinery, driven by hand: /c-worktree
+
+Lanes aren't the only thing that uses this machinery. The **[/c-worktree](/cadence/reference/c-worktree/)** utility command is the **opinionated way to handle worktrees on Cadence**: the same isolation, the same config, the same merge safety, but driven interactively by you instead of automatically by the scheduler.
+
+Reach for it whenever you want isolated feature work in its own working directory: a side experiment, a second Claude Code session working the same repo in parallel, or any branch you'd rather not develop in your main checkout. It needs no design, no plan, and no other `/c-*` command. The lifecycle is three subcommands:
+
+- **`/c-worktree create`** cuts a new worktree under the shared `worktree.dir` (default `.cadence/worktrees/`, the same directory the lanes use). It asks which base branch to cut from, never assumes, and records the answer so the merge later knows where the work goes home. If your config defines hooks, it can also provision the copy and start a dev server on its own dedicated port.
+- **`/c-worktree merge`** integrates the branch back into its recorded parent, per the same `worktree.integrate` policy the lanes follow, under the same shared merge lock. All the interaction (what will move, which merge type) happens *before* the lock, so the lock is held only for the git operations themselves.
+- **`/c-worktree cleanup`** stops the dev server, removes the worktree, deletes the branch, and releases the port.
+
+The payoff of one opinionated model instead of ad-hoc `git worktree` commands: every worktree in the repo, whether you made it or a lane did, lives in the same place, merges by the same policy, and respects the same lock. Because `/c-worktree` and `/c-execute` share the merge lock (`worktree.merge_lock`, on by default), a hand-driven merge and an automatic lane landing can never collide; whichever asks second simply waits its turn.
+
+<Aside type="tip" title="Works in any git repo">
+`/c-worktree` is generic and standalone: with no `worktree:` config at all it still runs the full create / merge / cleanup lifecycle. Config hooks layer on the repo-specific parts (provisioning, a dev port, a dev server, a deploy guard) without changing the core model.
+</Aside>
+
 ## Reference
 
-- Full command behavior: **[/c-execute reference](/cadence/reference/c-execute/)**.
+- Full command behavior: **[/c-execute reference](/cadence/reference/c-execute/)** and **[/c-worktree reference](/cadence/reference/c-worktree/)**.
 - The `execute.*` lane settings (`max_parallel`, `parallel`, `worktree_confirm`): **[Configuration reference](/cadence/reference/config/)**.
 - The shared `worktree.*` settings (`dir`, `integrate`, `merge_lock`, `lock_stale_threshold`, the `hooks.*` map): **[Configuration reference](/cadence/reference/config/#worktree)**.
-
-<Aside type="note" title="Worktrees aren't only for lanes anymore">
-The same worktree machinery is also driven interactively by the **[/c-worktree](/cadence/reference/c-worktree/)** utility command: you create a worktree by hand, work in it, and merge it back yourself. A shared merge lock (`worktree.merge_lock`, on by default) serializes any two concurrent merges into the same integration branch, so a `/c-worktree` merge and a `/c-execute` lane landing cannot collide.
-</Aside>
