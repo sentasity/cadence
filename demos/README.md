@@ -8,7 +8,7 @@ skills actually do.
 
 - `*.tape`: one VHS script per demo (currently `c-brainstorm.tape`).
 - `setup-fixture.sh`: rebuilds the scratch repo the tapes record inside
-  (`demos/.build/credit-ledger`, gitignored). Recordings never touch the real repo.
+  (`demos/.build/acme-api`, gitignored). Recordings never touch the real repo.
 - `*.gif`: the rendered output, committed so the README can embed it.
 
 ## Prerequisites

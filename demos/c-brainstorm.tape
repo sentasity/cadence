@@ -41,7 +41,7 @@ Set WaitTimeout 240s
 Set Framerate 20
 Set Theme "Catppuccin Mocha"
 
-Env FIXTURE "demos/.build/credit-ledger"
+Env FIXTURE "demos/.build/acme-api"
 Env CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC "1"
 
 # --- Launch (hidden): enter the fixture and start claude ---
@@ -57,7 +57,7 @@ Show
 Sleep 1s
 
 # --- The demo proper ---
-Type "/c-brainstorm I want to add a credit ledger that shows AWS credits per account"
+Type "/c-brainstorm I want to add rate limiting to our public API"
 Sleep 800ms
 Enter
 
@@ -70,7 +70,7 @@ Sleep 5s
 Enter
 Sleep 1s
 
-# Q2: credit-sharing model.
+# Q2: rate-limiting algorithm.
 Hide
 Wait+Screen /Enter to select/
 Show
