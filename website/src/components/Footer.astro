@@ -1,0 +1,28 @@
+---
+// Starlight Footer override: renders the default footer (pagination, meta),
+// then a small muted credit line. Registered in astro.config.mjs under
+// starlight({ components: { Footer } }).
+import Default from '@astrojs/starlight/components/Footer.astro';
+---
+
+<Default><slot /></Default>
+<div class="sentasity-credit">
+  Built by <a href="https://sentasity.com">Sentasity</a>
+</div>
+
+<style>
+  .sentasity-credit {
+    margin-top: 1.5rem;
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+  }
+  .sentasity-credit a {
+    color: var(--sl-color-gray-3);
+    text-decoration: none;
+  }
+  .sentasity-credit a:hover {
+    color: var(--sl-color-text-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+</style>
