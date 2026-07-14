@@ -24,37 +24,9 @@ After session restart, all ten `/c-*` commands work in every repo on your machin
 
 ## Demo
 
-```
-$ /c-brainstorm I want to add a credit ledger that shows AWS credits per account
+A real `/c-brainstorm` session, recorded live (not a mockup): Cadence scans the repo for context, asks one question at a time with a recommended pick, converges on an approach, and writes the `00-overview.md` design stub.
 
-→ Reading project context (recent commits, related designs, .cadence/config.yaml)...
-
-→ Question 1: This idea spans multiple subsystems (data ingest, reconciliation, UI).
-  Which one should we brainstorm first?
-    (a) Data ingest (CUR + credit API)        ← Recommended: start with the data
-                                                  foundation so the rest can read it
-    (b) Reconciliation logic
-    (c) UI surfaces
-
-$ a
-
-→ Question 2: How should reconciliation handle credit-sharing across sub-accounts?
-    (a) Owner-account stores; consumer-accounts reference via foreign key
-    (b) Denormalize: both sides hold a copy        ← Recommended for query simplicity
-    (c) Don't model sharing in v1
-
-$ b
-
-→ ...
-
-→ Two approaches proposed (see decisions log). Recommended: pull-model daily
-  reconciliation. Pick: (1) pull-model / (2) push-model / (other)?
-
-$ 1
-
-→ Writing 00-overview.md to docs/obsidian/designs/2026-05-17-credit-ledger/
-→ Stub written. Run /c-design to write the child docs.
-```
+![A recorded /c-brainstorm session: context scan, two questions, approach pick, design stub written](demos/c-brainstorm.gif)
 
 You then run `/c-design` (writes child docs one at a time, with "look good?" pauses), `/c-plan` (translates the approved design into an execution-ordered plan), `/c-execute` (PM-and-sub-agents drives the plan to completion with two-stage review per task), and `/c-validate` (walks the post-deploy validation doc).
 

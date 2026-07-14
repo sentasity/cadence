@@ -26,6 +26,10 @@ Cadence is a phase-aware system; the contribution flow follows the same phases.
 
 No automated test suite ships with Cadence (no code to test). Validation lives in each plan's `98-validation.md` / `96-validation.md` and is walked manually via `/c-validate`. If you change a skill or agent, walk the relevant plan's validation doc as part of your PR.
 
+## Demo GIFs
+
+The README's demo is a real recorded session, not a hand-written transcript. If a change alters what `/c-brainstorm` (or any other demoed skill) shows on screen, re-record with `make demos` (requires `brew install vhs` and an authenticated `claude` with the plugin installed) and commit the updated GIF. See [demos/README.md](demos/README.md) for how the tapes handle Claude's nondeterminism.
+
 ## Releasing
 
 A release is three edits landing on `main` together; everything after the push is automated.
