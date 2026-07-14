@@ -4,7 +4,7 @@ Operational reference for translating Cadence's obsidian-flavored markdown to an
 
 Only two constructs are translated, because only two are obsidian extensions rather than standard markdown: **callouts** and **wikilinks**. Everything else (headings, paragraphs, bulleted and numbered lists, GFM tables, fenced code including ` ```mermaid `, task checkboxes `- [ ]` / `- [x]`, plain blockquotes) is standard markdown and passes to the MCP untouched. Do not rewrite those.
 
-> **Why translate at all.** Notion-flavored Markdown treats `[`, `]`, `<`, and `>` as characters that must be escaped outside code blocks. A raw obsidian callout (`> [!summary]`) or wikilink (`[[slug]]`) handed to the MCP is escaped into literal text (`> \[!summary\]`, `\[\[slug\]\]`), and multi-line callout bodies spill out of the quote. Emitting Notion-flavored tags avoids the escaping and produces native blocks. This was verified by round-trip against the official MCP.
+> **Why translate at all.** Notion-flavored Markdown treats `[`, `]`, `<`, and `>` as characters that must be escaped outside code blocks. A raw obsidian callout (`> [!summary]`) or wikilink (`[[slug]]`) handed to the MCP is escaped into literal text (`> \[!summary\]`, `\[\[slug\]\]`), and the callout renders as a plain quote block with no icon, color, or callout affordance. Emitting Notion-flavored tags avoids the escaping and produces native blocks. This was verified by round-trip against the official MCP.
 
 ## Callouts to `<callout>` (write)
 
