@@ -159,8 +159,9 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 5. **Invariant 2 in reverse.** If a phase reveals a gap or inconsistency in the design, surface it. Apply drift policy (default: update plan only; user-elective: update plan + design).
 6. Dispatch `cadence-doc-consistency` once over the full set. Reconcile trivial wording; surface substantive contradictions to the user via `AskUserQuestion`. Re-dispatch only affected generators on resolution. The plan is not finalized until the sweep is clean.
 7. **Bidirectional linkage write.** Establish the design↔plan link via `skills/_shared/storage-resolution.md` (link) — one idempotent call sets `linked_plan` on the design and `linked_design` on the plan and bumps the design's `updated:`.
-8. **Self-review pass** (see below).
-9. Status stays `draft`. Print: *"Plan written. Run `/c-execute <path>` when ready."*
+8. **Resolve cross-references.** After all plan docs exist and the sweep is clean, call `skills/_shared/storage-resolution.md` (resolve_links) once over the plan to turn `[[…]]` wikilinks into Notion page mentions (sibling plan docs and cross-links to the design's now-existing pages). Backend-neutral: a no-op on the filesystem backend, the mention second pass on notion (see `skills/_shared/notion-translation.md`).
+9. **Self-review pass** (see below).
+10. Status stays `draft`. Print: *"Plan written. Run `/c-execute <path>` when ready."*
 
 ## Generation (always batched)
 

@@ -65,7 +65,7 @@ Where Cadence keeps its artifacts (brainstorm stubs, designs, and plans). The ba
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
 | `storage.backend` | Which backend stores designs, plans, and stubs. `filesystem` keeps them as markdown folders under `paths.*`; `notion` stores them as rows in two Notion databases. | `filesystem` | `filesystem` \| `notion` |
-| `storage.notion.root_page` | The Notion page Cadence provisions the two databases under. A page URL or id you own, shared with your Notion MCP's integration. Required when `backend` is `notion`. | `""` (empty) | Notion page URL or id |
+| `storage.notion.root_page` | The Notion page Cadence provisions the two databases under. A page URL or id you own, shared with the official Notion MCP's integration. Required when `backend` is `notion`. | `""` (empty) | Notion page URL or id |
 | `storage.notion.designs_db` | The Designs database id. Left empty by you; auto-filled on the first Notion-mode run, then committed so the team shares it. | `""` (empty) | Notion database id (auto-filled) |
 | `storage.notion.plans_db` | The Plans database id. Left empty by you; auto-filled on the first Notion-mode run, then committed so the team shares it. | `""` (empty) | Notion database id (auto-filled) |
 

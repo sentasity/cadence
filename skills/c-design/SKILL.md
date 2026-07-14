@@ -43,9 +43,10 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 5. **OOS additions during design.** Any decision-not-to-do lands in `99-out-of-scope.md` immediately with rationale + wikilink. Never deferred.
 6. **`00a-plain-english.md` is written last.** Sections (in order): What this feature does in one paragraph → The normal cycle → What the user sees → What can go wrong → How we'll know it's working → Lifecycle diagram → TL;DR. Length target: 400-700 lines for complex designs.
 7. **97 / 98.** Filled when the doc index includes them. 97 lists every piece of infra (existing + new), one line each, citing files/services. 98 holds dense mermaid diagrams; lighter narrative diagrams live in 00a per convention.
-8. **Self-review pass** (see below). Read the written docs back via `skills/_shared/storage-resolution.md` (read_artifact) and run a final pass over the whole artifact.
-9. **Flip status to `in-review`** per `skills/_shared/storage-resolution.md` (set_status), which also bumps `updated:`. Print: *"Design ready for review. Walk through it and tell me when to mark it `approved`."*
-10. **Status `approved`.** User-driven only. User says "approved" → flip status per `skills/_shared/storage-resolution.md` (set_status) → print: *"Run `/c-plan` to write the implementation plan."*
+8. **Resolve cross-references.** After every doc in the artifact exists, call `skills/_shared/storage-resolution.md` (resolve_links) once over the artifact to turn `[[…]]` wikilinks into Notion page mentions. Backend-neutral: a no-op on the filesystem backend, the mention second pass on notion (see `skills/_shared/notion-translation.md`).
+9. **Self-review pass** (see below). Read the written docs back via `skills/_shared/storage-resolution.md` (read_artifact) and run a final pass over the whole artifact.
+10. **Flip status to `in-review`** per `skills/_shared/storage-resolution.md` (set_status), which also bumps `updated:`. Print: *"Design ready for review. Walk through it and tell me when to mark it `approved`."*
+11. **Status `approved`.** User-driven only. User says "approved" → flip status per `skills/_shared/storage-resolution.md` (set_status) → print: *"Run `/c-plan` to write the implementation plan."*
 
 ## Generation mode
 

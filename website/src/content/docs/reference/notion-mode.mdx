@@ -14,15 +14,16 @@ By default Cadence keeps brainstorm stubs, designs, and plans as markdown folder
 
 Source code and git commits are unaffected. Only the Cadence artifacts (the docs, their frontmatter, and their checkboxes) move to Notion. In Notion mode Notion is canonical: there is no on-disk copy of a design or plan, and plan progress shows live on a Notion board as `/c-execute` ticks tasks off.
 
-<Aside type="note" title="Requires a Notion MCP">
-Notion mode drives whatever Notion MCP is configured in your session; Cadence ships no Notion code and stores no Notion token. If a repo is in Notion mode and no usable Notion MCP is found, Cadence stops with an actionable message. It never silently falls back to the filesystem.
+<Aside type="note" title="Requires the official Notion MCP">
+Notion mode runs on Notion's official MCP ([developers.notion.com/guides/mcp](https://developers.notion.com/guides/mcp/overview)); Cadence ships no Notion code and stores no Notion token. It requires that specific MCP, because it relies on the MCP's documented block format to render callouts, cross-references, and diagrams as native Notion content. Its per-install server id is resolved at runtime, so nothing Notion-specific is pasted into config. If a repo is in Notion mode and the official Notion MCP is not found, Cadence stops with an actionable message. It never silently falls back to the filesystem.
 </Aside>
 
-## Setup in three steps
+## Setup
 
-1. **Point at a root page.** In `.cadence/config.yaml`, set `storage.backend: notion` and `storage.notion.root_page` to a Notion page URL or id you own. Leave `storage.notion.designs_db` and `storage.notion.plans_db` empty.
-2. **Share the page with your Notion integration.** In Notion, share that root page with the integration your Notion MCP uses, so the MCP can create databases and sub-pages under it. This grant is the one setup step Cadence cannot do for you.
-3. **Run any `/c-*` command.** On the first Notion-mode run, Cadence creates the two databases under the root page, writes their ids back into the committed `.cadence/config.yaml`, and reminds you to commit so the whole team shares them.
+1. **Install the official Notion MCP.** Add Notion's official MCP ([developers.notion.com/guides/mcp](https://developers.notion.com/guides/mcp/overview)) to your session if it isn't already present. This is the specific MCP Notion mode requires.
+2. **Point at a root page.** In `.cadence/config.yaml`, set `storage.backend: notion` and `storage.notion.root_page` to a Notion page URL or id you own. Leave `storage.notion.designs_db` and `storage.notion.plans_db` empty.
+3. **Share the page with the integration.** In Notion, share that root page with the integration the official Notion MCP uses, so it can create databases and sub-pages under it. This grant is the one setup step Cadence cannot do for you.
+4. **Run any `/c-*` command.** On the first Notion-mode run, Cadence creates the two databases under the root page, writes their ids back into the committed `.cadence/config.yaml`, and reminds you to commit so the whole team shares them.
 
 See the [`storage` config keys](/cadence/reference/config/#storage) for the exact YAML. The entire `storage` block is team policy and belongs in the committed config, never in `.cadence/config.local.yaml`.
 
@@ -34,6 +35,16 @@ Cadence creates and owns both databases under your root page, including their pr
 - **Plans** holds one row per plan, with the same property shape plus a Base SHA. The design-to-plan link is a two-way **Relation** between the databases (a design's Linked Plan and a plan's Linked Design are the two ends of one relation), replacing the `linked_plan` / `linked_design` frontmatter fields.
 
 Because designs and plans are database rows with real Status, Date, and Relation columns, Notion's own status boards, filtered views, and roadmap timelines work over them at no extra cost.
+
+## How artifacts render in Notion
+
+Cadence authors its docs in obsidian-flavored markdown, and the Notion backend translates its two house extensions into native Notion blocks before writing, so pages read as first-class Notion content rather than escaped text:
+
+- **Callouts** (`> [!summary]`, `> [!success]`, `> [!warning]`, and so on) become native Notion callout blocks, each with a type-specific icon and background color.
+- **Wikilinks** (`[[01-topic]]`) become clickable Notion page mentions, resolved in a second pass once every page in the batch exists.
+- **Mermaid** code fences render as native Notion diagrams; standard markdown (headings, lists, tables, code, checkboxes) passes straight through.
+
+The mapping is defined in `skills/_shared/notion-translation.md`. Plan checkboxes are the load-bearing case: they become real Notion to-do blocks so `/c-execute` can tick them live.
 
 ## What changes and what does not
 
