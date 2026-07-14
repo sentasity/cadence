@@ -1,0 +1,113 @@
+name: Version bump guard
+
+# Leading-edge companion to release.yml. That workflow enforces the trailing
+# edge (a version bump landing on main becomes a tag + Release, gated on a
+# matching CHANGELOG section). This one enforces the leading edge: a PR that
+# changes the shipped plugin surface must ALSO bump the version and add the
+# matching changelog entry, so a surface change can never merge to main without
+# cutting a release. Feedback arrives at PR time, before release.yml's
+# merge-time gate.
+#
+# Runs on every PR to main (no top-level paths filter) and decides
+# applicability inside the job. A paths-filtered workflow is *skipped* when the
+# paths don't match, which leaves a required status check pending forever; an
+# always-running job that self-exempts reports a real pass/fail every time and
+# is safe to mark required in branch protection.
+#
+# Escape hatch: apply the `no-release` label to a shipped-surface PR that is
+# genuinely not user-facing. The labeled/unlabeled triggers re-run the check so
+# the label flips it green without a new push.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: version-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    env:
+      # The shipped plugin surface. A change under any of these must ship as a
+      # release. scripts/ is included because scripts/migrate-config.js runs at
+      # skill runtime, so changing it is user-facing.
+      SURFACE_DIRS: 'skills agents hooks defaults scripts'
+      SURFACE_FILES: '.claude-plugin/plugin.json'
+      NO_RELEASE_LABEL: 'no-release'
+      HAS_NO_RELEASE_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'no-release') }}
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Enforce version bump + changelog for shipped-surface changes
+        run: |
+          set -euo pipefail
+          base_ref="$GITHUB_BASE_REF"
+          git fetch --quiet origin "$base_ref"
+          base="$(git merge-base "origin/$base_ref" HEAD)"
+
+          # Files this PR changes, relative to the merge base.
+          changed="$(git diff --name-only "$base" HEAD)"
+
+          # Does the diff touch the shipped surface?
+          touched=""
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            for d in $SURFACE_DIRS; do
+              case "$f" in "$d"/*) touched="$touched$f"$'\n' ;; esac
+            done
+            for sf in $SURFACE_FILES; do
+              [ "$f" = "$sf" ] && touched="$touched$f"$'\n'
+            done
+          done <<< "$changed"
+
+          if [ -z "$touched" ]; then
+            echo "No shipped-surface changes in this PR; version bump not required."
+            exit 0
+          fi
+
+          echo "Shipped-surface files changed:"
+          printf '%s' "$touched" | sed 's/^/  - /'
+
+          if [ "$HAS_NO_RELEASE_LABEL" = "true" ]; then
+            echo "The '$NO_RELEASE_LABEL' label is set; skipping the version-bump check for this PR."
+            exit 0
+          fi
+
+          # Head vs base version.
+          head_v="$(jq -r .version .claude-plugin/plugin.json)"
+          base_v="$(git show "origin/$base_ref:.claude-plugin/plugin.json" | jq -r .version)"
+          echo "plugin.json version: base=$base_v head=$head_v"
+
+          fail() {
+            echo "::error::$1 See CONTRIBUTING.md § Releasing. If this shipped-surface change is genuinely not user-facing, apply the '$NO_RELEASE_LABEL' label."
+            exit 1
+          }
+
+          if [ "$head_v" = "$base_v" ]; then
+            fail "This PR changes the shipped plugin surface but does not bump 'version' in .claude-plugin/plugin.json (still $head_v)."
+          fi
+
+          # Strictly-greater semver check: head must be the unique max of {base, head}.
+          higher="$(printf '%s\n%s\n' "$base_v" "$head_v" | sort -V | tail -n1)"
+          if [ "$higher" != "$head_v" ]; then
+            fail "plugin.json version went backwards: base=$base_v, head=$head_v. The new version must be strictly greater."
+          fi
+
+          # A matching, non-empty '## vX.Y.Z' section must exist in CHANGELOG.md.
+          # Same extraction as release.yml so the two gates agree.
+          tag="v$head_v"
+          awk -v v="$tag" 'index($0, "## " v) == 1 {f=1; next} /^## v/{f=0} f' CHANGELOG.md > /tmp/notes.md
+          if ! grep -q '[^[:space:]]' /tmp/notes.md; then
+            fail "CHANGELOG.md has no non-empty '## $tag' section to match the version bump."
+          fi
+
+          echo "OK: version bumped $base_v -> $head_v with a matching '## $tag' changelog section."

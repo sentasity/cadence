@@ -40,6 +40,8 @@ A release is three edits landing on `main` together; everything after the push i
 
 The `release.yml` workflow then creates the annotated `vX.Y.Z` tag at that commit and publishes a GitHub Release whose notes are the changelog section. A bump with no matching changelog entry fails the workflow on purpose: no entry, no release. Don't hand-create tags or Releases unless the workflow is broken; if you must, match its shape (annotated tag `vX.Y.Z - <headline>`, Release notes from the changelog section).
 
+The `version-guard.yml` workflow enforces the same three edits at PR time: any PR that changes the shipped surface (`skills/`, `agents/`, `hooks/`, `defaults/`, `scripts/`, `.claude-plugin/plugin.json`) must bump the version and add the matching `## vX.Y.Z` changelog section, or the check fails. Website- and docs-only PRs don't touch the surface, so they need no bump. For the rare shipped-surface edit that genuinely isn't user-facing (internal refactor, comment fix), apply the `no-release` label to exempt the PR.
+
 ## What we don't take PRs for
 
 - **Renaming skills** (`/c-brainstorm` → `/c-bs`, etc.). The names are part of the v0.1 contract; breaking them breaks every plan that references them. Naming changes need an explicit migration plan.
