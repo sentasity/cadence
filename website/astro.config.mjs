@@ -47,6 +47,11 @@ export default defineConfig({
       logo: {
         src: './src/assets/cadence-icon.svg',
       },
+      // Footer override adds a small "Built by Sentasity" credit under the
+      // default footer content on every page.
+      components: {
+        Footer: './src/components/Footer.astro',
+      },
       social: [
         {
           icon: 'github',
