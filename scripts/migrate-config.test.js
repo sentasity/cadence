@@ -602,3 +602,46 @@ test('storage: a v4 config migrates to v5 with the storage block appended verbat
   assert.match(out, /^ {4}designs_db: ""/m);
   assert.match(out, /^ {4}plans_db: {3}""/m);
 });
+
+// ---- v5 -> v6 authoring.plan_mode (additive nested-key append) ----
+//
+// scripts/migrate-config.js is intentionally NOT modified for plan_mode:
+// detectMissingKeys finds the missing child under an existing authoring:
+// block and mergeMissing appends it with the default value from
+// defaults/config.default.yaml (v6). This test confirms that mechanism
+// for the exact line shipped in defaults.
+
+test('v5->v6: plan_mode is appended under an existing authoring block', () => {
+  const def = [
+    'config_version: 6          # schema version; drives migration detection',
+    'authoring:',
+    '  max_parallel: 6          # concurrent doc-generator agents (no worktrees; cheap)',
+    '  design_mode: ask         # ask | all-at-once | one-by-one | inline (standing default for /c-design)',
+    '  plan_mode: ask           # ask | all-at-once | inline (standing default for /c-plan)',
+  ].join('\n') + '\n';
+  const proj = [
+    'config_version: 5',
+    'authoring:',
+    '  max_parallel: 6',
+    '  design_mode: ask',
+  ].join('\n') + '\n';
+  const bumped = bumpOrInsertVersion(proj, 6);
+  const missing = detectMissingKeys(bumped, def);
+  assert.deepStrictEqual(missing.missingBlocks, []);
+  assert.deepStrictEqual(missing.missingNested, [{ block: 'authoring', key: 'plan_mode' }]);
+  const merged = mergeMissing(bumped, def, missing);
+  assert.match(merged, /config_version: 6/);
+  assert.match(merged, /^  plan_mode: ask/m);
+});
+
+test('v5->v6: the real shipped defaults produce exactly the plan_mode append for a v5 full copy', () => {
+  const defText = fs.readFileSync(path.join(__dirname, '..', 'defaults', 'config.default.yaml'), 'utf8');
+  const projText = defText
+    .replace(/^config_version: 6/m, 'config_version: 5')
+    .split('\n')
+    .filter((line) => !/^  plan_mode:/.test(line))
+    .join('\n');
+  const missing = detectMissingKeys(projText, defText);
+  assert.deepStrictEqual(missing.missingNested, [{ block: 'authoring', key: 'plan_mode' }]);
+  assert.deepStrictEqual(missing.missingBlocks, []);
+});
