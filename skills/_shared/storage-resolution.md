@@ -58,7 +58,7 @@ This asymmetry is the whole point of the layer: a skill says "the artifact `<slu
 
 ## Backend selection
 
-The layer reads `storage.backend` (`filesystem | notion`, default `filesystem`) from resolved configuration, using the three-layer resolution defined in `skills/_shared/config-resolution.md` (plugin defaults, then `.cadence/config.yaml`, then `.cadence/config.local.yaml`). Selection is a single read at the top of any operation; there is no per-operation or per-artifact backend choice, and no operation branches on the backend a second time once selection has run.
+The layer reads `storage.backend` (`filesystem | notion`, default `filesystem`) from the resolved config (via `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"`; contract in `skills/_shared/config-resolution.md`; never read config files directly). Selection is a single read at the top of any operation; there is no per-operation or per-artifact backend choice, and no operation branches on the backend a second time once selection has run.
 
 The `filesystem` default is defined to equal today's Cadence behavior exactly, so a repo that never sets `storage.*` sees no change at all.
 
@@ -96,11 +96,11 @@ Obsidian-to-Notion-flavored-Markdown translation on the way in, the read-back in
 
 Provisioning runs from the notion branch of the storage layer before the first read or write of any Notion-mode operation, as a numbered flow:
 
-1. **Resolve config.** Read `storage.backend`, `storage.notion.root_page`, `storage.notion.designs_db`, and `storage.notion.plans_db` through the three-layer resolution in `skills/_shared/config-resolution.md`. If `backend` is not `notion`, provisioning does nothing.
+1. **Resolve config.** Read `storage.backend`, `storage.notion.root_page`, `storage.notion.designs_db`, and `storage.notion.plans_db` from the resolver's output (`node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"`; contract in `skills/_shared/config-resolution.md`). If `backend` is not `notion`, provisioning does nothing.
 2. **Short-circuit when already provisioned.** If both `designs_db` and `plans_db` are already set, the databases exist; skip straight to normal operation. This makes provisioning idempotent, a no-op on every run after the first.
 3. **Search under the root page.** For each unset database id, search under `root_page` for an existing Designs or Plans database identified by a known title, using the discovered MCP's query or search capability. This recovers a database that exists but whose id was never recorded, for example one a teammate provisioned but has not yet committed.
 4. **Create any still-missing database.** For a database that is neither in config nor found under the root page, create it under `root_page` with the property schema defined in [[../../docs/designs/2026-07-10-notion-mode/02-notion-data-model]].
-5. **Write ids back to committed config.** Write the resolved and newly created database ids into `storage.notion.designs_db` and `storage.notion.plans_db` in the repo's committed `.cadence/config.yaml`, preserving surrounding content. This write-back edits the committed file additively and must never touch `.cadence/config.local.yaml`.
+5. **Write ids back to committed config.** Write the resolved and newly created database ids into `storage.notion.designs_db` and `storage.notion.plans_db` in the repo's committed `.cadence/config.yaml`, preserving surrounding content. This write-back edits the committed file additively and must never touch `.cadence/config.local.yaml`. This is a sanctioned write path per config-resolution.md; the read ban covers resolution only.
 6. **Tell the user and remind them to commit.** Report which databases were found versus created, and remind the user to commit `.cadence/config.yaml` so the whole team shares the same databases and no one re-provisions.
 
 ## Schema ownership
