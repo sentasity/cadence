@@ -3,7 +3,7 @@
 # never migrated); resolution order is defined in skills/_shared/config-resolution.md.
 # No assumption of obsidian or any specific repo layout.
 
-config_version: 6          # schema version; drives migration detection
+config_version: 7          # schema version; drives migration detection
 
 paths:
   designs: docs/designs
@@ -38,7 +38,8 @@ plan:
 execute:
   branch_check: true
   auto_resolve_drift: false
-  parallel: true           # master switch; false => sequential, no worktrees
+  parallel: true           # master switch; false => legacy sequential path (sub-agents, no worktrees)
+  mode: ask                # ask | parallel | inline (pre-flight execution-mode gate for /c-execute)
   max_parallel: 4          # concurrent implementer lanes (= worktrees); reviewers uncapped
   worktree_confirm: true   # one-time pre-flight worktree confirmation
   resume_on_dirty_tree: false
