@@ -67,7 +67,7 @@ audits:
     - validation-doc-presence
   optional: []
   build_validator:
-    command: node --test scripts/migrate-config.test.js
+    command: node --test 'scripts/*.test.js'
     expect_zero_exit: true
 
 plain_english:
