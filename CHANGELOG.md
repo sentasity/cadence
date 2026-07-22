@@ -2,6 +2,20 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.12.0 (2026-07-21)
+
+Config resolution becomes deterministic: a shipped resolver script replaces prose-driven three-layer merging, so `.cadence/config.local.yaml` overrides are honored by every skill every time. Plus: Notion Tags options are auto-created before writes, and designs and plans gain an inline (no sub-agents) authoring mode.
+
+### Added
+
+- **`scripts/resolve-config.js` — the only sanctioned config read.** Walks up to `.cadence/`, merges plugin defaults, `.cadence/config.yaml`, and `.cadence/config.local.yaml` per the documented per-key-path semantics (vendored js-yaml 4.1.0, zero install), and prints merged JSON with per-layer sources, team-policy override provenance, and a gitignore-protection flag; `--key <dot.path>` prints one bare value. Non-zero exits are hard stops with remediation messages (stale plugin cache, malformed YAML with file and line) — skills never fall back to reading config files directly, and every config-reading skill and agent now quotes the invocation and carries the prohibition. `skills/_shared/config-resolution.md` now documents the script's contract instead of an algorithm each model re-executes.
+- **`inline` authoring mode for `/c-design` and `/c-plan`** (`config_version` 5 → 6). The main session writes every doc itself — no generator sub-agents, no per-doc pauses, no consistency sweep. `authoring.design_mode` gains the `inline` value and the new `authoring.plan_mode` key (`ask | all-at-once | inline`, default `ask`) gives `/c-plan` its first generation-mode question; pin a concrete value to skip it. The migration appends `plan_mode` additively to existing configs.
+
+### Fixed
+
+- **Notion mode no longer fails on fresh tags.** The official Notion MCP rejects multi-select values that are not existing options, so `create_artifact` (and tag updates via `set_property`) now fetch the Tags schema, add any missing options via `notion-update-data-source` (add-only, full-list resend, one refetch-and-retry on races), then write. Sequence and payload shape documented in `skills/_shared/notion-translation.md`.
+- **Worktrees no longer drop local config overrides.** Gitignored files are absent from fresh worktree checkouts, so `/c-worktree` and `/c-execute` lane provisioning now copy `.cadence/config.local.yaml` from the main checkout into each new worktree.
+
 ## v0.11.0 (2026-07-14)
 
 Notion mode renders natively: obsidian callouts, wikilink cross-references, and Mermaid diagrams become real Notion blocks instead of escaped text, and the mode now requires Notion's official MCP.
