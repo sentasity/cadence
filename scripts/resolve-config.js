@@ -158,6 +158,58 @@ function resolveConfig(cwd) {
   };
 }
 
+const USAGE = 'usage: node resolve-config.js [--key <dot.path>] [--help]';
+
+function formatKeyValue(value) {
+  if (value === null) {
+    return 'null';
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
+
+function main(argv) {
+  const args = argv.slice(2);
+  let key = null;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--help') {
+      process.stdout.write(USAGE + '\n');
+      return 0;
+    }
+    if (args[i] === '--key') {
+      if (key !== null || i + 1 >= args.length) {
+        process.stderr.write(`resolve-config: ${USAGE}\n`);
+        return 5;
+      }
+      key = args[i + 1];
+      i += 1;
+      continue;
+    }
+    process.stderr.write(`resolve-config: unknown argument "${args[i]}"\n${USAGE}\n`);
+    return 5;
+  }
+  let resolved;
+  try {
+    resolved = resolveConfig(process.cwd());
+  } catch (err) {
+    process.stderr.write(`resolve-config: ${err.message}\n`);
+    return err.exitCode === 2 || err.exitCode === 3 ? err.exitCode : 1;
+  }
+  if (key !== null) {
+    const r = getPath(resolved.config, key);
+    if (!r.found) {
+      process.stderr.write(`resolve-config: no config key at path "${key}"\n`);
+      return 4;
+    }
+    process.stdout.write(formatKeyValue(r.value) + '\n');
+    return 0;
+  }
+  process.stdout.write(JSON.stringify(resolved, null, 2) + '\n');
+  return 0;
+}
+
 module.exports = {
   TEAM_POLICY_KEYS,
   isPlainObject,
@@ -168,4 +220,10 @@ module.exports = {
   findConfigDir,
   loadYamlFile,
   resolveConfig,
+  formatKeyValue,
+  main,
 };
+
+if (require.main === module) {
+  process.exit(main(process.argv));
+}

@@ -156,3 +156,75 @@ test('resolveConfig: malformed YAML throws with exitCode 3 naming the file', () 
     return true;
   });
 });
+
+const { spawnSync } = require('node:child_process');
+const SCRIPT = pathm.join(__dirname, 'resolve-config.js');
+
+function runCli(args, cwd) {
+  return spawnSync(process.execPath, [SCRIPT, ...args], { cwd, encoding: 'utf8' });
+}
+
+test('cli: no flags prints the full JSON object', () => {
+  const root = makeRepo({ '.cadence/config.yaml': 'config_version: 5\n' });
+  const r = runCli([], root);
+  assert.strictEqual(r.status, 0);
+  const out = JSON.parse(r.stdout);
+  assert.strictEqual(out.config.storage.backend, 'filesystem');
+  assert.ok(out.sources.defaults.endsWith('config.default.yaml'));
+});
+
+test('cli: --key prints a bare scalar for strings', () => {
+  const root = makeRepo({ '.cadence/config.yaml': 'config_version: 5\nstorage:\n  backend: notion\n' });
+  const r = runCli(['--key', 'storage.backend'], root);
+  assert.strictEqual(r.status, 0);
+  assert.strictEqual(r.stdout, 'notion\n');
+});
+
+test('cli: --key prints numbers, booleans, null, and JSON for structures', () => {
+  const root = makeRepo({ '.cadence/config.yaml': 'config_version: 5\n' });
+  assert.strictEqual(runCli(['--key', 'execute.max_parallel'], root).stdout, '4\n');
+  assert.strictEqual(runCli(['--key', 'plan.tdd'], root).stdout, 'true\n');
+  assert.strictEqual(runCli(['--key', 'worktree.hooks.provision'], root).stdout, 'null\n');
+  assert.strictEqual(
+    runCli(['--key', 'status.design'], root).stdout,
+    '["draft","in-review","approved","completed","superseded","on-hold"]\n'
+  );
+});
+
+test('cli: --key on a missing path exits 4 with empty stdout', () => {
+  const root = makeRepo({ '.cadence/config.yaml': 'config_version: 5\n' });
+  const r = runCli(['--key', 'storage.nope'], root);
+  assert.strictEqual(r.status, 4);
+  assert.strictEqual(r.stdout, '');
+  assert.match(r.stderr, /no config key at path "storage\.nope"/);
+});
+
+test('cli: unknown flag exits 5; --help exits 0', () => {
+  const root = makeRepo({});
+  assert.strictEqual(runCli(['--frobnicate'], root).status, 5);
+  assert.strictEqual(runCli(['--help'], root).status, 0);
+});
+
+test('cli: malformed repo YAML exits 3 with empty stdout', () => {
+  const root = makeRepo({ '.cadence/config.yaml': 'paths:\n\tdesigns: docs\n' });
+  const r = runCli([], root);
+  assert.strictEqual(r.status, 3);
+  assert.strictEqual(r.stdout, '');
+});
+
+test('cli: missing defaults exits 2 (script copied beside no defaults dir)', () => {
+  const fake = fsm.mkdtempSync(pathm.join(os.tmpdir(), 'rc-noplugin-'));
+  fsm.mkdirSync(pathm.join(fake, 'scripts', 'vendor'), { recursive: true });
+  fsm.copyFileSync(SCRIPT, pathm.join(fake, 'scripts', 'resolve-config.js'));
+  fsm.copyFileSync(
+    pathm.join(__dirname, 'vendor', 'js-yaml.js'),
+    pathm.join(fake, 'scripts', 'vendor', 'js-yaml.js')
+  );
+  const r = spawnSync(
+    process.execPath,
+    [pathm.join(fake, 'scripts', 'resolve-config.js')],
+    { cwd: fake, encoding: 'utf8' }
+  );
+  assert.strictEqual(r.status, 2);
+  assert.match(r.stderr, /plugin defaults not found/);
+});
