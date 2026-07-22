@@ -71,3 +71,88 @@ test('isTeamPolicyKey: prefix entries, exact entries, and personal keys', () => 
   assert.strictEqual(isTeamPolicyKey('authoring.design_mode'), false);
   assert.strictEqual(isTeamPolicyKey('advisors.enabled'), false);
 });
+
+const fsm = require('node:fs');
+const pathm = require('node:path');
+const os = require('node:os');
+const { findConfigDir, resolveConfig } = require('./resolve-config.js');
+
+function makeRepo(files) {
+  const root = fsm.mkdtempSync(pathm.join(os.tmpdir(), 'rc-'));
+  for (const [rel, content] of Object.entries(files)) {
+    const p = pathm.join(root, rel);
+    fsm.mkdirSync(pathm.dirname(p), { recursive: true });
+    fsm.writeFileSync(p, content);
+  }
+  return root;
+}
+
+test('findConfigDir: finds .cadence from a nested subdirectory', () => {
+  const root = makeRepo({ '.cadence/config.yaml': 'config_version: 5\n', 'a/b/keep.txt': '' });
+  assert.strictEqual(fsm.realpathSync(findConfigDir(pathm.join(root, 'a', 'b'))), fsm.realpathSync(root));
+});
+
+test('findConfigDir: a .cadence with only a local file anchors the walk', () => {
+  const root = makeRepo({ '.cadence/config.local.yaml': 'execute:\n  max_parallel: 2\n' });
+  assert.strictEqual(fsm.realpathSync(findConfigDir(root)), fsm.realpathSync(root));
+});
+
+test('findConfigDir: no config anywhere returns null', () => {
+  const root = makeRepo({ 'a/keep.txt': '' });
+  assert.strictEqual(findConfigDir(pathm.join(root, 'a')), null);
+});
+
+test('resolveConfig: no .cadence means pure defaults, root null', () => {
+  const root = makeRepo({});
+  const r = resolveConfig(root);
+  assert.strictEqual(r.root, null);
+  assert.strictEqual(r.sources.repo, null);
+  assert.strictEqual(r.sources.local, null);
+  assert.strictEqual(r.config.storage.backend, 'filesystem');
+  assert.deepStrictEqual(r.team_policy_overrides, []);
+  assert.strictEqual(r.gitignore_missing, false);
+});
+
+test('resolveConfig: repo layer overrides defaults per key path', () => {
+  const root = makeRepo({
+    '.cadence/config.yaml': 'config_version: 5\nexecute:\n  max_parallel: 9\n',
+  });
+  const r = resolveConfig(root);
+  assert.strictEqual(r.config.execute.max_parallel, 9);
+  assert.strictEqual(r.config.execute.branch_check, true);
+});
+
+test('resolveConfig: local layer wins over repo; policy override reported', () => {
+  const root = makeRepo({
+    '.cadence/config.yaml': 'config_version: 5\nstorage:\n  backend: filesystem\n',
+    '.cadence/config.local.yaml': 'storage:\n  backend: notion\nexecute:\n  max_parallel: 2\n',
+    '.gitignore': '.cadence/config.local.yaml\n',
+  });
+  const r = resolveConfig(root);
+  assert.strictEqual(r.config.storage.backend, 'notion');
+  assert.strictEqual(r.config.execute.max_parallel, 2);
+  assert.deepStrictEqual(r.team_policy_overrides, [
+    { key: 'storage.backend', layer: 'local', value: 'notion' },
+  ]);
+  assert.strictEqual(r.gitignore_missing, false);
+});
+
+test('resolveConfig: gitignore_missing true when local exists and line absent', () => {
+  const root = makeRepo({
+    '.cadence/config.yaml': 'config_version: 5\n',
+    '.cadence/config.local.yaml': 'authoring:\n  design_mode: inline\n',
+    '.gitignore': 'node_modules\n',
+  });
+  assert.strictEqual(resolveConfig(root).gitignore_missing, true);
+});
+
+test('resolveConfig: malformed YAML throws with exitCode 3 naming the file', () => {
+  const root = makeRepo({
+    '.cadence/config.yaml': 'paths:\n\tdesigns: docs\n',
+  });
+  assert.throws(() => resolveConfig(root), (err) => {
+    assert.strictEqual(err.exitCode, 3);
+    assert.match(err.message, /config\.yaml/);
+    return true;
+  });
+});

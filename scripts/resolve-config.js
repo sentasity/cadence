@@ -64,6 +64,100 @@ function isTeamPolicyKey(dotPath) {
   );
 }
 
+function findConfigDir(startDir) {
+  let dir = path.resolve(startDir);
+  for (;;) {
+    const cadenceDir = path.join(dir, '.cadence');
+    if (
+      fs.existsSync(path.join(cadenceDir, 'config.yaml')) ||
+      fs.existsSync(path.join(cadenceDir, 'config.local.yaml'))
+    ) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      return null;
+    }
+    dir = parent;
+  }
+}
+
+function loadYamlFile(filePath) {
+  const text = fs.readFileSync(filePath, 'utf8');
+  let doc;
+  try {
+    doc = yaml.load(text);
+  } catch (err) {
+    const e = new Error(
+      `failed to parse ${filePath}: ${err.message}. Fix the file; Cadence will not guess at config.`
+    );
+    e.exitCode = 3;
+    throw e;
+  }
+  if (doc === undefined || doc === null) {
+    return {};
+  }
+  if (!isPlainObject(doc)) {
+    const e = new Error(
+      `failed to parse ${filePath}: top level must be a mapping. Fix the file; Cadence will not guess at config.`
+    );
+    e.exitCode = 3;
+    throw e;
+  }
+  return doc;
+}
+
+function resolveConfig(cwd) {
+  const defaultsPath = path.join(__dirname, '..', 'defaults', 'config.default.yaml');
+  if (!fs.existsSync(defaultsPath)) {
+    const e = new Error(
+      `plugin defaults not found at ${defaultsPath}. The Cadence plugin install is broken or the plugin cache is stale; reinstall or update the Cadence plugin.`
+    );
+    e.exitCode = 2;
+    throw e;
+  }
+  let merged = loadYamlFile(defaultsPath);
+  const root = findConfigDir(cwd);
+  const sources = { defaults: defaultsPath, repo: null, local: null };
+  let localDoc = null;
+  if (root !== null) {
+    const repoPath = path.join(root, '.cadence', 'config.yaml');
+    const localPath = path.join(root, '.cadence', 'config.local.yaml');
+    if (fs.existsSync(repoPath)) {
+      sources.repo = repoPath;
+      merged = deepMerge(merged, loadYamlFile(repoPath));
+    }
+    if (fs.existsSync(localPath)) {
+      sources.local = localPath;
+      localDoc = loadYamlFile(localPath);
+      merged = deepMerge(merged, localDoc);
+    }
+  }
+  const teamPolicyOverrides = [];
+  if (localDoc !== null) {
+    for (const [key, value] of flattenLeaves(localDoc, '')) {
+      if (isTeamPolicyKey(key)) {
+        teamPolicyOverrides.push({ key, layer: 'local', value });
+      }
+    }
+  }
+  let gitignoreMissing = false;
+  if (sources.local !== null) {
+    const giPath = path.join(root, '.gitignore');
+    const lines = fs.existsSync(giPath)
+      ? fs.readFileSync(giPath, 'utf8').split('\n').map((l) => l.trim())
+      : [];
+    gitignoreMissing = !lines.includes('.cadence/config.local.yaml');
+  }
+  return {
+    config: merged,
+    root,
+    sources,
+    team_policy_overrides: teamPolicyOverrides,
+    gitignore_missing: gitignoreMissing,
+  };
+}
+
 module.exports = {
   TEAM_POLICY_KEYS,
   isPlainObject,
@@ -71,4 +165,7 @@ module.exports = {
   flattenLeaves,
   getPath,
   isTeamPolicyKey,
+  findConfigDir,
+  loadYamlFile,
+  resolveConfig,
 };
