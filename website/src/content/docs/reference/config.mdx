@@ -33,7 +33,7 @@ authoring:
   design_mode: all-at-once
 ```
 
-Keys intended for local override are the per-person, per-machine ones: `execute.max_parallel`, `execute.worktree_confirm`, `authoring.max_parallel`, `authoring.design_mode`, and the `validate.browser_*` and `advisors.*` keys. Everything else (paths, statuses, audits, plan policy, the whole `worktree:` section) is team policy: a local override of those still works, but Cadence prints a one-line notice so the divergence is never silent.
+Keys intended for local override are the per-person, per-machine ones: `execute.max_parallel`, `execute.worktree_confirm`, `authoring.max_parallel`, `authoring.design_mode`, `authoring.plan_mode`, and the `validate.browser_*` and `advisors.*` keys. Everything else (paths, statuses, audits, plan policy, the whole `worktree:` section) is team policy: a local override of those still works, but Cadence prints a one-line notice so the divergence is never silent.
 
 <Aside type="caution" title="Keep it gitignored">
 A committed "local" file is just a second team config with a confusing name. `.cadence/config.local.yaml` must be in your repo's `.gitignore`; when Cadence finds the file present but the repo's `.gitignore` lacks the line, it adds it for you and says so. The repo line matters even if your personal global excludes file already covers the pattern: the global entry protects only your machine, while the repo line protects every clone.
@@ -146,7 +146,8 @@ How doc-generator agents run when `/c-design` materializes a design folder. Thes
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
 | `authoring.max_parallel` | Maximum concurrent doc-generator agents. | `6` | Positive integer |
-| `authoring.design_mode` | Standing default for how `/c-design` writes child docs: `ask` prompts you, `all-at-once` generates in parallel, `one-by-one` writes sequentially with a review per doc. | `ask` | `ask` \| `all-at-once` \| `one-by-one` |
+| `authoring.design_mode` | Standing default for how `/c-design` writes child docs: `ask` prompts you, `all-at-once` generates in parallel, `one-by-one` writes sequentially with a review per doc, `inline` writes every doc in the main session with no sub-agents or pauses. | `ask` | `ask` \| `all-at-once` \| `one-by-one` \| `inline` |
+| `authoring.plan_mode` | Standing default for how `/c-plan` writes plan docs: `ask` prompts you, `all-at-once` generates in parallel, `inline` writes every doc in the main session. | `ask` | `ask` \| `all-at-once` \| `inline` |
 
 ## `advisors`
 

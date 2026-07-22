@@ -35,7 +35,7 @@ This means: if you ever change audit behavior, change the agent. Changing this s
 Dispatch the `cadence-completion-auditor` agent (via `Task` tool) with:
 - The resolved plan handle per `skills/_shared/storage-resolution.md` (resolve); the agent reads the plan, its to-do state, and Base SHA via read_artifact. The `git diff <base_sha>..HEAD` range stays git-side and unchanged.
 - The resolved linked-design handle (resolve).
-- Resolved config content per `skills/_shared/config-resolution.md` (specifically `audits.*` keys; `audits.*` is team policy, so a local override is honored but surfaced).
+- Resolved config content — the JSON printed by `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (specifically `audits.*` keys; `audits.*` is team policy, so a local override is honored but surfaced; never read config files directly).
 - Mode: `standalone` (this skill ALWAYS passes `standalone`; the `gating` mode is for `/c-execute`'s direct-dispatch path).
 - Diff range (`base_sha`..HEAD).
 

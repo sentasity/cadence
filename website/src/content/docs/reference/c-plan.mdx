@@ -20,6 +20,8 @@ Use `/c-plan` once a design is approved and you want a precise, executable bluep
 
 One design always becomes exactly one plan; large work is split into **phase docs** inside that single plan, not into sibling plans. After reading the design, it confirms the phase decomposition with you.
 
+It then asks one generation-mode question: **all-at-once** (the default — parallel generator sub-agents plus a consistency sweep) or **inline** (the main session writes every doc itself; no sub-agents, no sweep). A concrete `authoring.plan_mode` value skips the question.
+
 ## Inputs & preconditions
 
 A design whose `00-overview.md` has `status: approved`. It refuses if the design is still `draft` or `in-review` (finish and approve it first), or if a plan folder with the same slug already exists at a non-draft status (it won't overwrite).

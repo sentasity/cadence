@@ -35,11 +35,10 @@ non-trivial generic pieces.
 
 ## Config
 
-Read the `worktree:` section of the resolved config per
-`skills/_shared/config-resolution.md` (defaults, then `.cadence/config.yaml`,
-then the personal `.cadence/config.local.yaml`); defaults come from
-`${CLAUDE_PLUGIN_ROOT}/defaults/config.default.yaml` (a repo with no config file
-gets pure defaults):
+Read the `worktree:` section from the resolved config: run
+`node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` and use its JSON
+`config.worktree` (contract in `skills/_shared/config-resolution.md`; a repo
+with no config file gets pure defaults; never read config files directly):
 
 | Key | Default | Meaning |
 |---|---|---|

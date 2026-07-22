@@ -24,7 +24,7 @@ You run an interactive discussion of an existing design or plan. The user drives
 Before the first user question, all in parallel:
 
 - Read the target doc(s) via `skills/_shared/storage-resolution.md` (read_artifact). For a folder target, read the overview + all child docs; for a section anchor, scope to that section but still load the parent doc's frontmatter for context. Do not assume a `paths.designs`/`paths.plans` file path.
-- Read the resolved config per `skills/_shared/config-resolution.md` (resolve paths, naming, advisor list).
+- Resolve config by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` and use its JSON `config` (paths, naming, advisor list); contract in `skills/_shared/config-resolution.md`; never read config files directly.
 - Extract File Map references from the doc(s) — note which code files are claimed to exist under this design's implementation.
 - `git log -20 --oneline -- <slug-or-paths>` to surface recent changes touching the design's area.
 - Read the repo's `CLAUDE.md` if any.

@@ -43,7 +43,7 @@ After hearing the topic (and before any deep Q&A), pick a mode:
 
 ## Detect-and-offer: missing `.cadence/config.yaml`
 
-Before entering Q&A, walk up from the current working directory looking for `.cadence/config.yaml`. If none found:
+Before entering Q&A, run the resolver; if its output has `"root": null` (no `.cadence` config anywhere), then:
 
 1. Print: *"No `.cadence/config.yaml` found in this repo or any parent. Scaffold defaults to get started? (y/n)"*
 2. **If user says yes,** ask four focused questions (one at a time via `AskUserQuestion`):
@@ -51,14 +51,14 @@ Before entering Q&A, walk up from the current working directory looking for `.ca
    - **TDD default:** *"Should plans default to TDD-shaped tasks (test → fail → impl → pass → commit)?"* — yes / no.
    - **Advisors:** *"Any repo-specific agents to register as advisors?"* — comma-separated names or "none."
    - **Storage backend:** *"Store designs and plans on the filesystem (default) or in Notion?"* — filesystem / notion. When the user picks notion, ask one follow-up for `storage.notion.root_page` (the parent page under which Cadence provisions its databases); see [[../../docs/designs/2026-07-10-notion-mode/03-connection-provisioning]]. Filesystem needs no follow-up.
-3. Read `${CLAUDE_PLUGIN_ROOT}/defaults/config.default.yaml` as the source of truth, then write `.cadence/config.yaml` to the repo root: take its `config_version` verbatim, fold the user's four brainstorm answers (paths, TDD default, advisors, and — when the user chose notion — `storage.backend` plus `storage.notion.root_page`) over the corresponding default keys, and write the merged result with every other default key included as-is. Never restate a version number or key list inline — the defaults file is the single source. Confirm the file was created, and mention that personal per-machine overrides can later go in `.cadence/config.local.yaml` (gitignored; see `skills/_shared/config-resolution.md`).
+3. Read `${CLAUDE_PLUGIN_ROOT}/defaults/config.default.yaml` as the source of truth, then write `.cadence/config.yaml` to the repo root: take its `config_version` verbatim, fold the user's four brainstorm answers (paths, TDD default, advisors, and — when the user chose notion — `storage.backend` plus `storage.notion.root_page`) over the corresponding default keys, and write the merged result with every other default key included as-is. Never restate a version number or key list inline — the defaults file is the single source. Confirm the file was created, and mention that personal per-machine overrides can later go in `.cadence/config.local.yaml` (gitignored; see `skills/_shared/config-resolution.md`). (This scaffolding write is a sanctioned write path per config-resolution.md; the direct-read ban covers resolution only.)
 4. Enter the regular Q&A loop (below) for the user's brainstorm input.
 5. **If user says no,** exit cleanly with a one-line note: *"Config required to proceed. Run /c-brainstorm again when ready."* No error, no pointer dump.
 
 ## Q&A loop mechanics
 
 **Step 1 — Parallel context scan + pre-flight** (before the first question, all in parallel):
-- Read the resolved config per `skills/_shared/config-resolution.md` (resolve paths, naming, status vocab, advisors).
+- Resolve config by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` and use its JSON `config` (paths, naming, status vocab, advisors). Follow the notice/gitignore/hard-stop contract in `skills/_shared/config-resolution.md`; never read `.cadence/config.yaml`, `.cadence/config.local.yaml`, or `defaults/config.default.yaml` directly.
 - Read recent commits: `git log -20 --oneline`.
 - Enumerate and read related artifacts that match the idea's slug or topic per `skills/_shared/storage-resolution.md` (query to list each type's artifacts, read_artifact to pull a match); do not scan `paths.designs`/`paths.plans` directly.
 - Read the repo's `CLAUDE.md` (if any).

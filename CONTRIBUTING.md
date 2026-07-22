@@ -20,11 +20,12 @@ Cadence is a phase-aware system; the contribution flow follows the same phases.
 - Markdown for skill and agent files — keep the body terse, structure with clear H2/H3.
 - YAML for config and frontmatter.
 - JSON for plugin manifests (matches Claude Code's expectations).
+- Skill/agent text must route config reads through `scripts/resolve-config.js` — never instruct a direct read of `.cadence/config.yaml`, `.cadence/config.local.yaml`, or `defaults/config.default.yaml`. See `skills/_shared/config-resolution.md`.
 - No code in this repo (it's documentation + prompts). If you find yourself wanting to write a helper script, ask in the issue first — usually the right answer is "the skill prompt should handle it."
 
 ## Tests
 
-No automated test suite ships with Cadence (no code to test). Validation lives in each plan's `98-validation.md` / `96-validation.md` and is walked manually via `/c-validate`. If you change a skill or agent, walk the relevant plan's validation doc as part of your PR.
+The scripts under `scripts/` have a `node --test` suite: run `node --test 'scripts/*.test.js'` before any PR that touches them. Skill and agent prompts have no automated suite; their validation lives in each plan's `98-validation.md` / `96-validation.md` and is walked manually via `/c-validate`. If you change a skill or agent, walk the relevant plan's validation doc as part of your PR.
 
 ## Demo GIFs
 

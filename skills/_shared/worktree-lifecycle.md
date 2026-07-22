@@ -2,7 +2,7 @@
 
 Authoritative reference for the self-managed git worktree lifecycle Cadence uses to isolate concurrent implementer lanes (/c-execute) and to host interactive feature worktrees (/c-worktree). Cadence drives these commands itself; it never invokes the superpowers `using-git-worktrees` skill at runtime.
 
-Config keys live in the top-level `worktree:` section of `.cadence/config.yaml` (`worktree.dir`, `worktree.integrate`, `worktree.merge_lock`, `worktree.lock_stale_threshold`, `worktree.hooks.*`), resolved per `skills/_shared/config-resolution.md` (every `worktree.*` key is team policy; a `.cadence/config.local.yaml` override is honored but surfaced). For one release, skills fall back to the legacy `execute.worktree_dir` / `execute.integrate` when the new keys are absent.
+Config keys live in the top-level `worktree:` section (`worktree.dir`, `worktree.integrate`, `worktree.merge_lock`, `worktree.lock_stale_threshold`, `worktree.hooks.*`), read from the resolved config (via `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"`; contract in `skills/_shared/config-resolution.md`; never read config files directly). Every `worktree.*` key except `worktree.hooks.*` local nulling is team policy; a local override is honored but surfaced. For one release, skills fall back to the legacy `execute.worktree_dir` / `execute.integrate` when the new keys are absent.
 
 ## Naming
 
@@ -15,7 +15,7 @@ Config keys live in the top-level `worktree:` section of `.cadence/config.yaml` 
 
 | Event | Command |
 |---|---|
-| Open (lane start) | `git worktree add -b cadence/lane-<id> <worktree.dir>/lane-<id> <working-tip>` |
+| Open (lane start) | `git worktree add -b cadence/lane-<id> <worktree.dir>/lane-<id> <working-tip>`, then the local-config copy (below) |
 | Work | implementer edits + commits **inside** the lane worktree only |
 | Land (after review) | integrate per /c-execute merge-on-land, then `git worktree remove <worktree.dir>/lane-<id>` and `git branch -D cadence/lane-<id>` |
 | Block | leave the worktree in place (preserved for the fix path) |
@@ -32,6 +32,10 @@ Config keys live in the top-level `worktree:` section of `.cadence/config.yaml` 
 | Landing | reviews passed; PM integrating to the working branch |
 | Removed | integrated; worktree + branch deleted |
 | Preserved | blocked; worktree kept for the fix path |
+
+## Local-config copy (every worktree, both consumers)
+
+Immediately after `git worktree add` and before any hook runs: if `<main-checkout>/.cadence/config.local.yaml` exists, copy it to the same relative path inside the new worktree (`mkdir -p <worktree>/.cadence && cp <main>/.cadence/config.local.yaml <worktree>/.cadence/config.local.yaml`). Gitignored files are not checked out into fresh worktrees, so without this copy a lane resolves defaults + repo config only and silently drops the operator's local overrides. The repo's `.gitignore` line keeps the copy invisible to git inside the worktree, and worktree removal deletes it.
 
 ## Merge lock (shared step)
 

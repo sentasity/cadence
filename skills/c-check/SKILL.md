@@ -50,7 +50,7 @@ These duplicate what `/c-design` and `/c-plan` already run in their self-review 
 
 ## Dispatch model
 
-1. Read the target doc(s) via `skills/_shared/storage-resolution.md` (read_artifact); read the resolved config per `skills/_shared/config-resolution.md`.
+1. Read the target doc(s) via `skills/_shared/storage-resolution.md` (read_artifact); resolve config by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (contract in `skills/_shared/config-resolution.md`; never read config files directly).
 2. For each enabled check, dispatch a fresh sub-agent (via `Task`) with the doc(s) + the check's specific prompt + the expected output shape.
 3. Sub-agents return findings with citations (file:line, section anchor).
 4. Synthesize findings into a report with one section per check.

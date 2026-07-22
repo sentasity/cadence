@@ -22,12 +22,13 @@ Before scheduling, detect the plan format per-plan:
 
 ## Pre-flight checks (in order; any failure surfaces — no auto-resolution)
 
-1. Path resolves to a plan folder with `00-overview.md`.
-2. Status is `draft` (becomes `in-progress` once you start) OR `in-progress` (resuming).
-3. Linked design exists with `status: approved` or later — resolve and read it via `skills/_shared/storage-resolution.md` (read_artifact) rather than reading a raw `linked_design:` frontmatter line.
-4. Working tree is clean (no unstaged or uncommitted changes).
-5. Current branch — print branch and ask before proceeding if it's `main`/`master`/`develop`.
-6. **Worktree confirmation (new-format plans only; skip if `execute.worktree_confirm: false`).** Before opening the first lane worktree, print the worktree plan and ask once via `AskUserQuestion`:
+1. Resolve config by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` and use its JSON `config` for every `execute.*` and `worktree.*` read this run; follow the notice/gitignore/hard-stop contract in `skills/_shared/config-resolution.md`; never read config files directly.
+2. Path resolves to a plan folder with `00-overview.md`.
+3. Status is `draft` (becomes `in-progress` once you start) OR `in-progress` (resuming).
+4. Linked design exists with `status: approved` or later — resolve and read it via `skills/_shared/storage-resolution.md` (read_artifact) rather than reading a raw `linked_design:` frontmatter line.
+5. Working tree is clean (no unstaged or uncommitted changes).
+6. Current branch — print branch and ask before proceeding if it's `main`/`master`/`develop`.
+7. **Worktree confirmation (new-format plans only; skip if `execute.worktree_confirm: false`).** Before opening the first lane worktree, print the worktree plan and ask once via `AskUserQuestion`:
    *"This plan runs up to `<max_parallel>` parallel lanes in git worktrees under `.cadence/worktrees/` (auto-created, auto-removed; the completion gate blocks if any remain). Proceed?"*
    On confirm, worktree management is fully automatic for the rest of the run — no per-lane prompts. On decline, do not start; suggest the user re-run when ready. Legacy-format plans skip this check (no worktrees).
 
@@ -119,7 +120,7 @@ Use the `Task` tool with one of these named agents:
 
 | Agent | When | What PM passes |
 |---|---|---|
-| `cadence-implementer` | Per task | Task block + linked files extracted from task's `Reads:` block + `Touches:` list + CLAUDE.md excerpt + resolved-config slice (per `skills/_shared/config-resolution.md`) |
+| `cadence-implementer` | Per task | Task block + linked files extracted from task's `Reads:` block + `Touches:` list + CLAUDE.md excerpt + resolved-config slice (from the resolver's JSON output; see `skills/_shared/config-resolution.md`) |
 | `cadence-spec-reviewer` | After implementer DONE | Task spec + diff |
 | `cadence-code-reviewer` | After spec-review ✓ | Diff + repo conventions |
 
@@ -248,7 +249,7 @@ Once every task in every phase file is complete:
 
 1. Verify: every step `- [x]` + both reviews ✓ + commit visible in `git log`.
 2. **Worktree-cleanup sweep (pre-dispatch):** run `git worktree list` and confirm no `cadence/lane-*` worktrees remain; run `git branch --list 'cadence/lane-*'` and confirm no lane branches remain. If any do, remove them (`git worktree remove --force <path>` and `git branch -D <branch>`) before dispatching the auditor. A dirty worktree at this stage is a plan-execution defect — surface it to the user if removal fails.
-3. Dispatch the `cadence-completion-auditor` agent **directly** (via the `Task` tool) — same agent the standalone `/c-audit` skill dispatches, same parameters: plan path, linked design folder (from `linked_design:` frontmatter), resolved config content (per `skills/_shared/config-resolution.md`), diff range (`git diff <base_sha>..HEAD`), mode: `gating`. The default audit roster includes `merge-integrity` (verifies each task's commit landed cleanly and the lane history is linear). Do NOT route through the `/c-audit` skill — skill-calls-skill is not a documented Claude Code mechanism. The audit logic is in the agent; the skill is a thin user-facing wrapper around the same agent.
+3. Dispatch the `cadence-completion-auditor` agent **directly** (via the `Task` tool) — same agent the standalone `/c-audit` skill dispatches, same parameters: plan path, linked design folder (from `linked_design:` frontmatter), resolved config content (the resolver's JSON output; see `skills/_shared/config-resolution.md`), diff range (`git diff <base_sha>..HEAD`), mode: `gating`. The default audit roster includes `merge-integrity` (verifies each task's commit landed cleanly and the lane history is linear). Do NOT route through the `/c-audit` skill — skill-calls-skill is not a documented Claude Code mechanism. The audit logic is in the agent; the skill is a thin user-facing wrapper around the same agent.
 4. Read the agent's report.
 
 | Auditor result | `/c-execute` response |

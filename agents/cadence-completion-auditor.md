@@ -14,7 +14,7 @@ You are the orchestrator behind Cadence's `/c-audit` skill. You verify a plan wa
 **Input (from `/c-audit` skill):**
 - The resolved plan handle (per `skills/_shared/storage-resolution.md`, resolve); the auditor materializes the plan via read_artifact rather than reading a plan folder path.
 - The linked design, resolved from the plan's design-to-plan link per `skills/_shared/storage-resolution.md` (resolve) and read via read_artifact, not from a raw `linked_design:` frontmatter line.
-- The resolved config (per `skills/_shared/config-resolution.md`, walking up from the plan folder; a `.cadence/config.local.yaml` overlay participates when present).
+- The resolved config (the JSON printed by `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"`, run from the plan's repo; a `.cadence/config.local.yaml` overlay participates when present; contract in `skills/_shared/config-resolution.md`; never read config files directly).
 - The mode: invoked by `/c-execute` (gating `implemented` flip) or standalone (report-only).
 
 **What you do:**

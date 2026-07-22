@@ -12,7 +12,7 @@ Operations take an artifact type (`design` or `plan`) plus a slug; the type sele
 |---|---|---|---|---|
 | `resolve(type, slug)` | artifact type, slug | location handle | maps slug to the `<paths.type>/<slug>/` folder | maps slug to the type's database row page id via a query |
 | `artifact_exists(type, slug)` | type, slug | boolean | is there a folder with a `00-overview.md`? | is there a matching row in the type's database? |
-| `create_artifact(type, slug, frontmatter)` | type, slug, overview frontmatter | location handle | make the folder, write `00-overview.md` with frontmatter | create a database row and set its title and initial properties |
+| `create_artifact(type, slug, frontmatter)` | type, slug, overview frontmatter | location handle | make the folder, write `00-overview.md` with frontmatter | ensure Tags options exist (add-missing-first), then create a database row and set its title and initial properties |
 | `read_artifact(type, slug)` | type, slug | overview and each child doc | read every `.md` in the folder | fetch the row's properties and child sub-pages, translate blocks back to markdown |
 | `write_doc(type, slug, slot, content)` | type, slug, slot id, markdown body | nothing | write `<slot>.md` in the folder | translate obsidian syntax to Notion-flavored Markdown, upsert the slot's sub-page |
 | `resolve_links(type, slug)` | type, slug | nothing | no-op (obsidian resolves wikilinks in the vault) | second pass after a batch write: rewrite `[[slug]]` wikilinks to `<mention-page>` mentions |
@@ -28,7 +28,7 @@ Operations take an artifact type (`design` or `plan`) plus a slug; the type sele
 
 **`artifact_exists(type, slug)`** answers whether a slug already has an artifact, the check that gates create-versus-update decisions in `/c-brainstorm`, `/c-design`, and `/c-plan`. It never creates anything; a `false` result only tells the caller that `create_artifact` is safe to call next.
 
-**`create_artifact(type, slug, frontmatter)`** is the only operation that brings an artifact into being, kept distinct from `write_doc` for that reason. On the filesystem it makes the folder and writes `00-overview.md` with the given frontmatter. On Notion it creates a database row and must set the row's title and its initial typed properties (status, created, updated, tags) in the same call, because a Notion row cannot exist without a title; there is no create-then-fill sequence.
+**`create_artifact(type, slug, frontmatter)`** is the only operation that brings an artifact into being, kept distinct from `write_doc` for that reason. On the filesystem it makes the folder and writes `00-overview.md` with the given frontmatter. On Notion it creates a database row and must set the row's title and its initial typed properties (status, created, updated, tags) in the same call, because a Notion row cannot exist without a title; there is no create-then-fill sequence. Before the create, the notion backend runs the Tags pre-step: fetch the target database's data-source schema, diff the frontmatter `tags` against the Tags property's existing option names (exact, case-sensitive match), and when any are missing add them via `notion-update-data-source` (add-only: pass names only so Notion assigns colors; never remove or recolor existing options). The official MCP hard-rejects unknown multi-select values, so skipping this step fails the create on any fresh tag. Operational sequence and payload shape: `skills/_shared/notion-translation.md`.
 
 **`read_artifact(type, slug)`** returns a backend-neutral view: the overview's frontmatter and body, plus each child doc's slot id, frontmatter, and body. A caller that only needs the overview reads that entry and ignores the rest. This operation promises the shape of the return; the fidelity of Notion block-to-markdown reconstruction on read-back belongs to [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]].
 
@@ -38,7 +38,7 @@ Operations take an artifact type (`design` or `plan`) plus a slug; the type sele
 
 **`set_status(type, slug, status)`** is a vocabulary-checked specialization of `set_property` for the one field with a controlled vocabulary and transition rules (`skills/_shared/frontmatter.md`). It stays separate because the Notion backend maps status to a Select whose options must already exist in the schema, so an out-of-vocabulary value is an error this operation catches rather than a silent free-text write. Both backends bump `updated:` to today whenever `set_status` runs.
 
-**`set_property(type, slug, key, value)`** covers the remaining overview fields a skill writes after creation, notably `base_sha` and `updated` on plans and `updated` on designs. The filesystem writes the frontmatter key directly; Notion writes the property it is mapped to.
+**`set_property(type, slug, key, value)`** covers the remaining overview fields a skill writes after creation, notably `base_sha` and `updated` on plans and `updated` on designs. The filesystem writes the frontmatter key directly; Notion writes the property it is mapped to. When the key is `tags`, the notion backend runs the same Tags pre-step as `create_artifact` before writing, since a post-create tag edit can introduce a new value just as easily.
 
 **`link(design_slug, plan_slug)`** is bidirectional and idempotent: one call establishes the design-to-plan relationship from both sides. The filesystem writes two frontmatter fields, `linked_plan:` and `linked_design:`, one on each overview; Notion sets a single Relation, which Notion surfaces on both rows automatically. There is no half-linked state where one side points and the other does not.
 
@@ -58,7 +58,7 @@ This asymmetry is the whole point of the layer: a skill says "the artifact `<slu
 
 ## Backend selection
 
-The layer reads `storage.backend` (`filesystem | notion`, default `filesystem`) from resolved configuration, using the three-layer resolution defined in `skills/_shared/config-resolution.md` (plugin defaults, then `.cadence/config.yaml`, then `.cadence/config.local.yaml`). Selection is a single read at the top of any operation; there is no per-operation or per-artifact backend choice, and no operation branches on the backend a second time once selection has run.
+The layer reads `storage.backend` (`filesystem | notion`, default `filesystem`) from the resolved config (via `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"`; contract in `skills/_shared/config-resolution.md`; never read config files directly). Selection is a single read at the top of any operation; there is no per-operation or per-artifact backend choice, and no operation branches on the backend a second time once selection has run.
 
 The `filesystem` default is defined to equal today's Cadence behavior exactly, so a repo that never sets `storage.*` sees no change at all.
 
@@ -96,11 +96,11 @@ Obsidian-to-Notion-flavored-Markdown translation on the way in, the read-back in
 
 Provisioning runs from the notion branch of the storage layer before the first read or write of any Notion-mode operation, as a numbered flow:
 
-1. **Resolve config.** Read `storage.backend`, `storage.notion.root_page`, `storage.notion.designs_db`, and `storage.notion.plans_db` through the three-layer resolution in `skills/_shared/config-resolution.md`. If `backend` is not `notion`, provisioning does nothing.
+1. **Resolve config.** Read `storage.backend`, `storage.notion.root_page`, `storage.notion.designs_db`, and `storage.notion.plans_db` from the resolver's output (`node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"`; contract in `skills/_shared/config-resolution.md`). If `backend` is not `notion`, provisioning does nothing.
 2. **Short-circuit when already provisioned.** If both `designs_db` and `plans_db` are already set, the databases exist; skip straight to normal operation. This makes provisioning idempotent, a no-op on every run after the first.
 3. **Search under the root page.** For each unset database id, search under `root_page` for an existing Designs or Plans database identified by a known title, using the discovered MCP's query or search capability. This recovers a database that exists but whose id was never recorded, for example one a teammate provisioned but has not yet committed.
 4. **Create any still-missing database.** For a database that is neither in config nor found under the root page, create it under `root_page` with the property schema defined in [[../../docs/designs/2026-07-10-notion-mode/02-notion-data-model]].
-5. **Write ids back to committed config.** Write the resolved and newly created database ids into `storage.notion.designs_db` and `storage.notion.plans_db` in the repo's committed `.cadence/config.yaml`, preserving surrounding content. This write-back edits the committed file additively and must never touch `.cadence/config.local.yaml`.
+5. **Write ids back to committed config.** Write the resolved and newly created database ids into `storage.notion.designs_db` and `storage.notion.plans_db` in the repo's committed `.cadence/config.yaml`, preserving surrounding content. This write-back edits the committed file additively and must never touch `.cadence/config.local.yaml`. This is a sanctioned write path per config-resolution.md; the read ban covers resolution only.
 6. **Tell the user and remind them to commit.** Report which databases were found versus created, and remind the user to commit `.cadence/config.yaml` so the whole team shares the same databases and no one re-provisions.
 
 ## Schema ownership
