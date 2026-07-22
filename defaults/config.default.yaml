@@ -3,7 +3,7 @@
 # never migrated); resolution order is defined in skills/_shared/config-resolution.md.
 # No assumption of obsidian or any specific repo layout.
 
-config_version: 5          # schema version; drives migration detection
+config_version: 6          # schema version; drives migration detection
 
 paths:
   designs: docs/designs
@@ -58,7 +58,8 @@ worktree:
 
 authoring:
   max_parallel: 6          # concurrent doc-generator agents (no worktrees; cheap)
-  design_mode: ask         # ask | all-at-once | one-by-one (standing default for /c-design)
+  design_mode: ask         # ask | all-at-once | one-by-one | inline (standing default for /c-design)
+  plan_mode: ask           # ask | all-at-once | inline (standing default for /c-plan)
 
 audits:
   default:
