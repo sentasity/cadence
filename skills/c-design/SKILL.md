@@ -34,7 +34,7 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 
 ## Writing flow
 
-1. **Read the stub** via `skills/_shared/storage-resolution.md` (read_artifact). List the proposed doc index. Confirm with user: *"Write `00a-plain-english.md` next, then `01-<x>`, `02-<y>`. Sound right?"* Then ask the generation-mode question (see Generation mode).
+1. **Read the stub** via `skills/_shared/storage-resolution.md` (read_artifact). List the proposed doc index. Confirm with user: *"Write `00a-plain-english.md` next, then `01-<x>`, `02-<y>`. Sound right?"* Then ask the generation-mode question (see Generation mode). Config values (`authoring.*`) come from running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (contract in `skills/_shared/config-resolution.md`; never read config files directly).
 2. **Write child docs per chosen mode.** Each doc is written to its reserved slot per `skills/_shared/storage-resolution.md` (write_doc); do not open or path-compute a `<paths.designs>/…/<slot>.md` file.
    - **All-at-once:** dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`); after all complete, dispatch `cadence-doc-consistency` once over the set for a consistency sweep (see Generation mode). Then generate `00a-plain-english.md` last.
    - **One-by-one:** write one child doc, then proceed to step 3.

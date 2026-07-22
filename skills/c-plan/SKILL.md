@@ -152,7 +152,7 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 
 ## Writing flow
 
-1. Read approved design end-to-end (overview + every child + 99-OOS).
+1. Resolve config by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (`plan.tdd`, `authoring.*`; contract in `skills/_shared/config-resolution.md`; never read config files directly). Read approved design end-to-end (overview + every child + 99-OOS).
 2. Confirm phase decomposition (no split question — one plan always). Decompose into the **minimal coherent grouping** that covers the design — prefer one substantive topic per phase file (5–10+ tasks per file), not one phase file per design child-doc. A phase file is the unit of worktree dispatch and per-lane review under `/c-execute`'s lane = phase file rule; fragmented files create cold-start churn without parallelism gain. Confirm with the user: *"Plan files will be `01-<topic>`, `02-<topic>`, …. Sound right?"*
 3. Create the plan artifact first via `skills/_shared/storage-resolution.md` (create_artifact), writing the `00-overview` (frontmatter + phase index + File Map — generators need it) with `base_sha` initialized empty; do not path-compute `<paths.plans>/…/00-overview.md`.
 4. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`; each generated doc is written to its slot per `skills/_shared/storage-resolution.md` (write_doc), never to a hand-computed `<paths.plans>/…` file. Before each generator finalizes its doc, run the codebase verification pass (above) on every path, symbol, and import it cites. Fix inline.
