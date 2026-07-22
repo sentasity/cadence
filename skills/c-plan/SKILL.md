@@ -154,22 +154,25 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 
 1. Resolve config by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (`plan.tdd`, `authoring.*`; contract in `skills/_shared/config-resolution.md`; never read config files directly). Read approved design end-to-end (overview + every child + 99-OOS).
 2. Confirm phase decomposition (no split question — one plan always). Decompose into the **minimal coherent grouping** that covers the design — prefer one substantive topic per phase file (5–10+ tasks per file), not one phase file per design child-doc. A phase file is the unit of worktree dispatch and per-lane review under `/c-execute`'s lane = phase file rule; fragmented files create cold-start churn without parallelism gain. Confirm with the user: *"Plan files will be `01-<topic>`, `02-<topic>`, …. Sound right?"*
-3. Create the plan artifact first via `skills/_shared/storage-resolution.md` (create_artifact), writing the `00-overview` (frontmatter + phase index + File Map — generators need it) with `base_sha` initialized empty; do not path-compute `<paths.plans>/…/00-overview.md`.
-4. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`; each generated doc is written to its slot per `skills/_shared/storage-resolution.md` (write_doc), never to a hand-computed `<paths.plans>/…` file. Before each generator finalizes its doc, run the codebase verification pass (above) on every path, symbol, and import it cites. Fix inline.
-5. **Invariant 2 in reverse.** If a phase reveals a gap or inconsistency in the design, surface it. Apply drift policy (default: update plan only; user-elective: update plan + design).
-6. Dispatch `cadence-doc-consistency` once over the full set. Reconcile trivial wording; surface substantive contradictions to the user via `AskUserQuestion`. Re-dispatch only affected generators on resolution. The plan is not finalized until the sweep is clean.
-7. **Bidirectional linkage write.** Establish the design↔plan link via `skills/_shared/storage-resolution.md` (link) — one idempotent call sets `linked_plan` on the design and `linked_design` on the plan and bumps the design's `updated:`.
-8. **Resolve cross-references.** After all plan docs exist and the sweep is clean, call `skills/_shared/storage-resolution.md` (resolve_links) once over the plan to turn `[[…]]` wikilinks into Notion page mentions (sibling plan docs and cross-links to the design's now-existing pages). Backend-neutral: a no-op on the filesystem backend, the mention second pass on notion (see `skills/_shared/notion-translation.md`).
-9. **Self-review pass** (see below).
-10. Status stays `draft`. Print: *"Plan written. Run `/c-execute <path>` when ready."*
+3. Resolve `authoring.plan_mode`; when it names a concrete mode (`all-at-once`, `inline`) use it without asking. When it is `ask`, ask via `AskUserQuestion` (default `(Recommended)` = all-at-once): **All-at-once** — one generator agent per remaining doc in parallel plus the `cadence-doc-consistency` sweep (today's behavior); **Inline** (label: "Inline, no sub-agents") — the main session writes every doc itself, sequentially, running the codebase verification pass on each doc before moving on; no generators, no sweep.
+4. Create the plan artifact first via `skills/_shared/storage-resolution.md` (create_artifact), writing the `00-overview` (frontmatter + phase index + File Map — generators need it) with `base_sha` initialized empty; do not path-compute `<paths.plans>/…/00-overview.md`.
+5. (all-at-once mode) Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`; each generated doc is written to its slot per `skills/_shared/storage-resolution.md` (write_doc), never to a hand-computed `<paths.plans>/…` file. Before each generator finalizes its doc, run the codebase verification pass (above) on every path, symbol, and import it cites. Fix inline. (inline mode) The main session writes each remaining doc itself, in order, applying the same codebase verification pass per doc.
+6. **Invariant 2 in reverse.** If a phase reveals a gap or inconsistency in the design, surface it. Apply drift policy (default: update plan only; user-elective: update plan + design).
+7. (all-at-once mode; inline skips the sweep — single author) Dispatch `cadence-doc-consistency` once over the full set. Reconcile trivial wording; surface substantive contradictions to the user via `AskUserQuestion`. Re-dispatch only affected generators on resolution. The plan is not finalized until the sweep is clean.
+8. **Bidirectional linkage write.** Establish the design↔plan link via `skills/_shared/storage-resolution.md` (link) — one idempotent call sets `linked_plan` on the design and `linked_design` on the plan and bumps the design's `updated:`.
+9. **Resolve cross-references.** After all plan docs exist and the sweep is clean, call `skills/_shared/storage-resolution.md` (resolve_links) once over the plan to turn `[[…]]` wikilinks into Notion page mentions (sibling plan docs and cross-links to the design's now-existing pages). Backend-neutral: a no-op on the filesystem backend, the mention second pass on notion (see `skills/_shared/notion-translation.md`).
+10. **Self-review pass** (see below).
+11. Status stays `draft`. Print: *"Plan written. Run `/c-execute <path>` when ready."*
 
-## Generation (always batched)
+## Generation modes
 
-Plan docs are mechanical, so `/c-plan` always batches generation (no one-by-one mode):
+Plan docs are mechanical, so `/c-plan` offers `all-at-once` (default) and `inline` — never the paused one-by-one mode (review happens on the assembled plan, so a per-doc pause buys nothing). All-at-once:
 1. Write `00-overview.md` first (frontmatter + phase index + File Map — generators need it).
 2. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`. Each generator gets the approved design (or relevant slice), the plan overview, its doc's scope, and the format conventions.
 3. Dispatch `cadence-doc-consistency` once over the full set. Reconcile trivial wording; surface substantive contradictions to the user via `AskUserQuestion`. Re-dispatch only affected generators on resolution.
 4. The plan is not finalized until the sweep is clean.
+
+Inline mode replaces items 2-3: the main session writes each remaining doc itself in order, applying the codebase verification pass per doc; the consistency sweep is skipped (single author). Item 4's finalization gate still applies.
 
 ## Self-review pass
 
