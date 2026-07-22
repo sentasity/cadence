@@ -1,6 +1,6 @@
 ---
 name: c-design
-description: Takes a `00-overview.md` stub from /c-brainstorm and materializes the full design folder (child docs in reading order, plain-English narrative, optional 97/98 sections, OOS shell). Parallel generation (all-at-once, the default) or sequential one-by-one writes with explicit user review per child doc. Self-review pass before flipping status to `in-review`. Never writes plans or code.
+description: Takes a `00-overview.md` stub from /c-brainstorm and materializes the full design folder (child docs in reading order, plain-English narrative, optional 97/98 sections, OOS shell). Generation modes: all-at-once (parallel generators, the default), one-by-one (write, pause for review, repeat), or inline (main session writes every doc itself, no sub-agents, no pauses). Self-review pass before flipping status to `in-review`. Never writes plans or code.
 ---
 
 # `/c-design`
@@ -38,6 +38,7 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 2. **Write child docs per chosen mode.** Each doc is written to its reserved slot per `skills/_shared/storage-resolution.md` (write_doc); do not open or path-compute a `<paths.designs>/…/<slot>.md` file.
    - **All-at-once:** dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`); after all complete, dispatch `cadence-doc-consistency` once over the set for a consistency sweep (see Generation mode). Then generate `00a-plain-english.md` last.
    - **One-by-one:** write one child doc, then proceed to step 3.
+   - **Inline:** the main session writes every technical child doc itself, sequentially, via write_doc — no generator sub-agents, no per-doc pause, no `cadence-doc-consistency` sweep (a single author holds the whole context; Invariant 2 still applies in full). Then generate `00a-plain-english.md` last and continue at step 8.
 3. **Pause after each doc (one-by-one mode only).** *"`<filename>` written. Review and tell me to continue, revise, or stop."* Never auto-write the next file in this mode. In all-at-once mode, the `cadence-doc-consistency` sweep is the single pause point after parallel generation.
 4. **Invariant 2 — consistency re-litigation.** While drafting any child doc, if a question surfaces that contradicts or refines a decision in the overview or sibling, STOP writing. Surface the conflict. Ask the user to resolve. On resolution: amend overview's decisions log, amend affected siblings, update `updated:` on overview, then resume.
 5. **OOS additions during design.** Any decision-not-to-do lands in `99-out-of-scope.md` immediately with rationale + wikilink. Never deferred.
@@ -50,10 +51,11 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 
 ## Generation mode
 
-After confirming the doc index, ask via `AskUserQuestion` (default `(Recommended)` = all-at-once):
+After confirming the doc index, resolve `authoring.design_mode`; when it names a concrete mode (`all-at-once`, `one-by-one`, `inline`) use it without asking. When it is `ask`, ask via `AskUserQuestion` (default `(Recommended)` = all-at-once):
 
 - **All-at-once** (default): dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`), then dispatch `cadence-doc-consistency` once over the set. The sweep reconciles trivial wording and surfaces substantive contradictions via `AskUserQuestion`. Then generate `00a-plain-english.md` last (from the settled docs). No per-doc pause; the sweep is the single consistency gate.
 - **One-by-one**: today's behavior — write one child doc, pause for review, loop; Invariant 2 re-litigation runs incrementally.
+- **Inline** (label: "Inline, no sub-agents"): the main session writes every doc itself, one after another, with no per-doc pause and no consistency sweep — one author holds the whole context. Slowest wall-clock of the three when docs are many; strongest cross-doc consistency for coupled doc sets.
 
 `00a-plain-english.md` is generated last in both modes.
 
