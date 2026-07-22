@@ -16,9 +16,9 @@ Optional: `/c-execute --restart <plan-path>` — wipe checkboxes and start over 
 ## Plan-format detection
 
 Before scheduling, detect the plan format per-plan:
-- **New format** (tasks carry `Touches:`) → run the lane engine below.
+- **New format** (tasks carry `Touches:`) → run the lane engine below, or the inline path when the execution-mode gate selects `inline`.
 - **Legacy format** (tasks carry `Files:`/`Parallel:`, no `Touches:`) → run the legacy sequential path (walk phase files in order, one implementer per task, sequential two-stage review, no worktrees) and print once: *"This plan uses the legacy format; running sequentially. Re-plan with `/c-plan` to enable parallel execution."* A single plan is never run half-parallel, half-sequential.
-- **`execute.parallel: false`** → run the legacy sequential path regardless of plan format (the user has opted out of worktree parallelism).
+- **`execute.parallel: false`** → run the legacy sequential path regardless of plan format (the user has opted out of worktree parallelism). Takes precedence over `execute.mode`; the execution-mode gate is skipped.
 
 ## Pre-flight checks (in order; any failure surfaces — no auto-resolution)
 
@@ -28,9 +28,14 @@ Before scheduling, detect the plan format per-plan:
 4. Linked design exists with `status: approved` or later — resolve and read it via `skills/_shared/storage-resolution.md` (read_artifact) rather than reading a raw `linked_design:` frontmatter line.
 5. Working tree is clean (no unstaged or uncommitted changes).
 6. Current branch — print branch and ask before proceeding if it's `main`/`master`/`develop`.
-7. **Worktree confirmation (new-format plans only; skip if `execute.worktree_confirm: false`).** Before opening the first lane worktree, print the worktree plan and ask once via `AskUserQuestion`:
-   *"This plan runs up to `<max_parallel>` parallel lanes in git worktrees under `.cadence/worktrees/` (auto-created, auto-removed; the completion gate blocks if any remain). Proceed?"*
-   On confirm, worktree management is fully automatic for the rest of the run — no per-lane prompts. On decline, do not start; suggest the user re-run when ready. Legacy-format plans skip this check (no worktrees).
+7. **Execution-mode gate (new-format plans only).** Resolve `execute.mode`:
+   - **`parallel`** — run the lane engine. Keep today's worktree confirmation: unless `execute.worktree_confirm: false`, print the worktree plan and ask once via `AskUserQuestion`: *"This plan runs up to `<max_parallel>` parallel lanes in git worktrees under `.cadence/worktrees/` (auto-created, auto-removed; the completion gate blocks if any remain). Proceed?"* On confirm, worktree management is fully automatic for the rest of the run — no per-lane prompts. On decline, do not start.
+   - **`inline`** — run the Inline mode path (below). No worktree question; nothing worktree-related happens all run.
+   - **`ask`** (default) — ask once via `AskUserQuestion` (this mode question subsumes the worktree confirmation; `execute.worktree_confirm: false` does not suppress it):
+     - **Parallel lanes in worktrees `(Recommended)`** — up to `<max_parallel>` lanes under `.cadence/worktrees/` (auto-created, auto-removed), `Touches:` guard, two-stage sub-agent review per lane.
+     - **Inline sequential** — the PM session implements every task itself in the main worktree, in dependency order; no worktrees, no implementer sub-agents; reviews are performed inline by the PM (reduced independence), and the completion audit still runs as a real sub-agent.
+     - **Don't start** — nothing is dispatched; re-run `/c-execute` when ready.
+   Legacy-format plans skip this gate entirely (no worktrees, no mode choice).
 
 ## On first flip from `draft` to `in-progress`: record `base_sha`
 
@@ -52,7 +57,7 @@ SHA-based pinning is robust against rebases, merges, and unrelated commits that 
 
 ## Lane model and DAG scheduling
 
-The PM builds a dependency DAG from each task's `Depends:` edges (cross-file allowed), then runs **lanes** — the ready subset of one phase file's tasks — concurrently in isolated worktrees. The phase file is the lane: the unit of dispatch, the unit of review, and the unit of merge.
+Applies in `parallel` mode; `inline` mode replaces this whole engine with the Inline mode section below. The PM builds a dependency DAG from each task's `Depends:` edges (cross-file allowed), then runs **lanes** — the ready subset of one phase file's tasks — concurrently in isolated worktrees. The phase file is the lane: the unit of dispatch, the unit of review, and the unit of merge.
 
 - **Lane** = the ready subset of one phase file `F`'s tasks, run by one `cadence-implementer` in one worktree, committing per-task internally. Lane boundaries are author-visible (the `0X-*.md` filename); they are NOT a runtime-derived chain.
 - **Lane formation (per phase file):** for every phase file `F` with at least one ready task, compute `eligible(F)` = tasks of `F` whose cross-file `Depends:` are merged AND whose `Touches:` are disjoint from every in-flight lane. If `eligible(F)` is non-empty, dispatch it as one lane. Internal `Depends:` (both endpoints in the same eligible subset) do NOT gate dispatch — the implementer resolves them inside the lane by running predecessors first. The phase file = lane rule supersedes the older greedy-chain-extension rule from `docs/designs/2026-05-21-cadence-parallelism/01-execution-engine.md` §"Lane formation".
@@ -90,6 +95,18 @@ while unfinished tasks and not quiescing:
 ```
 
 The DAG must be acyclic; a cycle is a plan defect — surface it, never guess an order. Internal-`Depends:` cycles inside one phase file are caught by the same acyclicity check at DAG construction time and never reach this loop.
+
+## Inline mode (no worktrees, no implementer sub-agents)
+
+Selected by `execute.mode: inline` or the `ask` gate. The PM session implements every task itself, directly in the main worktree. The execution-side analog of the authoring skills' `inline` generation mode.
+
+- **Order:** topological over `Depends:` edges (the same DAG; acyclicity check unchanged), walking phase files in numeric order and task order within a file as the tie-break. `Touches:` overlaps are irrelevant — nothing runs concurrently.
+- **Per task, unchanged from the lane engine's per-task contract:** follow the task's steps exactly (TDD shape included), commit per task with the task's commit step, run the Invariant 3 grep on the task's diff, and tick the task's checkboxes per `skills/_shared/storage-resolution.md` (tick) the moment it lands. The progress-checkpoint rule holds: never carry landed-but-unmarked work through a pause.
+- **Review:** the PM self-reviews each task's diff against the task spec and repo conventions before ticking. This is a real trade-off — the author is the reviewer — and is exactly what the user opts into by picking inline; do not silently dispatch reviewer sub-agents anyway.
+- **No worktree machinery:** no lane branches, no `git worktree add`, no merge-on-land, and no merge-lock acquisition (commits land directly on the working branch; there is nothing to integrate). The completion-time worktree-cleanup sweep still runs and should trivially find nothing.
+- **Drift and blockers:** the drift `AskUserQuestion` table applies unchanged; quiesce is trivial (nothing else is in flight). Implementer status handling and NEEDS_CONTEXT routing don't apply — there is no implementer to route.
+- **Completion gate: unchanged in every mode.** The `cadence-completion-auditor` dispatch stays a real sub-agent — its value is independence from the author, which matters MORE when the author also reviewed. Never run the audit inline.
+- **Resume:** identical protocol; checkbox state remains the only source of truth. The worktree prune step is a harmless no-op.
 
 ## Worktree lifecycle and merge-on-land
 

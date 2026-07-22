@@ -2,6 +2,15 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.13.0 (2026-07-21)
+
+/c-execute gains an inline execution mode: the whole plan can run sequentially in the PM session itself — no worktrees, no implementer sub-agents — chosen at a new pre-flight execution-mode gate or pinned in config. Requested in #14.
+
+### Added
+
+- **`execute.mode: ask | parallel | inline`** (`config_version` 6 → 7, appended additively by the migration). The old worktree confirmation becomes an execution-mode gate: `ask` (the default) presents **parallel lanes in worktrees** (recommended) versus **inline sequential**; a concrete value skips the question (`parallel` keeps the `execute.worktree_confirm` behavior; `inline` never touches worktrees). `execute.parallel: false` still forces the legacy sequential path and takes precedence.
+- **Inline execution path in `skills/c-execute/SKILL.md`.** Tasks run in `Depends:` topological order directly in the main worktree with the per-task contract unchanged (steps, per-task commits, Invariant 3 grep, immediate checkbox ticks). Reviews are performed inline by the PM — a stated reduced-independence trade-off — while the completion-time `cadence-completion-auditor` remains a real sub-agent dispatch in every mode, since its value is independence from the author. No merge lock, no lane branches, trivial quiesce; resume protocol unchanged.
+
 ## v0.12.0 (2026-07-21)
 
 Config resolution becomes deterministic: a shipped resolver script replaces prose-driven three-layer merging, so `.cadence/config.local.yaml` overrides are honored by every skill every time. Plus: Notion Tags options are auto-created before writes, and designs and plans gain an inline (no sub-agents) authoring mode.

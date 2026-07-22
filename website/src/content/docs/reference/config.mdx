@@ -95,7 +95,8 @@ How `/c-execute` drives a plan to implemented code, including the parallel-lane 
 | --- | --- | --- | --- |
 | `execute.branch_check` | Refuse to start unless you're on an appropriate branch. | `true` | `true` \| `false` |
 | `execute.auto_resolve_drift` | Auto-resolve drift between plan and code instead of surfacing it for a decision. | `false` | `true` \| `false` |
-| `execute.parallel` | Master switch for parallel execution. When `false`, execution is sequential and no worktrees are created. | `true` | `true` \| `false` |
+| `execute.parallel` | Master switch for parallel execution. When `false`, execution is the legacy sequential path (sub-agents, no worktrees) and `execute.mode` is ignored. | `true` | `true` \| `false` |
+| `execute.mode` | Pre-flight execution-mode gate: `ask` presents parallel lanes (recommended) vs inline sequential, `parallel` runs the lane engine, `inline` runs every task in the PM session itself — no worktrees, no implementer sub-agents (the completion audit stays a sub-agent). | `ask` | `ask` \| `parallel` \| `inline` |
 | `execute.max_parallel` | Maximum concurrent implementer lanes (one worktree per lane). Reviewers are uncapped. | `4` | Positive integer |
 | `execute.worktree_confirm` | Show a one-time pre-flight confirmation before creating worktrees. | `true` | `true` \| `false` |
 | `execute.resume_on_dirty_tree` | Allow resuming execution when the working tree is dirty. | `false` | `true` \| `false` |

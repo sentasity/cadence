@@ -21,7 +21,7 @@ Use `/c-execute` when a plan is written and you're ready to build. It is the fou
 
 ## Inputs & preconditions
 
-A plan folder with `00-overview.md` at status `draft` (or `in-progress` to resume), a linked design that is `approved` or later, and a clean working tree. It prints the current branch and asks before proceeding if you're on `main`/`master`/`develop`, and (for parallel plans) asks once before opening worktrees. It records the starting commit as `base_sha` on the first run so the audit can compute an exact diff range.
+A plan folder with `00-overview.md` at status `draft` (or `in-progress` to resume), a linked design that is `approved` or later, and a clean working tree. It prints the current branch and asks before proceeding if you're on `main`/`master`/`develop`, and (for new-format plans) runs a one-time execution-mode gate: **parallel lanes in worktrees** (recommended) or **inline sequential** (every task implemented by the session itself — no worktrees, no implementer sub-agents; the completion audit still runs as a sub-agent). A concrete `execute.mode` value skips the question. It records the starting commit as `base_sha` on the first run so the audit can compute an exact diff range.
 
 ## What it produces
 
@@ -30,7 +30,7 @@ Real code committed to the branch (one commit per task), every plan checkbox fli
 ## Gates & guarantees
 
 - Two-stage review on every change: a spec review then a code review; on conflict, spec wins.
-- Parallel work runs in isolated worktrees scheduled by each task's dependencies, with a guard that serializes any two tasks touching the same files.
+- Parallel work runs in isolated worktrees scheduled by each task's dependencies, with a guard that serializes any two tasks touching the same files. Inline mode trades that machinery (and independent per-task review) for a single sequential session; the completion audit is unchanged in both modes.
 - Merging a lane back (merge-on-land) acquires the shared merge lock, so cross-session merges into the same working branch (for example, a concurrent `/c-worktree` merge) serialize instead of colliding (gated by `worktree.merge_lock`).
 - A completion audit must pass before the status can flip to `implemented`.
 - On any block it surfaces three explicit paths (fix, mark out of scope, or abort) and never works around a blocker silently.

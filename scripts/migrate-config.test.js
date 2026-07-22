@@ -645,3 +645,46 @@ test('v5->v6: the real shipped defaults produce exactly the plan_mode append for
   assert.deepStrictEqual(missing.missingNested, [{ block: 'authoring', key: 'plan_mode' }]);
   assert.deepStrictEqual(missing.missingBlocks, []);
 });
+
+// ---- v6 -> v7 execute.mode (additive nested-key append) ----
+//
+// Same mechanism as plan_mode: detectMissingKeys finds the missing child
+// under an existing execute: block and mergeMissing appends it with the
+// default value from defaults/config.default.yaml (v7).
+
+test('v6->v7: mode is appended under an existing execute block', () => {
+  const def = [
+    'config_version: 7          # schema version; drives migration detection',
+    'execute:',
+    '  branch_check: true',
+    '  parallel: true           # master switch; false => legacy sequential path (sub-agents, no worktrees)',
+    '  mode: ask                # ask | parallel | inline (pre-flight execution-mode gate for /c-execute)',
+    '  max_parallel: 4          # concurrent implementer lanes (= worktrees); reviewers uncapped',
+  ].join('\n') + '\n';
+  const proj = [
+    'config_version: 6',
+    'execute:',
+    '  branch_check: true',
+    '  parallel: true',
+    '  max_parallel: 4',
+  ].join('\n') + '\n';
+  const bumped = bumpOrInsertVersion(proj, 7);
+  const missing = detectMissingKeys(bumped, def);
+  assert.deepStrictEqual(missing.missingBlocks, []);
+  assert.deepStrictEqual(missing.missingNested, [{ block: 'execute', key: 'mode' }]);
+  const merged = mergeMissing(bumped, def, missing);
+  assert.match(merged, /config_version: 7/);
+  assert.match(merged, /^  mode: ask/m);
+});
+
+test('v6->v7: the real shipped defaults produce exactly the execute.mode append for a v6 full copy', () => {
+  const defText = fs.readFileSync(path.join(__dirname, '..', 'defaults', 'config.default.yaml'), 'utf8');
+  const projText = defText
+    .replace(/^config_version: 7/m, 'config_version: 6')
+    .split('\n')
+    .filter((line) => !/^  mode:/.test(line))
+    .join('\n');
+  const missing = detectMissingKeys(projText, defText);
+  assert.deepStrictEqual(missing.missingNested, [{ block: 'execute', key: 'mode' }]);
+  assert.deepStrictEqual(missing.missingBlocks, []);
+});
