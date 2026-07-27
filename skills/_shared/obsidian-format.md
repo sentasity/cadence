@@ -15,6 +15,8 @@ Authoritative reference for the obsidian-flavored markdown conventions Cadence's
 
 If a sentence doesn't earn a callout, it's just prose. No `> [!info]` flooding.
 
+**Backend rule (which syntax to author).** The callout *set* above is backend-neutral; the `> [!type]` syntax is the **filesystem (obsidian) authoring form only**. When the resolved `storage.backend` is `notion`, author each callout directly as its Notion-flavored `<callout icon="…" color="…">` block, using the type-to-icon/color table in `skills/_shared/notion-translation.md`. Never emit `> [!type]` in content bound for Notion: the MCP escapes it into literal text (`> \[!summary\]`) and it renders as a broken quote block, not a callout. Everywhere this doc or a skill shows `> [!type]` syntax, read it as "this callout type, in the current backend's authoring form."
+
 ## Wikilinks
 
 Relative format: `[[../sibling-folder/00-overview]]` or `[[01-topic#Section heading]]`. Resolves within the obsidian vault. Never use absolute paths.
@@ -38,7 +40,7 @@ Skills refuse to scaffold conflicting names.
 
 ## Plain-English layering
 
-- Every H2 section in a technical child doc opens with `> [!summary] Plain English` (2-4 sentences).
+- Every H2 section in a technical child doc opens with the `[!summary] Plain English` callout (2-4 sentences), authored in the backend's form per the Callouts section above.
 - Subsections (H3/H4) stay pure technical. No callout flooding at lower heading levels.
 - The full plain-English narrative lives in `00a-plain-english.md` (written last in `/c-design`'s flow).
 

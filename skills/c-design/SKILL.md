@@ -36,7 +36,7 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 
 1. **Read the stub** via `skills/_shared/storage-resolution.md` (read_artifact). List the proposed doc index. Confirm with user: *"Write `00a-plain-english.md` next, then `01-<x>`, `02-<y>`. Sound right?"* Then ask the generation-mode question (see Generation mode). Config values (`authoring.*`) come from running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (contract in `skills/_shared/config-resolution.md`; never read config files directly).
 2. **Write child docs per chosen mode.** Each doc is written to its reserved slot per `skills/_shared/storage-resolution.md` (write_doc); do not open or path-compute a `<paths.designs>/…/<slot>.md` file.
-   - **All-at-once:** dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`); after all complete, dispatch `cadence-doc-consistency` once over the set for a consistency sweep (see Generation mode). Then generate `00a-plain-english.md` last.
+   - **All-at-once:** dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`). Every generator prompt names the resolved storage backend and the matching syntax reference: `skills/_shared/obsidian-format.md` always, **plus `skills/_shared/notion-translation.md` when the backend is notion** (so generators author callouts as native `<callout>` blocks, not obsidian syntax). After all complete, dispatch `cadence-doc-consistency` once over the set for a consistency sweep (see Generation mode). Then generate `00a-plain-english.md` last.
    - **One-by-one:** write one child doc, then proceed to step 3.
    - **Inline:** the main session writes every technical child doc itself, sequentially, via write_doc — no generator sub-agents, no per-doc pause, no `cadence-doc-consistency` sweep (a single author holds the whole context; Invariant 2 still applies in full). Then generate `00a-plain-english.md` last and continue at step 8.
 3. **Pause after each doc (one-by-one mode only).** *"`<filename>` written. Review and tell me to continue, revise, or stop."* Never auto-write the next file in this mode. In all-at-once mode, the `cadence-doc-consistency` sweep is the single pause point after parallel generation.
@@ -53,7 +53,7 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 
 After confirming the doc index, resolve `authoring.design_mode`; when it names a concrete mode (`all-at-once`, `one-by-one`, `inline`) use it without asking. When it is `ask`, ask via `AskUserQuestion` (default `(Recommended)` = all-at-once):
 
-- **All-at-once** (default): dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`), then dispatch `cadence-doc-consistency` once over the set. The sweep reconciles trivial wording and surfaces substantive contradictions via `AskUserQuestion`. Then generate `00a-plain-english.md` last (from the settled docs). No per-doc pause; the sweep is the single consistency gate.
+- **All-at-once** (default): dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`), each prompt carrying the resolved storage backend and its syntax reference (see step 2), then dispatch `cadence-doc-consistency` once over the set. The sweep reconciles trivial wording and surfaces substantive contradictions via `AskUserQuestion`. Then generate `00a-plain-english.md` last (from the settled docs). No per-doc pause; the sweep is the single consistency gate.
 - **One-by-one**: today's behavior — write one child doc, pause for review, loop; Invariant 2 re-litigation runs incrementally.
 - **Inline** (label: "Inline, no sub-agents"): the main session writes every doc itself, one after another, with no per-doc pause and no consistency sweep — one author holds the whole context. Slowest wall-clock of the three when docs are many; strongest cross-doc consistency for coupled doc sets.
 
@@ -61,7 +61,7 @@ After confirming the doc index, resolve `authoring.design_mode`; when it names a
 
 ## Callout conventions
 
-See `skills/_shared/obsidian-format.md` for the full set. Summary: `> [!summary] Plain English` (per H2), `> [!success] Decision`, `> [!warning]`, `> [!note]`, `> [!bug] Fix:`, `> [!todo] Build:`. No invented callouts. No `> [!info]` flooding.
+See `skills/_shared/obsidian-format.md` for the full set **and the backend rule**. Semantic set: `[!summary] Plain English` (per H2), `[!success] Decision`, `[!warning]`, `[!note]`, `[!bug] Fix:`, `[!todo] Build:`. Syntax is backend-specific: `> [!type]` obsidian form on the filesystem backend; native `<callout>` blocks per `skills/_shared/notion-translation.md` on the notion backend — never author `> [!type]` in content bound for Notion. No invented callouts. No `[!info]` flooding.
 
 ## Self-review pass (before flipping to in-review)
 
@@ -71,6 +71,7 @@ See `skills/_shared/obsidian-format.md` for the full set. Summary: `> [!summary]
 4. **OOS integrity** — every 99-OOS entry has rationale + wikilink.
 5. **Invariant 1 audit** — no callouts that read like open questions ("should we…", "we might…", "TBD"). Sharpen wording if ambiguous.
 6. **Ambiguity check** — could any decision be read two ways? Sharpen inline.
+7. **Callout-form check (notion backend only)** — scan the read-back for escaped callout remnants (`\[!` or a quote block starting `> [!`): either means a callout reached Notion in obsidian syntax and rendered as literal text. Rewrite that callout as a native `<callout>` block per `skills/_shared/notion-translation.md`.
 
 Fix inline. No re-review needed.
 
