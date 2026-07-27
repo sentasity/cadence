@@ -111,7 +111,7 @@ Stub structure — create the design artifact for slug `{yyyy-mm-dd-slug}` per `
 - **Why** — 1-2 sentences naming the motivating problem.
 - **Approach** — the picked option from step 6, summarized.
 - **Doc index** — proposed child docs, one wikilink + one-line description each. Mark 97/98 as `opt-in` if Q&A decided to include them; otherwise omit.
-- **Decisions log** — every `> [!success] Decision` from Q&A, with rationale.
+- **Decisions log** — every `[!success] Decision` callout from Q&A, with rationale (authored in the backend's form per `skills/_shared/obsidian-format.md`'s backend rule: obsidian `> [!success]` on the filesystem, native `<callout>` per `skills/_shared/notion-translation.md` on notion).
 - **Out of scope** — wikilink to `99-out-of-scope.md` (canonical list lives there once /c-design materializes it).
 
 Handoff: *"Stub written to `<path>/00-overview.md`. Run `/c-design` to write the child docs."* No auto-chain.

@@ -38,9 +38,9 @@ Because designs and plans are database rows with real Status, Date, and Relation
 
 ## How artifacts render in Notion
 
-Cadence authors its docs in obsidian-flavored markdown, and the Notion backend translates its two house extensions into native Notion blocks before writing, so pages read as first-class Notion content rather than escaped text:
+Cadence's callout and cross-reference conventions are semantic, and each backend authors them in its own native syntax, so pages read as first-class Notion content rather than escaped text:
 
-- **Callouts** (`> [!summary]`, `> [!success]`, `> [!warning]`, and so on) become native Notion callout blocks, each with a type-specific icon and background color.
+- **Callouts** (the `[!summary]`, `[!success]`, `[!warning]` set) are authored directly as native Notion callout blocks in Notion mode, each with a type-specific icon and background color — never as obsidian `> [!type]` syntax, which Notion would render as escaped literal text. A pre-send guard translates any obsidian-form callout that reaches a write anyway (for example, content drafted before the repo switched modes).
 - **Wikilinks** (`[[01-topic]]`) become clickable Notion page mentions, resolved in a second pass once every page in the batch exists.
 - **Mermaid** code fences render as native Notion diagrams; standard markdown (headings, lists, tables, code, checkboxes) passes straight through.
 

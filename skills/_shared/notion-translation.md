@@ -1,14 +1,18 @@
 # Notion translation (notion backend only)
 
-Operational reference for translating Cadence's obsidian-flavored markdown to and from the official Notion MCP's Notion-flavored Markdown. The `notion` branch of `storage-resolution.md` applies this on every `write_doc` (obsidian to Notion-flavored Markdown, before the MCP call) and every `read_artifact` (Notion-flavored Markdown back to obsidian, after the fetch). The filesystem backend never runs any of this. Design rationale: [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]].
+Operational reference for Notion-flavored Markdown authoring and for translating between it and Cadence's obsidian-flavored markdown. On the `notion` branch of `storage-resolution.md`: **new content is authored directly in the Notion-flavored forms below** (callouts especially — see the authoring rule in the next section), `write_doc` translates any obsidian-form constructs that reach it anyway (pre-existing content, read-modify-write cycles, a generator that slipped), and `read_artifact` maps Notion-flavored Markdown back to obsidian after a fetch. The filesystem backend never runs any of this. Design rationale: [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]].
 
 Only two constructs are translated, because only two are obsidian extensions rather than standard markdown: **callouts** and **wikilinks**. Everything else (headings, paragraphs, bulleted and numbered lists, GFM tables, fenced code including ` ```mermaid `, task checkboxes `- [ ]` / `- [x]`, plain blockquotes) is standard markdown and passes to the MCP untouched, with one caveat for table-cell pipes (below). Do not otherwise rewrite those.
 
 > **Why translate at all.** Notion-flavored Markdown treats `[`, `]`, `<`, and `>` as characters that must be escaped outside code blocks. A raw obsidian callout (`> [!summary]`) or wikilink (`[[slug]]`) handed to the MCP is escaped into literal text (`> \[!summary\]`, `\[\[slug\]\]`), and the callout renders as a plain quote block with no icon, color, or callout affordance. Emitting Notion-flavored tags avoids the escaping and produces native blocks. This was verified by round-trip against the official MCP.
 
-## Callouts to `<callout>` (write)
+## Callouts: author `<callout>` natively (write)
 
-Every obsidian callout `> [!type] Label` (with its continuation `>` lines) becomes one `<callout>` block. Pick icon and background by type:
+**Authoring rule: in notion mode, write every callout as a `<callout>` block from the start.** Do not author `> [!type]` obsidian syntax and rely on a later translation step — that step is exactly what gets skipped, and a raw `> [!type]` reaching the MCP renders as escaped literal text. The obsidian column below exists so you know which semantic callout type (per `obsidian-format.md`) maps to which icon and color, and so pre-existing obsidian-form content can be translated when it passes through `write_doc`.
+
+**Pre-send guard:** before ANY content write to the MCP (`notion-create-pages`, `notion-update-page`), scan the outgoing body for `> [!`. A hit means an obsidian callout survived — translate it per this table before sending. Content handed to the MCP must never contain `> [!`.
+
+Each semantic callout type maps to one `<callout>` block. Pick icon and background by type:
 
 | Obsidian callout | icon | color |
 |---|---|---|

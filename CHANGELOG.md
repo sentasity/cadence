@@ -2,7 +2,13 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
-## v0.13.0 (2026-07-21)
+## v0.13.1 (2026-07-27)
+
+Notion mode stops leaking raw obsidian callout syntax (`[!summary]`, `[!warning]`) into Notion pages: callout syntax recommendations are now backend-specific, so content bound for Notion is authored as native `<callout>` blocks from the start.
+
+### Fixed
+
+- **Callouts are authored natively per backend, not translated at the boundary.** v0.11.0 specified an obsidian-to-Notion callout translation inside `write_doc`, but it was an implicit transform with no explicit step, so writers (generator sub-agents especially, whose prompts only carried `obsidian-format.md`) handed raw `> [!type]` syntax to the MCP, which escaped it into literal text. Now: `obsidian-format.md` carries a backend rule (obsidian `> [!type]` syntax is the filesystem form only; notion authors native `<callout>` blocks per `notion-translation.md`); `/c-design` and `/c-plan` generator dispatches pass the resolved backend and, in notion mode, `notion-translation.md`; `write_doc` gains a pre-send guard (scan outgoing content for `> [!`, translate any survivor); and both skills' self-review passes gain a notion-only check for escaped callout remnants on read-back. Wikilinks are unchanged — the two-pass `resolve_links` design already works.
 
 /c-execute gains an inline execution mode: the whole plan can run sequentially in the PM session itself — no worktrees, no implementer sub-agents — chosen at a new pre-flight execution-mode gate or pinned in config. Requested in #14.
 

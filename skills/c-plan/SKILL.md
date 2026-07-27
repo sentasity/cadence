@@ -144,7 +144,7 @@ Every entry gets `- [ ]`. `/c-validate` checks them off as it walks.
 
 ## `97` / `98` shells
 
-Each is a single `> [!note] Reference shell` block pointing back to the design's matching doc. Same shape for 97 and 98. If the design omitted 97/98 (opt-in not taken), the shell still creates with a pointer to the design's overview.
+Each is a single `[!note] Reference shell` callout (authored in the backend's form per `skills/_shared/obsidian-format.md`'s backend rule) pointing back to the design's matching doc. Same shape for 97 and 98. If the design omitted 97/98 (opt-in not taken), the shell still creates with a pointer to the design's overview.
 
 ## `99-out-of-scope.md` (plan-side)
 
@@ -168,7 +168,7 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 
 Plan docs are mechanical, so `/c-plan` offers `all-at-once` (default) and `inline` — never the paused one-by-one mode (review happens on the assembled plan, so a per-doc pause buys nothing). All-at-once:
 1. Write `00-overview.md` first (frontmatter + phase index + File Map — generators need it).
-2. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`. Each generator gets the approved design (or relevant slice), the plan overview, its doc's scope, and the format conventions.
+2. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`. Each generator gets the approved design (or relevant slice), the plan overview, its doc's scope, the resolved storage backend, and the format conventions (`skills/_shared/obsidian-format.md`; **plus `skills/_shared/notion-translation.md` when the backend is notion**, so callouts are authored as native `<callout>` blocks, never obsidian `> [!type]` syntax).
 3. Dispatch `cadence-doc-consistency` once over the full set. Reconcile trivial wording; surface substantive contradictions to the user via `AskUserQuestion`. Re-dispatch only affected generators on resolution.
 4. The plan is not finalized until the sweep is clean.
 
@@ -183,6 +183,7 @@ Inline mode replaces items 2-3: the main session writes each remaining doc itsel
 5. **Symbol/path/import verification** — every cited file path, line range, symbol, and import was ground-truthed against the current code per "Codebase verification" rules. Intra-plan consistency also holds: names referenced across later tasks match earlier ones. (`/c-audit`'s `code-behind-checkbox` audit remains a backstop at completion.)
 6. **File Map honesty** — every file in tasks appears in File Map; nothing in File Map is missing from tasks.
 7. **Wikilink integrity** — every `[[…]]` resolves.
+8. **Callout-form check (notion backend only)** — scan the read-back for escaped callout remnants (`\[!` or a quote block starting `> [!`): either means a callout reached Notion in obsidian syntax and rendered as literal text. Rewrite that callout as a native `<callout>` block per `skills/_shared/notion-translation.md`.
 8. **Fragmented-file detector** — flag any phase file with 1–2 tasks whose `Reads:` core overlaps a sibling phase file's by >50% (candidate for consolidation). Surface to the user via `AskUserQuestion`; never auto-merge.
 9. **Mixed-topic detector** — flag any phase file whose tasks pairwise share zero `Reads:` (candidate-multi-topic). Surface to the user via `AskUserQuestion`; never auto-split.
 
