@@ -2,6 +2,16 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.13.2 (2026-07-30)
+
+Notion mode stops silently corrupting long child docs. Content writes are now capped at ~8k characters, chunked past that, and verified by reading the page back. Fixes #19.
+
+### Fixed
+
+- **Long Notion writes are chunked and verified instead of sent whole and trusted.** A child doc past roughly 20k characters could have its tail silently mangled: the tool call succeeded, the page was created, and the damage (literal `\n` or a bare `n` inside code fences, swallowed `*`, orphaned `****`, to-dos landing as escaped `- \[ \]`) was visible only on read-back. The cause is client-side, not Notion's: a streaming tool-argument accumulator that drops an in-flight string token and then repairs the JSON into something syntactically valid ([anthropics/claude-code#67765](https://github.com/anthropics/claude-code/issues/67765), open). Now `skills/_shared/storage-resolution.md` carries a hard ~8k-character cap on every content-bearing MCP call, a chunked create-then-append path (create small, extend with `insert_content` calls, cut only on top-level block boundaries) with `allow_async: true` on large writes, and an explicit never-interrupt rule, since Escape mid-write is a deterministic trigger and corrupted arguments are cached per-tool for the rest of the session.
+- **Every Notion content write now verifies itself on read-back.** `skills/_shared/notion-translation.md` gains a post-write verification step alongside the existing pre-send guard: fetch the page back, compare returned length against what was sent, and scan the tail for the shear signature. A clean tool result is not evidence of a clean write, and the corruption is not mechanically recoverable, so affected sections are re-authored from source, not patched. `/c-design` and `/c-plan` self-review passes gain a matching notion-only write-integrity check; plan task steps are the load-bearing case, since a sheared tail drops steps `/c-execute` will never run.
+- **Generators are size-aware in Notion mode.** `/c-design` proposes splitting an obviously-long technical child doc at its natural topic boundary when confirming the doc index (`00a-plain-english` and a dense `98` are expected to exceed the cap and go through chunked writes instead). `/c-plan` keeps its lane = phase file sizing rule intact (phase docs are still one substantive topic at 5–10+ tasks) and treats an oversized doc as a storage-layer concern, splitting only when a genuine internal topic boundary already made it a candidate.
+
 ## v0.13.1 (2026-07-27)
 
 Notion mode stops leaking raw obsidian callout syntax (`[!summary]`, `[!warning]`) into Notion pages: callout syntax recommendations are now backend-specific, so content bound for Notion is authored as native `<callout>` blocks from the start.

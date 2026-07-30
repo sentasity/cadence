@@ -1,6 +1,6 @@
 # Notion translation (notion backend only)
 
-Operational reference for Notion-flavored Markdown authoring and for translating between it and Cadence's obsidian-flavored markdown. On the `notion` branch of `storage-resolution.md`: **new content is authored directly in the Notion-flavored forms below** (callouts especially — see the authoring rule in the next section), `write_doc` translates any obsidian-form constructs that reach it anyway (pre-existing content, read-modify-write cycles, a generator that slipped), and `read_artifact` maps Notion-flavored Markdown back to obsidian after a fetch. The filesystem backend never runs any of this. Design rationale: [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]].
+Operational reference for Notion-flavored Markdown authoring and for translating between it and Cadence's obsidian-flavored markdown. On the `notion` branch of `storage-resolution.md`: **new content is authored directly in the Notion-flavored forms below** (callouts especially — see the authoring rule in the next section), `write_doc` translates any obsidian-form constructs that reach it anyway (pre-existing content, read-modify-write cycles, a generator that slipped), and `read_artifact` maps Notion-flavored Markdown back to obsidian after a fetch. Every content write also verifies itself on read-back (post-write verification, below), because the write path can shear silently. The filesystem backend never runs any of this. Design rationale: [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]].
 
 Only two constructs are translated, because only two are obsidian extensions rather than standard markdown: **callouts** and **wikilinks**. Everything else (headings, paragraphs, bulleted and numbered lists, GFM tables, fenced code including ` ```mermaid `, task checkboxes `- [ ]` / `- [x]`, plain blockquotes) is standard markdown and passes to the MCP untouched, with one caveat for table-cell pipes (below). Do not otherwise rewrite those.
 
@@ -90,6 +90,21 @@ The pre-step is idempotent (the diff against freshly fetched schema makes re-run
 ## Table cells and literal pipes
 
 A GFM pipe table cannot carry a literal `|` inside a cell through the MCP: the pipe is read as a column delimiter and splits the row, and there is no working escape (verified by round-trip against the official MCP — `\|` comes back as a stray backslash and an extra column, and `&#124;` comes back as literal text). So author tables with no cell-internal `|` (reword per [[obsidian-format#Tables]]), or emit that table as a Notion-flavored `<table>` block, where a raw `|` inside a `<td>` is plain text. When migrating a pre-existing GFM table whose cell needs a literal pipe, rebuild that one table as a `<table>` block. This is a GFM limitation to work around, not an obsidian-to-Notion construct translation, and it has no read-back inverse.
+
+## Post-write verification (write)
+
+The pre-send guard above catches syntax that would render wrong. It cannot catch a body that never arrived intact. Per the size cap in `skills/_shared/storage-resolution.md`, a content write can be silently sheared client-side: the tool call succeeds, the page is created, and the tail is corrupted. **A clean tool result is not evidence of a clean write.** Read-back is the only detection, so every `write_doc` on the notion backend verifies after the final chunk lands, before the operation returns.
+
+1. **Fetch the page back** with `notion-fetch`.
+2. **Compare length.** Measure the returned body against what was sent. Read-back is not byte-exact (native blocks reconstruct to slightly different markdown), so treat a shortfall past a few percent, or any shortfall concentrated at the tail, as a failed write, not as translation noise.
+3. **Scan the tail for the corruption signature.** All of these mean shear, never legitimate content:
+   - a literal `\n` in the body, or a bare `n` where a newline belongs (most visible inside fenced code blocks, which arrive as one run-on line)
+   - to-do items as escaped text (`- \[ \]`, `- \[x\]`) instead of real to-do blocks
+   - swallowed `*` characters: `{{fixture.*}}` arriving as `\{\{fixture.\}\}`
+   - orphaned `****` with nothing between the markers
+   - the body ending mid-sentence, mid-fence, or mid-block
+
+Corruption is **not mechanically recoverable**: the dropped characters are ambiguous, so a corrupted section has to be re-authored from source, not patched. On a hit, report the affected doc and slot to the caller, re-author the affected section from the content originally handed to `write_doc`, and rewrite it in smaller chunks. If a rewrite corrupts again at the same place, the per-tool argument cache is poisoned. Stop and tell the user to restart the session (see the never-interrupt rule in `skills/_shared/storage-resolution.md`); retrying inside the same session will keep failing.
 
 ## Read-back inverse (`read_artifact`)
 

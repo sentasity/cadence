@@ -46,6 +46,16 @@ Cadence's callout and cross-reference conventions are semantic, and each backend
 
 The mapping is defined in `skills/_shared/notion-translation.md`. Plan checkboxes are the load-bearing case: they become real Notion to-do blocks so `/c-execute` can tick them live.
 
+## Long docs are written in chunks
+
+Cadence caps every Notion content write at roughly 8,000 characters and writes anything longer as a create-then-append sequence, splitting only on block boundaries. After the last chunk lands it fetches the page back and checks it: length against what was sent, plus a scan for the tell-tale signs of a truncated write. This is invisible in normal use: you write a design or plan as usual and the pages come out whole.
+
+The reason for it is client-side rather than anything about Notion. A large tool argument can be sheared while it streams, producing a call that succeeds while carrying a mangled tail, so a long page could land damaged with nothing anywhere reporting an error ([anthropics/claude-code#67765](https://github.com/anthropics/claude-code/issues/67765)). Reading the page back is the only way to catch it.
+
+<Aside type="caution" title="Don't press Escape during a write">
+Interrupting a content write is a reliable way to trigger the shear, and the corrupted argument is cached for the rest of the session, so one interrupted write can spoil every later one. If a write gets interrupted, restart the session before continuing and check anything written after the interruption. Corrupted content cannot be repaired mechanically: the affected section has to be written again.
+</Aside>
+
 ## What changes and what does not
 
 Changes:
