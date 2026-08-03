@@ -2,6 +2,16 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.14.0 (2026-08-03)
+
+Design docs get a judgment-based menu of readability constructs — equation blocks, inline mermaid diagrams, collapsible detail, table of contents — so formulas and algorithms stop shipping as prose walls. Notion syntax for each construct verified by round-trip against the official MCP.
+
+### Added
+
+- **Readability constructs in the shared format conventions.** `skills/_shared/obsidian-format.md` gains a *Readability constructs* section: equation blocks for multi-term formulas, inline mermaid for flows/algorithms/state machines (the `98-architecture-diagrams` slot is for cross-cutting architecture, not a quarantine for every diagram), collapsible detail (folded callouts on the filesystem backend, toggles on notion) for long support material, table of contents on long docs, and columns for short side-by-side comparisons. All judgment-based with an anti-flooding rule; collapsible detail still obeys the doc's compression rules.
+- **Verified Notion syntax and read-back inverses.** `skills/_shared/notion-translation.md` gains a *Readability blocks* section (round-trip verified 2026-08-03): inline math is ``$`x`$`` with backticks required — obsidian's `$x$` is now the third translated construct, and bare dollar amounts in prose are confirmed safe; toggle and toggle-heading children are contained by tab indentation only; mermaid node labels with special characters need double quotes. Read-back maps toggles to folded callouts and flattens the notion-only constructs.
+- **/c-design self-review check 6a.** The self-review pass now scans for prose doing a construct's job — a run-on formula sentence, a step-by-step flow narration, an inline edge-case dump — and converts it.
+
 ## v0.13.2 (2026-07-30)
 
 Notion mode stops silently corrupting long child docs. Content writes are now capped at ~8k characters, chunked past that, and verified by reading the page back. Fixes #19.

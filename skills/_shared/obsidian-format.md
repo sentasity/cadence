@@ -25,6 +25,21 @@ Relative format: `[[../sibling-folder/00-overview]]` or `[[01-topic#Section head
 
 GFM pipe tables. Do **not** put a literal `|` inside a cell: it is read as a column delimiter and breaks the row. There is no portable escape — GFM's `\|` and the `&#124;` entity both fail through the Notion MCP (verified: `\|` renders as a stray backslash and splits the cell; `&#124;` renders as literal text). Reword to avoid the pipe (`SfnStartResult` or `None`; `Optional[SfnStartResult]`); or, when a table genuinely needs a cell-internal pipe, author that one table as a Notion-flavored `<table>` block, where a raw `|` inside a `<td>` is plain text. Keep each cell on one line; use `<br>` for an intentional in-cell line break.
 
+## Readability constructs (judgment-based, both backends)
+
+Beyond callouts and tables, four constructs earn their place when they say something more clearly than prose. All are judgment calls — the same discipline as callouts applies: if prose says it just as well, use prose. Never convert for decoration.
+
+| Construct | Use when | Filesystem (obsidian) form | Notion form |
+|---|---|---|---|
+| **Equation block** | A definition has multiple terms, a sum/product over a set, or conditional branches that prose forces into a run-on sentence (rate formulas, aggregations, thresholds). | `$$ … $$` LaTeX (obsidian renders MathJax) | Same `$$ … $$` — see `notion-translation.md` for inline form and `$` caveats |
+| **Mermaid diagram** | A section describes a flow, algorithm, state machine, sequence, or decision tree step-by-step in prose. Inline in the child doc where the reader needs it — the `98-architecture-diagrams` slot is for cross-cutting architecture, not a quarantine for every diagram. | ` ```mermaid ` fence | Same fence; label-quoting rules in `notion-translation.md` |
+| **Collapsible detail** | A complete-but-long support section the main narrative doesn't need on screen: edge-case matrices, rejected alternatives, verbose examples, raw payload samples. The summary line must say what's inside — a reader should know whether to open it. | Folded callout: `> [!note]- Title` | `<details>` toggle or `{toggle="true"}` heading — see `notion-translation.md` |
+| **Table of contents** | A child doc long enough that H2 navigation helps (roughly 5+ H2s). Top of doc, once. | Skip — obsidian has an outline pane | `<table_of_contents/>` |
+
+Anti-flooding rule, same spirit as callouts: one construct per job. A section with an equation, a diagram, a toggle, AND colored text is noise. Collapsible detail must still obey the doc's own compression rules — a toggle is not a place to park content that should be deleted.
+
+Column layouts (`<columns>`, notion-only) are allowed for short side-by-side comparisons (two options, before/after) but never for body prose; on the filesystem backend use a table or two H3s instead.
+
 ## Reserved file slots
 
 **Design folder:** `00-overview`, `00a-plain-english`, `97-infrastructure-inventory`, `98-architecture-diagrams`, `99-out-of-scope`.

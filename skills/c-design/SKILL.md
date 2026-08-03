@@ -71,6 +71,8 @@ After confirming the doc index, resolve `authoring.design_mode`; when it names a
 
 See `skills/_shared/obsidian-format.md` for the full set **and the backend rule**. Semantic set: `[!summary] Plain English` (per H2), `[!success] Decision`, `[!warning]`, `[!note]`, `[!bug] Fix:`, `[!todo] Build:`. Syntax is backend-specific: `> [!type]` obsidian form on the filesystem backend; native `<callout>` blocks per `skills/_shared/notion-translation.md` on the notion backend — never author `> [!type]` in content bound for Notion. No invented callouts. No `[!info]` flooding.
 
+Beyond callouts, generators should reach for the readability constructs (equation blocks for multi-term formulas, inline mermaid for flows/algorithms, collapsible detail for long support material, TOC on long docs) per `skills/_shared/obsidian-format.md` § Readability constructs — judgment-based, never decorative.
+
 ## Self-review pass (before flipping to in-review)
 
 1. **Placeholder scan** — no `TBD`, `TODO`, `(fill in)`, empty H2s, `TBC` anywhere.
@@ -79,6 +81,7 @@ See `skills/_shared/obsidian-format.md` for the full set **and the backend rule*
 4. **OOS integrity** — every 99-OOS entry has rationale + wikilink.
 5. **Invariant 1 audit** — no callouts that read like open questions ("should we…", "we might…", "TBD"). Sharpen wording if ambiguous.
 6. **Ambiguity check** — could any decision be read two ways? Sharpen inline.
+6a. **Readability-construct check** — scan for prose doing a construct's job: a multi-term formula or conditional definition written as a run-on sentence (should be an equation block), a flow/algorithm/state machine narrated step-by-step (should be a mermaid diagram), a long edge-case matrix or rejected-alternatives dump inline in the narrative (should be collapsible detail). Convert per `skills/_shared/obsidian-format.md` § Readability constructs — judgment-based, no decoration.
 7. **Callout-form check (notion backend only)** — scan the read-back for escaped callout remnants (`\[!` or a quote block starting `> [!`): either means a callout reached Notion in obsidian syntax and rendered as literal text. Rewrite that callout as a native `<callout>` block per `skills/_shared/notion-translation.md`.
 8. **Write-integrity check (notion backend only)** — scan the same read-back for the write-shear signature (literal `\n` or a bare `n` inside code fences, escaped `- \[ \]`, swallowed `*`, orphaned `****`, a doc ending mid-block), and confirm each doc's tail is the tail you wrote. A hit means the write was sheared, not mistranslated; re-author the affected section per `skills/_shared/notion-translation.md`'s post-write verification. The long docs (`00a-plain-english`, `98`) are the likeliest to be hit.
 
