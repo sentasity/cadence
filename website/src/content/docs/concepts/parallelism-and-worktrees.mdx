@@ -71,16 +71,17 @@ Set `execute.parallel: false` in your config and `/c-execute` runs everything se
 
 Lanes aren't the only thing that uses this machinery. The **[/c-worktree](/cadence/reference/c-worktree/)** utility command is the **opinionated way to handle worktrees on Cadence**: the same isolation, the same config, the same merge safety, but driven interactively by you instead of automatically by the scheduler.
 
-Reach for it whenever you want isolated feature work in its own working directory: a side experiment, a second Claude Code session working the same repo in parallel, or any branch you'd rather not develop in your main checkout. It needs no design, no plan, and no other `/c-*` command. The lifecycle is three subcommands:
+Reach for it whenever you want isolated feature work in its own working directory: a side experiment, a second Claude Code session working the same repo in parallel, or any branch you'd rather not develop in your main checkout. It needs no design, no plan, and no other `/c-*` command. The lifecycle is create, one of two exits, then cleanup:
 
 - **`/c-worktree create`** cuts a new worktree under the shared `worktree.dir` (default `.cadence/worktrees/`, the same directory the lanes use). It asks which base branch to cut from, never assumes, and records the answer so the merge later knows where the work goes home. If your config defines hooks, it can also provision the copy and start a dev server on its own dedicated port.
-- **`/c-worktree merge`** integrates the branch back into its recorded parent, per the same `worktree.integrate` policy the lanes follow, under the same shared merge lock. All the interaction (what will move, which merge type) happens *before* the lock, so the lock is held only for the git operations themselves.
+- **`/c-worktree merge`** integrates the branch back into its recorded parent *locally*, per the same `worktree.integrate` policy the lanes follow, under the same shared merge lock. All the interaction (what will move, which merge type) happens *before* the lock, so the lock is held only for the git operations themselves.
+- **`/c-worktree pr`** is the other exit, for branches that ship through review: it pushes the branch and opens a pull request against its base, so integration happens on the forge rather than in your clone. It takes no lock (there is no local merge to serialize), and your worktree stays alive for review fixes until the PR merges.
 - **`/c-worktree cleanup`** stops the dev server, removes the worktree, deletes the branch, and releases the port.
 
-The payoff of one opinionated model instead of ad-hoc `git worktree` commands: every worktree in the repo, whether you made it or a lane did, lives in the same place, merges by the same policy, and respects the same lock. Because `/c-worktree` and `/c-execute` share the merge lock (`worktree.merge_lock`, on by default), a hand-driven merge and an automatic lane landing can never collide; whichever asks second simply waits its turn.
+The payoff of one opinionated model instead of ad-hoc `git worktree` commands: every worktree in the repo, whether you made it or a lane did, lives in the same place and goes home by a policy you can predict. Because `/c-worktree`'s local merges and `/c-execute`'s lane landings share the merge lock (`worktree.merge_lock`, on by default), a hand-driven merge and an automatic lane landing can never collide; whichever asks second simply waits its turn. The PR exit sidesteps that question entirely: it never merges into your clone, so there is nothing to serialize.
 
 <Aside type="tip" title="Works in any git repo">
-`/c-worktree` is generic and standalone: with no `worktree:` config at all it still runs the full create / merge / cleanup lifecycle. Config hooks layer on the repo-specific parts (provisioning, a dev port, a dev server, a deploy guard) without changing the core model.
+`/c-worktree` is generic and standalone: with no `worktree:` config at all it still runs the full create / exit / cleanup lifecycle (the PR exit needs only a remote, plus `gh` for the smoothest path). Config hooks layer on the repo-specific parts (provisioning, a dev port, a dev server, a deploy guard) without changing the core model.
 </Aside>
 
 ## Reference

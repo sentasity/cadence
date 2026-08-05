@@ -109,13 +109,13 @@ See [Parallelism and worktrees](/cadence/concepts/parallelism-and-worktrees/) fo
 
 ## `worktree`
 
-The shared git-worktree lifecycle: where worktrees live, how branches merge back, the merge lock, and the optional repo-specific hooks. Two commands read this section: [`/c-worktree`](/cadence/reference/c-worktree/) (the interactive lifecycle) and `/c-execute` (its parallel lanes use `dir` and `integrate`, and its merge-on-land honors the lock).
+The shared git-worktree lifecycle: where worktrees live, how branches go home, the merge lock, and the optional repo-specific hooks. Two commands read this section: [`/c-worktree`](/cadence/reference/c-worktree/) (the interactive lifecycle) and `/c-execute` (its parallel lanes use `dir` and `integrate`, and its merge-on-land honors the lock).
 
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
 | `worktree.dir` | Where worktrees are created: interactive `/c-worktree` worktrees and `/c-execute` lane worktrees alike. Relocated from `execute.worktree_dir`. | `.cadence/worktrees` | Repo-relative path |
 | `worktree.integrate` | History policy when a worktree branch merges back. Relocated from `execute.integrate`. | `rebase-ff` | `rebase-ff` \| `merge-commit` |
-| `worktree.merge_lock` | Whether merges acquire the shared repo-global merge lock, so concurrent merges into the same integration branch serialize instead of colliding. Honored by both `/c-worktree` and `/c-execute`. | `true` | `true` \| `false` |
+| `worktree.merge_lock` | Whether **local** merges acquire the shared repo-global merge lock, so concurrent merges serialize instead of colliding. Honored by `/c-worktree`'s local-merge exit and `/c-execute`'s lane landings; `/c-worktree`'s PR exit performs no local merge and never takes it. | `true` | `true` \| `false` |
 | `worktree.lock_stale_threshold` | Seconds after which a held lock is reported stale and surfaced as a "steal it?" question. Never auto-stolen. | `600` | Positive integer (seconds) |
 
 ### Hooks
