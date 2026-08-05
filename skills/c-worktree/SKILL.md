@@ -1,37 +1,48 @@
 ---
 name: c-worktree
-description: Full git-worktree lifecycle for isolated interactive sessions — create an isolated worktree, optionally run its dev server on a dedicated port, merge it back behind a shared lock, and clean up. Generic and standalone: works in any git repo with no Cadence design, plan, or other /c-* skill; merges are lock-guarded so they serialize with /c-execute lane landings and other sessions. Use whenever starting isolated or parallel feature work, spinning up a worktree, asking which port a worktree's dev server runs on, or merging/integrating a worktree branch back to its base — from the feature session OR from the main worktree. Use it even when the user just says 'new worktree', 'isolate this', 'merge my branch back', or 'serialize these merges'.
+description: Full git-worktree lifecycle for isolated interactive sessions — create an isolated worktree, optionally run its dev server on a dedicated port, ship the branch home by local merge or by GitHub PR, and clean up. Generic and standalone: works in any git repo with no Cadence design, plan, or other /c-* skill; local merges are lock-guarded so they serialize with /c-execute lane landings and other sessions; the PR-flow exit pushes the branch, opens the PR, and cleans up after it merges. Use whenever starting isolated or parallel feature work, spinning up a worktree, asking which port a worktree's dev server runs on, merging/integrating a worktree branch back to its base, or shipping one as a PR — from the feature session OR from the main worktree. Use it even when the user just says 'new worktree', 'isolate this', 'merge my branch back', 'push this up and open a PR', or 'the PR merged, clean up'.
 ---
 
 # `/c-worktree`
 
 You own the whole arc of an interactive worktree session: **create → run dev
-server → merge back → clean up**, plus a deploy guard where a repo configures one.
-Generic where it can be (plain git plus a merge lock that works in any repo) and
-repo-aware only through optional config hooks. Pick the phase that matches the
-request — you rarely run all of them in one turn.
+server → go home through one of two exits (local merge or PR flow) → clean up**,
+plus a deploy guard where a repo configures one. Generic where it can be (plain
+git plus a merge lock that works in any repo) and repo-aware only through
+optional config hooks. Pick the phase that matches the request — you rarely run
+all of them in one turn.
 
 ## Invocation
 
 - `/c-worktree` or `/c-worktree create [<branch>]` — create an isolated worktree
   (always asks for the base branch).
-- `/c-worktree merge [<feature>]` — merge a feature branch home, lock-guarded.
-  From a feature worktree with no arg, the current branch merges to its recorded
-  parent; from the target worktree, `<feature>` merges into the current branch.
+- `/c-worktree merge [<feature>]` — the **local-merge exit**: merge a feature
+  branch home in this clone, lock-guarded. From a feature worktree with no arg,
+  the current branch merges to its recorded parent; from the target worktree,
+  `<feature>` merges into the current branch. When the branch's base is the
+  repo's PR target, this first routes through the exit choice (see Two exits).
+- `/c-worktree pr [<feature>]` — the **PR-flow exit**: push the branch and open
+  a PR against its recorded parent; the worktree stays alive for review fixes,
+  and cleanup runs after the PR merges.
 - `/c-worktree cleanup [<feature>]` — stop the dev server, remove the worktree,
-  delete the branch, release the port.
+  delete the branch, release the port. Detects a PR-shipped branch and verifies
+  the PR merged first.
 
-Bare phrasing maps to phases too: "new worktree" → create; "merge my branch back"
-→ merge; "tear down this worktree" → cleanup.
+Bare phrasing maps to phases too: "new worktree" → create; "merge my branch
+back" / "I'm done, ship it" → the exit choice (see Two exits); "push this up" /
+"open a PR for this" → pr; "tear down this worktree" / "the PR merged, clean
+up" → cleanup.
 
 ## The standalone-generic guarantee
 
 `/c-worktree` requires **no Cadence design, no plan, and no other `/c-*` skill**
 at runtime. It works in any git repo. With an empty or absent `worktree:` config
 (or no `.cadence/config.yaml` at all), only the generic core runs: plain
-`git worktree add`, a lock-guarded merge, and cleanup. The `references/merging.md`
-menu and the merge lock (`scripts/merge-lock.sh` at the plugin root) are the only
-non-trivial generic pieces.
+`git worktree add`, a lock-guarded merge or a push + PR, and cleanup. The
+`references/merging.md` menu and the merge lock (`scripts/merge-lock.sh` at the
+plugin root) are the only non-trivial generic pieces. The PR-flow exit is
+generic too: it needs a remote base (plus `gh` for the nicest path) and
+degrades to push + a hand-opened PR when `gh` is absent.
 
 ## Config
 
@@ -128,8 +139,8 @@ everything a hook may rely on (the public config reference restates it):
    ```bash
    git worktree add -b <branch> <worktree.dir>/<branch> <base>
    ```
-4. **Record the integration target** so the merge phase knows where this branch
-   goes home: `git config branch.<branch>.parent <base>`.
+4. **Record the integration target** so both exits know where this branch goes
+   home: `git config branch.<branch>.parent <base>`.
 5. **Gitignore the worktree home.** Add the `<worktree.dir>/` line to the repo's
    `.gitignore` if it is absent (same behavior as `/c-execute` lanes).
 6. **Run the create hooks (each only when set).** First `provision` (cwd
@@ -170,9 +181,47 @@ When set:
 Stop the server when the user is done with it, and **always** before cleanup.
 Kill by the worktree's own recorded port (see the cleanup phase), never `:3000`.
 
-## Merge phase
+## Two exits: local merge or PR flow
 
-All merges serialize through one repo-global lock — `scripts/merge-lock.sh` at
+A finished worktree branch goes home through exactly one of two exits. Always
+name the exit in what you say to the user; "merge it back" has meant both, and
+taking the wrong one is the failure this section exists to prevent.
+
+- **Local merge** (`/c-worktree merge`, next section): the branch merges into
+  its base in this clone, behind the shared merge lock. Integration is complete
+  the moment the merge lands. Right when the base is a local integration point:
+  an epic/integration branch, or a repo that doesn't ship through PRs.
+- **PR flow** (`/c-worktree pr`, section after): the branch is pushed and a PR
+  is opened against its base; integration happens on the remote (review, then
+  the forge's merge). The local base is untouched until cleanup pulls the
+  merged result down. Right when the base is the repo's PR target (e.g.
+  `develop`): a local merge there would put unreviewed commits on the local
+  base and diverge it from `origin/<base>`; the PR is the real integration.
+
+**Choosing the exit:**
+
+1. **The user named it**: `/c-worktree pr`, "open a PR", "push this up" → PR
+   flow; "merge it locally", "merge into the epic branch here" → local merge.
+   No question either way.
+2. **PR flow impossible** (no remote, or no `origin/<base>`): local merge, no
+   question.
+3. **Otherwise check for the PR-flow signature:** `<base>` is the repo's
+   PR-receiving integration branch (same discovery as the create phase:
+   documented flow in CONTRIBUTING/CLAUDE.md, else the remote HEAD) and it
+   tracks origin. A worktree branched off an epic branch does NOT match, even
+   when the epic is pushed: the epic integrates locally and ships as a PR
+   later, as a whole.
+4. **Signature holds → ask; otherwise local merge.** Ask with `AskUserQuestion`
+   (the `skills/_shared/ask-user-question.md` spec applies), recommending **PR
+   flow**, with the divergence hazard above as the why in that option's
+   description. This question fires even on a bare `/c-worktree merge` or
+   "merge my branch back": that is the phrase users reach for when they mean
+   "ship it", so against the PR target it gets the question, never a silent
+   local merge. If the user picks local merge anyway, honor it.
+
+## Local-merge exit
+
+All local merges serialize through one repo-global lock — `scripts/merge-lock.sh` at
 the plugin root, invoked as `"${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh"`. It
 is the same lock `/c-execute` takes around its lane landings, so an interactive
 merge and an autonomous land can never collide. The lock is one per repo, not per
@@ -223,7 +272,7 @@ the merge unlocked):
    is held — that's unavoidable; see the note below.
 6. Release: `"${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh" release`.
 
-Cleanup (the next phase) happens outside the lock.
+Cleanup (its own phase, below) happens outside the lock.
 
 ### Stale threshold vs interactive holds
 
@@ -238,10 +287,59 @@ other sessions to be shown the steal prompt; and when YOU see `STALE`, remember
 the holder may be a live human mid-conflict — which is exactly why you never
 steal without the user's explicit yes.
 
+## PR-flow exit
+
+Ship the worktree branch as a PR against its base. **No merge lock at any
+point:** the lock serializes local integrations into this clone's checkouts,
+and PR flow performs none (the forge serializes merges on its side).
+
+**Resolve source + base** as the local-merge exit does: source = the current
+branch (or the named `<feature>`); base = its `branch.<branch>.parent`
+(fallback: the integration branch). Then:
+
+1. **Show what will ship.** `git fetch origin`, then
+   `git log --oneline origin/<base>..<branch>` (the PR's commit list). Confirm
+   the feature worktree is clean: uncommitted work doesn't ship, so surface it
+   and let the user decide (commit it or leave it behind; never auto-stash).
+2. **Offer pre-PR dev validation on the main checkout.** In PR flow, "validate
+   on the main checkout" happens BEFORE the PR merges, not after a merge-back.
+   In `$MAIN_ROOT` (confirm it's clean; never auto-stash, never interrupt a
+   live dev server without saying so), run `git checkout --detach <branch>` (a
+   plain checkout refuses while the branch is checked out in the feature
+   worktree; detaching sidesteps that without touching it), validate with the
+   main checkout's tooling, then return with `git checkout <prior-branch>`.
+   Skip freely: this matters mostly in repos whose dev or deploy tooling is
+   anchored to the main checkout.
+3. **Push:** `git push -u origin <branch>`.
+4. **Open the PR** with base `<base>`. Draft a title and body from the branch's
+   commits (match the repo's PR conventions), show both, and create on the
+   user's confirmation: `gh pr create --base <base> ...`. No `gh`, or not a
+   GitHub remote: push anyway and hand the user the create-PR URL (git prints
+   one on push) to open it themselves.
+5. **The worktree outlives the PR.** Review fixes happen here and push to the
+   same branch; the PR updates itself. Never clean up while the PR is open.
+6. **After the PR merges** (the user says so, or `MERGED` per
+   `gh pr view <branch> --json state`): run the cleanup phase. Its PR-shipped
+   variant verifies the merge before deleting the squashed branch, and
+   finishes by syncing the base.
+
+The deploy guard is unchanged by this exit: deploys happen from the main
+worktree only, after the PR has merged and the base is synced (cleanup's last
+step): never from the feature worktree, and never from the pre-PR validation
+checkout.
+
 ## Cleanup phase
 
-Run after a merge lands (outside the lock), or on request for an abandoned
-worktree.
+Run after a local merge lands (outside the lock), after a shipped PR merges, or
+on request for an abandoned worktree.
+
+**PR-shipped branch? Verify the merge before touching anything.** If this
+branch went out through the PR-flow exit, confirm the PR merged (state
+`MERGED` per `gh pr view <branch> --json state,mergedAt`; without `gh`, fetch
+and find the squash commit on `origin/<base>`, or the user confirms) BEFORE
+step 1: an OPEN PR means cleanup is premature (the worktree is where review
+fixes happen), so stop and confirm intent first. Step 3 relies on this
+verification.
 
 1. **Stop the dev server first** — otherwise it lingers (RAM + a held port) and
    its cwd is about to be deleted. Kill by the worktree's **own** recorded port,
@@ -258,6 +356,12 @@ worktree.
    refuses after a clean merge because the current HEAD doesn't contain the
    target's new commits, briefly check out `<target>` and delete from there
    (merged-check anchors to HEAD); that is not a `-D` case.
+   **PR-shipped branch:** a squash-merged PR leaves nothing `-d` can see, and
+   the forge answers the "did the squash capture everything" question instead
+   of the user: the merge was already verified before step 1, so go straight
+   to `git branch -D <branch>`. Delete the remote branch too if the forge
+   didn't (`git push origin --delete <branch>`; already gone counts as
+   success, not an error).
 4. **Run the `port_release` hook** if set (cwd `$MAIN_ROOT` — the worktree is
    already gone).
 5. **Unset the branch config:**
@@ -265,6 +369,12 @@ worktree.
    git config --unset branch.<branch>.parent  2>/dev/null || true
    git config --unset branch.<branch>.devPort 2>/dev/null || true
    ```
+6. **PR flow only: sync the base.** The merged PR lives on `origin/<base>`
+   until it's pulled: if the main worktree has `<base>` checked out, run
+   `git pull --ff-only origin <base>` there; otherwise
+   `git fetch origin <base>:<base>`. Both refuse a non-fast-forward. A refusal
+   means local `<base>` has diverged from origin (often exactly the unreviewed
+   local commits the PR-flow exit exists to avoid): surface it, never force.
 
 ## Deploy phase
 
@@ -274,7 +384,8 @@ logic, and **this skill never deploys** either way.
 When the hook is set and a deploy is requested from a worktree context: run
 `deploy_guard` (cwd = the directory the deploy was attempted from; that location
 is what it judges). On non-zero exit, **refuse the deploy** and explain the flow:
-merge the feature home first (merge phase), then deploy from the main worktree.
+get the feature home first (local-merge exit, or in PR flow a merged PR plus
+cleanup's base sync), then deploy from the main worktree.
 A repo's guard may also fire inside its own build targets independently of this
 skill; the hook is then a second line of defense plus a better explanation, not
 the enforcement.
@@ -282,6 +393,8 @@ the enforcement.
 ## What `/c-worktree` doesn't do
 
 - Doesn't deploy — ever. `deploy_guard` only judges and refuses.
+- Doesn't approve or merge its own PR: PR integration belongs to the repo's
+  review flow. This skill pushes, opens the PR, and cleans up after it merges.
 - Doesn't auto-steal a stale lock, auto-resolve conflicts, or auto-stash /
   auto-switch the target worktree.
 - Doesn't touch `/c-execute`'s lane worktrees (`cadence/lane-*`) — those belong
