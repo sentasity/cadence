@@ -6,17 +6,32 @@ This file is self-contained. You can run drift-check from this file alone.
 
 ## What it compares
 
-The reference is nine hand-written pages, one per Cadence command. For each command, pair:
+The reference is a set of hand-written pages, one per Cadence command. For each command, pair:
 
 - the reference page `website/src/content/docs/reference/<command>.mdx`
 - against its source `skills/<command>/SKILL.md`
 
-The mapping is 1:1 by slug. The nine commands are:
+The mapping is 1:1 by slug.
 
-- **Core pipeline (6):** `c-brainstorm`, `c-design`, `c-plan`, `c-execute`, `c-audit`, `c-validate`.
-- **Diagnostics (3):** `c-check`, `c-find-bugs`, `c-explain`.
+**Discover the pairs; never work from a hardcoded list.** List `website/src/content/docs/reference/*.mdx` and `skills/*/SKILL.md`, then pair by slug. A list written into this file goes stale the moment a command ships, and a page missing from it is silently skipped, which is exactly the failure drift-check exists to prevent. (This is not hypothetical: `c-worktree` shipped, got a reference page, and was absent from this file's former list of nine.)
 
-Run drift-check across all nine pages by default. If the user names specific commands, restrict the pass to those pages.
+Two mismatches are themselves findings, so report them rather than passing over them:
+
+- **Page with no `SKILL.md`:** either a cross-cutting page (see below) or a page for a command that no longer exists.
+- **`SKILL.md` with no page:** a shipped command the docs never got. Point the user at the `new-skill-doc` action.
+
+Run drift-check across every discovered pair by default. If the user names specific commands, restrict the pass to those pages.
+
+## Cross-cutting pages
+
+Some pages are not 1:1 with any one command but still assert things commands guarantee. They drift the same way and are in scope whenever the change that prompted this pass touched what they describe:
+
+- `website/src/content/docs/reference/config.mdx`: every config key's meaning and default, against `defaults/config.default.yaml` and the skills that read those keys.
+- `website/src/content/docs/reference/notion-mode.mdx` and the `concepts/` pages: check these against the relevant `skills/_shared/*.md`, which is where cross-command behavior actually lives.
+
+A change to a `skills/_shared/` doc is a strong signal that a concept or reference page drifted even when no single command's page did. (Again, not hypothetical: the v0.15.0 `/c-worktree` change scoped the merge lock in `skills/_shared/worktree-lifecycle.md`, and both `concepts/parallelism-and-worktrees.mdx` and `config.mdx` were left asserting the old, unconditional rule.)
+
+Same rules as everything else here: report and propose, approve per page, never auto-fix.
 
 ## Semantic, not textual
 
