@@ -41,6 +41,8 @@ Immediately after `git worktree add` and before any hook runs: if `<main-checkou
 
 Both consumers serialize merges through `${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh` (atomic `mkdir` on `<git-common-dir>/worktree-merge.lock`). Gated by `worktree.merge_lock` (default `true`); when `false`, skip acquire/release entirely. The lock is **repo-global**: one lock per repository, not per target branch. `--target` is recorded in `holder.json` for release-ownership matching only, so merges into different branches also serialize (accepted over-caution; merges are short).
 
+**Scope: the lock guards local integration into this clone.** /c-worktree's PR-flow exit performs no local merge (the branch integrates on the remote via a PR) and never takes the lock. Its post-merge base sync uses `--ff-only` pulls, which refuse cleanly instead of colliding with a concurrent local landing.
+
 - **Acquire (immediately before any integrate):** `bash ${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh acquire --target <integration-branch> --threshold <worktree.lock_stale_threshold>`
 
 | Output | Exit | Meaning | Caller's move |

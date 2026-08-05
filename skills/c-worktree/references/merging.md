@@ -1,7 +1,9 @@
 # Merging a worktree branch home
 
-Detailed mechanics for the merge phase. The lock (`scripts/merge-lock.sh` at the
-plugin root, invoked as `"${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh"`) is already
+Detailed mechanics for the **local-merge exit** only. The PR-flow exit (push,
+open a PR, clean up after it merges) never runs these steps and never takes the
+lock; it lives in SKILL.md. The lock (`scripts/merge-lock.sh` at the plugin
+root, invoked as `"${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh"`) is already
 covered in SKILL.md; this file is the merge itself.
 
 ## 1. Show what will move

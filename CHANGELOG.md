@@ -2,6 +2,24 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.15.0 (2026-08-05)
+
+/c-worktree learns that a worktree branch can go home two ways: the existing lock-guarded local merge, or a new PR-flow exit (push the branch, open a PR against its base, clean up after it merges). The skill previously assumed local merge-back was the only ending, so small fixes that ship via a reviewed PR either bypassed the skill entirely (raw push + PR + manual cleanup) or, worse, would merge unreviewed commits onto a local copy of the PR target and diverge it from origin.
+
+### Added
+
+- **Two named exits in `skills/c-worktree/SKILL.md`: local merge and PR flow.** A new *Two exits* section defines both unambiguously ("merge it back" had meant both) and the choice rule: explicit phrasing is honored; no remote base means local merge without a question; and when the branch's base is the repo's PR-receiving integration branch, even a bare "merge my branch back" gets the exit question with PR flow recommended, because that phrasing is what users reach for when they mean "ship it". A worktree based on a pushed epic branch still recommends local merge (the epic integrates locally and ships as a PR later, as a whole). `/c-worktree pr [<feature>]` invokes the PR exit directly.
+- **PR-flow exit phase.** Push + `gh pr create` against the recorded parent (degrades to push + a hand-opened PR without `gh`); pre-PR dev validation on the main checkout via `git checkout --detach <branch>` (a plain checkout refuses while the branch is checked out in the feature worktree); an explicit no-merge-lock rule (the lock guards local integration; the forge serializes PR merges); and a worktree-outlives-the-PR rule so review fixes have somewhere to live. The deploy guard is unchanged: deploys still happen only from the main worktree, after the PR merges and the base is synced.
+- **PR-aware cleanup.** Branch deletion verifies the PR actually merged (`gh pr view --json state`) before force-deleting the squash-merged branch, stops to confirm when the PR is still open, deletes the leftover remote branch, and finishes with a `--ff-only` base sync so the main worktree picks up the merged PR. A sync refusal means the local base diverged and is surfaced, never forced.
+
+### Changed
+
+- `skills/c-worktree/references/merging.md` is scoped explicitly to the local-merge exit; `skills/_shared/worktree-lifecycle.md` now states the merge lock guards local integration only (the PR-flow exit never takes it).
+
+### Why
+
+Observed in the field: a small fix whose worktree branch was based directly on the PR base shipped via a raw push + PR because the skill's only documented ending was a local merge-back, which would have put unreviewed commits on the local base. The exit the user needed existed only outside the skill.
+
 ## v0.14.0 (2026-08-03)
 
 Design docs get a judgment-based menu of readability constructs — equation blocks, inline mermaid diagrams, collapsible detail, table of contents — so formulas and algorithms stop shipping as prose walls. Notion syntax for each construct verified by round-trip against the official MCP.
