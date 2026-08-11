@@ -2,6 +2,10 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.17.0 (2026-08-11)
+
+The Notion write token no longer has to live in a plaintext file. `scripts/notion-write.js` gains a `NOTION_TOKEN_CMD` fallback: when `NOTION_TOKEN` is unset, the script executes that command and uses its stdout as the token, so the secret can stay in a keychain or password manager (`security find-generic-password -s notion-pat -w`, `op read …`) while config carries only the lookup command. `NOTION_TOKEN` wins when both are set; a failing or empty command, or neither variable set, is the usual exit-2 hard stop with an actionable message. Documented in `skills/_shared/storage-resolution.md`'s authentication boundary and the notion-mode setup steps; 4 new tests (83 total).
+
 ## v0.16.0 (2026-08-11)
 
 Notion doc bodies are now written by a bundled script over Notion's REST markdown endpoints instead of through MCP tool calls, removing the corruption class that v0.13.2 could only manage. The ~8k write cap, chunked create-then-append, prose-driven read-back verification, and never-interrupt rule are all gone; the script replaces them with deterministic, tested code.
