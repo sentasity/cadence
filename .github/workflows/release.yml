@@ -52,6 +52,10 @@ jobs:
           echo "headline=$headline" >> "$GITHUB_OUTPUT"
 
       - name: Create annotated tag (if missing)
+        env:
+          # Passed via env, not ${{ }}-templated into the script: a headline
+          # containing backticks or $ would otherwise be executed by bash.
+          HEADLINE: ${{ steps.notes.outputs.headline }}
         run: |
           tag="${{ steps.version.outputs.tag }}"
           if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
@@ -60,12 +64,13 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$tag" -m "$tag - ${{ steps.notes.outputs.headline }}" "$GITHUB_SHA"
+          git tag -a "$tag" -m "$tag - $HEADLINE" "$GITHUB_SHA"
           git push origin "$tag"
 
       - name: Publish GitHub Release (if missing)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEADLINE: ${{ steps.notes.outputs.headline }}
         run: |
           tag="${{ steps.version.outputs.tag }}"
           if gh release view "$tag" > /dev/null 2>&1; then
@@ -73,5 +78,5 @@ jobs:
             exit 0
           fi
           gh release create "$tag" --verify-tag \
-            --title "$tag — ${{ steps.notes.outputs.headline }}" \
+            --title "$tag — $HEADLINE" \
             --notes-file /tmp/notes.md
