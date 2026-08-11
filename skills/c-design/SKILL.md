@@ -32,14 +32,6 @@ Reserved slots: 00-overview, 00a-plain-english, 97-infrastructure-inventory, 98-
 
 See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child docs carry only `title:`.
 
-## Doc sizing (notion backend only)
-
-The notion backend caps a single MCP content write at ~8k characters (`skills/_shared/storage-resolution.md`, "Content write size cap"). Prefer landing under it by construction: when confirming the doc index, split a technical child doc that would obviously run long into two docs at its natural topic boundary, and propose the split to the user with the index rather than deciding it silently. `NN` prefixes keep reading order legible, so a split costs nothing structurally.
-
-Two docs cannot be split this way and are expected to exceed the cap: `00a-plain-english.md` (400–700 lines by design) and a dense `98-architecture-diagrams.md`. Those go through the storage layer's chunked create-then-append, which is transparent to this skill: write the whole body and let the layer chunk and verify it.
-
-Splitting is about write reliability, not about capping the design's total size. A design that genuinely needs long docs still gets them.
-
 ## Writing flow
 
 1. **Read the stub** via `skills/_shared/storage-resolution.md` (read_artifact). List the proposed doc index. Confirm with user: *"Write `00a-plain-english.md` next, then `01-<x>`, `02-<y>`. Sound right?"* Then ask the generation-mode question (see Generation mode). Config values (`authoring.*`) come from running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (contract in `skills/_shared/config-resolution.md`; never read config files directly).
@@ -83,7 +75,6 @@ Beyond callouts, generators should reach for the readability constructs (equatio
 6. **Ambiguity check** — could any decision be read two ways? Sharpen inline.
 6a. **Readability-construct check** — scan for prose doing a construct's job: a multi-term formula or conditional definition written as a run-on sentence (should be an equation block), a flow/algorithm/state machine narrated step-by-step (should be a mermaid diagram), a long edge-case matrix or rejected-alternatives dump inline in the narrative (should be collapsible detail). Convert per `skills/_shared/obsidian-format.md` § Readability constructs — judgment-based, no decoration.
 7. **Callout-form check (notion backend only)** — scan the read-back for escaped callout remnants (`\[!` or a quote block starting `> [!`): either means a callout reached Notion in obsidian syntax and rendered as literal text. Rewrite that callout as a native `<callout>` block per `skills/_shared/notion-translation.md`.
-8. **Write-integrity check (notion backend only)** — scan the same read-back for the write-shear signature (literal `\n` or a bare `n` inside code fences, escaped `- \[ \]`, swallowed `*`, orphaned `****`, a doc ending mid-block), and confirm each doc's tail is the tail you wrote. A hit means the write was sheared, not mistranslated; re-author the affected section per `skills/_shared/notion-translation.md`'s post-write verification. The long docs (`00a-plain-english`, `98`) are the likeliest to be hit.
 
 Fix inline. No re-review needed.
 

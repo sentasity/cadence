@@ -2,7 +2,23 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
-## v0.15.0 (2026-08-05)
+## v0.16.0 (2026-08-11)
+
+Notion doc bodies are now written by a bundled script over Notion's REST markdown endpoints instead of through MCP tool calls, removing the corruption class that v0.13.2 could only manage. The ~8k write cap, chunked create-then-append, prose-driven read-back verification, and never-interrupt rule are all gone; the script replaces them with deterministic, tested code.
+
+### Added
+
+- **`scripts/notion-write.js` + `scripts/notion-write.test.js`.** A dependency-free Node CLI with two modes: `create` (new sub-page under a parent, with title and optional icon) and `replace` (overwrite a page's content wholesale). It reads the body from a local file and pushes it to Notion's REST markdown endpoints (`Notion-Version: 2026-03-11`), so the content never rides in a streamed tool argument, which is where the client-side shear lives ([anthropics/claude-code#67765](https://github.com/anthropics/claude-code/issues/67765), still open; its sibling report was auto-closed unplanned, so an upstream fix is not coming). The script enforces the pre-send callout guard mechanically (exit 3 with offending line numbers), sends `allow_async` and polls the task for large bodies, retries rate limits, and verifies the read-back length before exiting 0 (a shortfall is exit 5). Distinct exit codes for usage, guard, API, and verification failures; single-line JSON result on success. 20 tests against a mock Notion API server.
+- **`NOTION_TOKEN`.** The script authenticates with an internal-integration token from the environment, documented in `skills/_shared/storage-resolution.md`'s authentication boundary and the notion-mode setup steps: create the integration, share the root page with it (same gesture as the MCP's grant), export the token. The value never appears in config, frontmatter, or logs; a missing token is a hard stop with an actionable message, same shape as the missing-MCP hard fail.
+
+### Changed
+
+- **`skills/_shared/storage-resolution.md`:** the *Content write size cap* section is replaced by *Content write path*. Every `write_doc` body, regardless of size, is written to a local file and pushed by the script; `notion-create-pages` body content and `notion-update-page` `insert_content` are no longer used for doc bodies. The MCP keeps everything small-argument: row creation and properties, `read_artifact` fetches, queries, `tick`, and `resolve_links` search-and-replace. Interrupting a write is now recoverable (no per-tool argument cache in play; the next `replace` overwrites wholesale).
+- **`skills/_shared/notion-translation.md`:** post-write verification is the script's job; skills no longer re-fetch pages to check writes, and a clean exit 0 is the evidence of a clean write. Wikilink pass 1 collects the slug-to-URL map from the script's JSON results.
+- **`/c-design` and `/c-plan` drop their size-awareness rules.** The *Doc sizing* section (c-design) and the size-aware split logic plus the self-review *Write-integrity checks* (both skills) existed only because of the cap; doc boundaries are back to being decided purely by topical coherence.
+- **Docs:** `website/src/content/docs/reference/notion-mode.mdx` replaces *Long docs are written in chunks* with *Doc bodies are written by a script*, and setup gains the integration-token step.
+
+
 
 /c-worktree learns that a worktree branch can go home two ways: the existing lock-guarded local merge, or a new PR-flow exit (push the branch, open a PR against its base, clean up after it merges). The skill previously assumed local merge-back was the only ending, so small fixes that ship via a reviewed PR either bypassed the skill entirely (raw push + PR + manual cleanup) or, worse, would merge unreviewed commits onto a local copy of the PR target and diverge it from origin.
 
