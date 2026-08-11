@@ -305,3 +305,76 @@ test('cli: exits 5 when read-back is sheared short', async () => {
     srv.close();
   }
 });
+
+// ---------------------------------------------------------------------------
+// NOTION_TOKEN_CMD fallback
+// ---------------------------------------------------------------------------
+
+function runCliEnv(argv, env) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [SCRIPT, ...argv], { env });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (c) => { stdout += c; });
+    child.stderr.on('data', (c) => { stderr += c; });
+    child.on('error', reject);
+    child.on('close', (status) => resolve({ status, stdout, stderr }));
+  });
+}
+
+function baseEnv(extra) {
+  const env = { ...process.env, NOTION_WRITE_POLL_BUDGET_MS: '5000', ...extra };
+  delete env.NOTION_TOKEN;
+  delete env.NOTION_TOKEN_CMD;
+  return { ...env, ...extra };
+}
+
+test('cli: NOTION_TOKEN_CMD supplies the token when NOTION_TOKEN is unset', async () => {
+  const body = '# Doc\n\nVia token command.\n';
+  const srv = await mockServer([
+    { method: 'PATCH', path: '/v1/pages/p1/markdown', status: 200, body: { object: 'page_markdown', id: 'p1', markdown: body, truncated: false } },
+  ]);
+  try {
+    const r = await runCliEnv(['replace', '--page', 'p1', '--file', writeTmp(body)],
+      baseEnv({ NOTION_API_BASE: srv.base, NOTION_TOKEN_CMD: 'echo cmd-sourced-token' }));
+    assert.strictEqual(r.status, 0, r.stderr);
+    const patch = srv.seen.find((s) => s.method === 'PATCH');
+    assert.strictEqual(patch.headers.authorization, 'Bearer cmd-sourced-token');
+  } finally {
+    srv.close();
+  }
+});
+
+test('cli: NOTION_TOKEN wins over NOTION_TOKEN_CMD when both are set', async () => {
+  const body = '# Doc\n\nDirect token wins.\n';
+  const srv = await mockServer([
+    { method: 'PATCH', path: '/v1/pages/p1/markdown', status: 200, body: { object: 'page_markdown', id: 'p1', markdown: body, truncated: false } },
+  ]);
+  try {
+    const r = await runCliEnv(['replace', '--page', 'p1', '--file', writeTmp(body)],
+      baseEnv({ NOTION_API_BASE: srv.base, NOTION_TOKEN: 'direct-token', NOTION_TOKEN_CMD: 'echo cmd-token' }));
+    assert.strictEqual(r.status, 0, r.stderr);
+    const patch = srv.seen.find((s) => s.method === 'PATCH');
+    assert.strictEqual(patch.headers.authorization, 'Bearer direct-token');
+  } finally {
+    srv.close();
+  }
+});
+
+test('cli: a failing or empty NOTION_TOKEN_CMD exits 2 with the command named', async () => {
+  const fail = await runCliEnv(['replace', '--page', 'p1', '--file', writeTmp('# x\n')],
+    baseEnv({ NOTION_TOKEN_CMD: 'exit 7' }));
+  assert.strictEqual(fail.status, 2);
+  assert.match(fail.stderr, /NOTION_TOKEN_CMD/);
+  const empty = await runCliEnv(['replace', '--page', 'p1', '--file', writeTmp('# x\n')],
+    baseEnv({ NOTION_TOKEN_CMD: 'true' }));
+  assert.strictEqual(empty.status, 2);
+  assert.match(empty.stderr, /NOTION_TOKEN_CMD/);
+});
+
+test('cli: missing-token message mentions both NOTION_TOKEN and NOTION_TOKEN_CMD', async () => {
+  const r = await runCliEnv(['replace', '--page', 'p1', '--file', writeTmp('# x\n')], baseEnv({}));
+  assert.strictEqual(r.status, 2);
+  assert.match(r.stderr, /NOTION_TOKEN/);
+  assert.match(r.stderr, /NOTION_TOKEN_CMD/);
+});
