@@ -27,7 +27,7 @@ Each phase file becomes the unit of worktree dispatch and the unit of per-lane r
 - **Target 5–10+ tasks per file.** Below 5 is too thin to amortize worktree spin-up + per-lane review. 10+ is fine as long as topical coherence holds. The 5–10+ figure is a **target, not a threshold** — a genuinely 3-task plan still ships as a 3-task phase file.
 - **Task size inside a phase file is unchanged.** The per-task contract (`Reads:`/`Touches:`/`Depends:`/`Steps`, every step one action, every code step shows the FULL code) is exactly today's rule. Consolidation is at the file level, not the task level.
 
-**Size awareness (notion backend only).** The notion backend caps a single MCP content write at ~8k characters and chunks anything longer (`skills/_shared/storage-resolution.md`, "Content write size cap"), so an oversized phase doc is a storage-layer concern, not a reason to fragment lanes. Topical coherence and the 5–10+ task target still decide the file boundaries. What changes in notion mode: estimate each phase doc's character count before writing it, and when a doc runs well past the cap, check whether it *also* has a genuine internal topic boundary per the sprawling-monolith test below. If it does, offer the split via `AskUserQuestion` (it was already a candidate). If it does not, write it whole and let the storage layer chunk it; never split a coherent lane on size alone.
+**Doc size is not a storage concern on any backend.** The notion backend writes a doc of any size in one script call (`skills/_shared/storage-resolution.md`, "Content write path"), so topical coherence and the 5–10+ task target alone decide the file boundaries; never split a coherent lane on size.
 
 **Worked example (positive exemplar).** `docs/plans/2026-05-26-c-validate-browser-automation/01-browser-validation.md` is the canonical good shape: 5 tasks (`1.1` config keys → `1.2` shared spec → `{1.3, 1.4, 1.5}` per-skill integration), one substantive topic (browser validation), shared `Reads:` core across all five (the `2026-05-26-c-validate-browser-automation` design docs), classic setup-then-fan-out DAG. Under the new rule this file is one warm lane.
 
@@ -186,11 +186,10 @@ Inline mode replaces items 2-3: the main session writes each remaining doc itsel
 6. **File Map honesty** — every file in tasks appears in File Map; nothing in File Map is missing from tasks.
 7. **Wikilink integrity** — every `[[…]]` resolves.
 8. **Callout-form check (notion backend only)** — scan the read-back for escaped callout remnants (`\[!` or a quote block starting `> [!`): either means a callout reached Notion in obsidian syntax and rendered as literal text. Rewrite that callout as a native `<callout>` block per `skills/_shared/notion-translation.md`.
-9. **Write-integrity check (notion backend only)** — scan the same read-back for the write-shear signature (literal `\n` or a bare `n` inside code fences, escaped `- \[ \]` to-dos, swallowed `*`, orphaned `****`, a doc ending mid-block), and confirm each doc's tail is the tail you wrote. A hit means the write was sheared, not mistranslated; re-author the affected section per `skills/_shared/notion-translation.md`'s post-write verification. Task steps are the load-bearing case: a sheared tail silently drops steps `/c-execute` will never run.
-10. **Fragmented-file detector** — flag any phase file with 1–2 tasks whose `Reads:` core overlaps a sibling phase file's by >50% (candidate for consolidation). Surface to the user via `AskUserQuestion`; never auto-merge.
-11. **Mixed-topic detector** — flag any phase file whose tasks pairwise share zero `Reads:` (candidate-multi-topic). Surface to the user via `AskUserQuestion`; never auto-split.
+9. **Fragmented-file detector** — flag any phase file with 1–2 tasks whose `Reads:` core overlaps a sibling phase file's by >50% (candidate for consolidation). Surface to the user via `AskUserQuestion`; never auto-merge.
+10. **Mixed-topic detector** — flag any phase file whose tasks pairwise share zero `Reads:` (candidate-multi-topic). Surface to the user via `AskUserQuestion`; never auto-split.
 
-Fix items 1–9 inline. For items 10 and 11, surface candidates to the user — consolidate / split / leave-as-is is the user's call, not `/c-plan`'s. No re-review needed.
+Fix items 1–8 inline. For items 9 and 10, surface candidates to the user — consolidate / split / leave-as-is is the user's call, not `/c-plan`'s. No re-review needed.
 
 ## What `/c-plan` doesn't do
 

@@ -1,6 +1,6 @@
 # Notion translation (notion backend only)
 
-Operational reference for Notion-flavored Markdown authoring and for translating between it and Cadence's obsidian-flavored markdown. On the `notion` branch of `storage-resolution.md`: **new content is authored directly in the Notion-flavored forms below** (callouts especially — see the authoring rule in the next section), `write_doc` translates any obsidian-form constructs that reach it anyway (pre-existing content, read-modify-write cycles, a generator that slipped), and `read_artifact` maps Notion-flavored Markdown back to obsidian after a fetch. Every content write also verifies itself on read-back (post-write verification, below), because the write path can shear silently. The filesystem backend never runs any of this. Design rationale: [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]].
+Operational reference for Notion-flavored Markdown authoring and for translating between it and Cadence's obsidian-flavored markdown. On the `notion` branch of `storage-resolution.md`: **new content is authored directly in the Notion-flavored forms below** (callouts especially — see the authoring rule in the next section), `write_doc` translates any obsidian-form constructs that reach it anyway (pre-existing content, read-modify-write cycles, a generator that slipped), and `read_artifact` maps Notion-flavored Markdown back to obsidian after a fetch. Doc bodies reach Notion through `scripts/notion-write.js` (storage-resolution.md's Content write path), which enforces the pre-send guard and verifies every write itself. The filesystem backend never runs any of this. Design rationale: [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]].
 
 Only three constructs are translated, because only three are obsidian extensions rather than standard markdown: **callouts** (including folded callouts), **wikilinks**, and **inline math**. Everything else (headings, paragraphs, bulleted and numbered lists, GFM tables, fenced code including ` ```mermaid `, block equations `$$ … $$`, task checkboxes `- [ ]` / `- [x]`, plain blockquotes) is standard markdown and passes to the MCP untouched, with one caveat for table-cell pipes (below) and the readability-block syntax below. Do not otherwise rewrite those.
 
@@ -10,7 +10,7 @@ Only three constructs are translated, because only three are obsidian extensions
 
 **Authoring rule: in notion mode, write every callout as a `<callout>` block from the start.** Do not author `> [!type]` obsidian syntax and rely on a later translation step — that step is exactly what gets skipped, and a raw `> [!type]` reaching the MCP renders as escaped literal text. The obsidian column below exists so you know which semantic callout type (per `obsidian-format.md`) maps to which icon and color, and so pre-existing obsidian-form content can be translated when it passes through `write_doc`.
 
-**Pre-send guard:** before ANY content write to the MCP (`notion-create-pages`, `notion-update-page`), scan the outgoing body for `> [!`. A hit means an obsidian callout survived — translate it per this table before sending. Content handed to the MCP must never contain `> [!`.
+**Pre-send guard:** before ANY content write (a `scripts/notion-write.js` invocation, or a small content edit via `notion-update-page`), scan the outgoing body for `> [!`. A hit means an obsidian callout survived — translate it per this table before sending. Content handed to Notion must never contain `> [!`. The script enforces this mechanically: it refuses a body carrying an untranslated callout (exit 3) and names the offending lines, so a slipped translation is a hard stop, not a mangled page.
 
 Each semantic callout type maps to one `<callout>` block. Pick icon and background by type:
 
@@ -53,7 +53,7 @@ Plain blockquotes (`>` with no `[!type]` marker) are left untouched and become N
 
 A wikilink `[[NN-topic#Section]]` becomes `<mention-page url="URL">Title</mention-page>`, where `URL` is the target sub-page's Notion URL. Resolution is two-pass, because a wikilink can point at a sibling written later in the same batch:
 
-1. **Pass 1, create.** Write every doc in the batch (`notion-create-pages`) with wikilinks left as-is. Collect the slug-to-page-URL map from the create responses.
+1. **Pass 1, create.** Write every doc in the batch (`scripts/notion-write.js create`) with wikilinks left as-is. Collect the slug-to-page-URL map from the script's JSON results (`page_id`, `url`).
 2. **Pass 2, `resolve_links`.** For each written doc, replace each `[[slug#anchor]]` with `<mention-page url="{resolved-url}">{display}</mention-page>` via `notion-update-page` (`update_content` search-and-replace, `old_str` = the literal `[[…]]` string). `{display}` is the target's human title or the slug. A `#anchor` is dropped: a `<mention-page>` addresses a page, not a block.
 
 Fallback: if a slug does not resolve (target not created yet, for example a design linking to a not-yet-created plan), leave the readable display text (the slug), never the literal `[[…]]`. `resolve_links` is idempotent and re-runs when the target later exists.
@@ -105,18 +105,9 @@ Syntax for the constructs in `obsidian-format.md` § Readability constructs, ver
 
 ## Post-write verification (write)
 
-The pre-send guard above catches syntax that would render wrong. It cannot catch a body that never arrived intact. Per the size cap in `skills/_shared/storage-resolution.md`, a content write can be silently sheared client-side: the tool call succeeds, the page is created, and the tail is corrupted. **A clean tool result is not evidence of a clean write.** Read-back is the only detection, so every `write_doc` on the notion backend verifies after the final chunk lands, before the operation returns.
+The pre-send guard above catches syntax that would render wrong. Whether the body *arrived* intact is the script's job, not prose: `scripts/notion-write.js` verifies every write against the read-back before exiting 0, and a shortfall is its exit 5. Skills do not re-fetch pages to check writes; a clean exit 0 from the script is the evidence of a clean write.
 
-1. **Fetch the page back** with `notion-fetch`.
-2. **Compare length.** Measure the returned body against what was sent. Read-back is not byte-exact (native blocks reconstruct to slightly different markdown), so treat a shortfall past a few percent, or any shortfall concentrated at the tail, as a failed write, not as translation noise.
-3. **Scan the tail for the corruption signature.** All of these mean shear, never legitimate content:
-   - a literal `\n` in the body, or a bare `n` where a newline belongs (most visible inside fenced code blocks, which arrive as one run-on line)
-   - to-do items as escaped text (`- \[ \]`, `- \[x\]`) instead of real to-do blocks
-   - swallowed `*` characters: `{{fixture.*}}` arriving as `\{\{fixture.\}\}`
-   - orphaned `****` with nothing between the markers
-   - the body ending mid-sentence, mid-fence, or mid-block
-
-Corruption is **not mechanically recoverable**: the dropped characters are ambiguous, so a corrupted section has to be re-authored from source, not patched. On a hit, report the affected doc and slot to the caller, re-author the affected section from the content originally handed to `write_doc`, and rewrite it in smaller chunks. If a rewrite corrupts again at the same place, the per-tool argument cache is poisoned. Stop and tell the user to restart the session (see the never-interrupt rule in `skills/_shared/storage-resolution.md`); retrying inside the same session will keep failing.
+On exit 5, the write did not land whole. The source file still holds the true content, so recovery is mechanical: surface the script's message, then re-invoke `replace` with the same file (which overwrites the page wholesale). A repeated exit 5 on the same page is a real API-side problem to surface to the user, not something to retry silently.
 
 ## Read-back inverse (`read_artifact`)
 

@@ -14,8 +14,8 @@ By default Cadence keeps brainstorm stubs, designs, and plans as markdown folder
 
 Source code and git commits are unaffected. Only the Cadence artifacts (the docs, their frontmatter, and their checkboxes) move to Notion. In Notion mode Notion is canonical: there is no on-disk copy of a design or plan, and plan progress shows live on a Notion board as `/c-execute` ticks tasks off.
 
-<Aside type="note" title="Requires the official Notion MCP">
-Notion mode runs on Notion's official MCP ([developers.notion.com/guides/mcp](https://developers.notion.com/guides/mcp/overview)); Cadence ships no Notion code and stores no Notion token. It requires that specific MCP, because it relies on the MCP's documented block format to render callouts, cross-references, and diagrams as native Notion content. Its per-install server id is resolved at runtime, so nothing Notion-specific is pasted into config. If a repo is in Notion mode and the official Notion MCP is not found, Cadence stops with an actionable message. It never silently falls back to the filesystem.
+<Aside type="note" title="Requires the official Notion MCP and an integration token">
+Notion mode runs on Notion's official MCP ([developers.notion.com/guides/mcp](https://developers.notion.com/guides/mcp/overview)) for reads, queries, and property writes, and on a small bundled script that pushes doc bodies to Notion's REST API using a `NOTION_TOKEN` environment variable you provide. Cadence stores no Notion token anywhere: the MCP holds its own credential, and `NOTION_TOKEN` lives only in your environment. It requires that specific MCP because it relies on the MCP's documented block format to render callouts, cross-references, and diagrams as native Notion content; the MCP's per-install server id is resolved at runtime, so nothing Notion-specific is pasted into config. If a repo is in Notion mode and the official Notion MCP is not found, or `NOTION_TOKEN` is unset when a doc write is needed, Cadence stops with an actionable message. It never silently falls back to the filesystem.
 </Aside>
 
 ## Setup
@@ -23,7 +23,8 @@ Notion mode runs on Notion's official MCP ([developers.notion.com/guides/mcp](ht
 1. **Install the official Notion MCP.** Add Notion's official MCP ([developers.notion.com/guides/mcp](https://developers.notion.com/guides/mcp/overview)) to your session if it isn't already present. This is the specific MCP Notion mode requires.
 2. **Point at a root page.** In `.cadence/config.yaml`, set `storage.backend: notion` and `storage.notion.root_page` to a Notion page URL or id you own. Leave `storage.notion.designs_db` and `storage.notion.plans_db` empty.
 3. **Share the page with the integration.** In Notion, share that root page with the integration the official Notion MCP uses, so it can create databases and sub-pages under it. This grant is the one setup step Cadence cannot do for you.
-4. **Run any `/c-*` command.** On the first Notion-mode run, Cadence creates the two databases under the root page, writes their ids back into the committed `.cadence/config.yaml`, and reminds you to commit so the whole team shares them.
+4. **Create an internal integration and export its token.** Doc bodies are written by a bundled script over Notion's REST API, authenticated separately from the MCP. Create an internal integration at [notion.so/profile/integrations](https://www.notion.so/profile/integrations) with content read/insert/update capabilities, share the same root page with it, and export its token as `NOTION_TOKEN` in the environment Claude Code runs in. The token never goes in config.
+5. **Run any `/c-*` command.** On the first Notion-mode run, Cadence creates the two databases under the root page, writes their ids back into the committed `.cadence/config.yaml`, and reminds you to commit so the whole team shares them.
 
 See the [`storage` config keys](/cadence/reference/config/#storage) for the exact YAML. The entire `storage` block is team policy and belongs in the committed config, never in `.cadence/config.local.yaml`.
 
@@ -46,22 +47,18 @@ Cadence's callout and cross-reference conventions are semantic, and each backend
 
 The mapping is defined in `skills/_shared/notion-translation.md`. Plan checkboxes are the load-bearing case: they become real Notion to-do blocks so `/c-execute` can tick them live.
 
-## Long docs are written in chunks
+## Doc bodies are written by a script
 
-Cadence caps every Notion content write at roughly 8,000 characters and writes anything longer as a create-then-append sequence, splitting only on block boundaries. After the last chunk lands it fetches the page back and checks it: length against what was sent, plus a scan for the tell-tale signs of a truncated write. This is invisible in normal use: you write a design or plan as usual and the pages come out whole.
+Cadence writes every doc body with a bundled script (`scripts/notion-write.js`) that reads the content from a local file and pushes it to Notion's REST markdown endpoints in a single request, of any size. The script refuses a body carrying untranslated obsidian callout syntax, polls Notion's async task handling for large pages, retries rate limits, and verifies the read-back length before reporting success, so a clean exit is real evidence the page landed whole.
 
-The reason for it is client-side rather than anything about Notion. A large tool argument can be sheared while it streams, producing a call that succeeds while carrying a mangled tail, so a long page could land damaged with nothing anywhere reporting an error ([anthropics/claude-code#67765](https://github.com/anthropics/claude-code/issues/67765)). Reading the page back is the only way to catch it.
-
-<Aside type="caution" title="Don't press Escape during a write">
-Interrupting a content write is a reliable way to trigger the shear, and the corrupted argument is cached for the rest of the session, so one interrupted write can spoil every later one. If a write gets interrupted, restart the session before continuing and check anything written after the interruption. Corrupted content cannot be repaired mechanically: the affected section has to be written again.
-</Aside>
+The reason for the script is client-side rather than anything about Notion. A large tool argument can be sheared while it streams, producing a call that succeeds while carrying a mangled tail ([anthropics/claude-code#67765](https://github.com/anthropics/claude-code/issues/67765), still open). Earlier Cadence releases managed that risk by capping MCP content writes at roughly 8,000 characters, chunking longer docs, and checking every page by reading it back. The script removes the risk instead: the content travels from a file to Notion in a plain HTTP request and never rides in a streamed tool argument, so there is no cap, no chunking, and no session-poisoning failure mode. Interrupting a write is now harmless; the next write simply replaces the page wholesale.
 
 ## What changes and what does not
 
 Changes:
 
 - Designs, plans, and stubs live as Notion pages, not markdown folders. They lose git diff, blame, and PR review of the artifacts themselves; Notion's page history substitutes.
-- `/c-execute` writes plan progress to Notion. The PM (your main session) is the sole writer, ticking each task's to-do block and setting status and `base_sha` after the two-stage review. Notion mode requires network access through the MCP; there is no offline path.
+- `/c-execute` writes plan progress to Notion. The PM (your main session) is the sole writer, ticking each task's to-do block and setting status and `base_sha` after the two-stage review. Notion mode requires network access (the MCP for reads and properties, Notion's REST API for doc bodies); there is no offline path.
 
 Does not change:
 

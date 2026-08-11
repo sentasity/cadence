@@ -6,4 +6,4 @@ Skill and agent text in this repo must route every Cadence config read through `
 
 ## Tests
 
-`node --test 'scripts/*.test.js'` runs the script suites (`migrate-config.test.js`, `resolve-config.test.js`). Run it before any PR that touches `scripts/`.
+`node --test 'scripts/*.test.js'` runs the script suites (`migrate-config.test.js`, `resolve-config.test.js`, `notion-write.test.js`). Run it before any PR that touches `scripts/`.
