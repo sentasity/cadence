@@ -103,7 +103,7 @@ Obsidian-to-Notion-flavored-Markdown translation on the way in, the read-back in
 - New sub-page: `node "${CLAUDE_PLUGIN_ROOT}/scripts/notion-write.js" create --parent <parent-page-id> --title <title> --file <path> [--icon <emoji>]`
 - Replace a slot's content wholesale: `node "${CLAUDE_PLUGIN_ROOT}/scripts/notion-write.js" replace --page <page-id> --file <path>`
 
-**Contract (enforced by the script, not by prose).** On success the script prints a single-line JSON result (`ok`, `page_id`, `url`, `sent_chars`, `readback_chars`) and exits 0; a clean exit 0 IS evidence of a clean write, unlike the MCP path it replaces. Non-zero exits are hard stops the caller surfaces, never retries blindly:
+**Contract (enforced by the script, not by prose).** On success the script prints a single-line JSON result (`ok`, `page_id`, `url`, `sent_chars`, `readback_chars`) and exits 0; a clean exit 0 IS evidence of a clean write, unlike the MCP path it replaces. `url` is always present (both modes) and is the page's user-facing link: when reporting a write to the user, include it as a clickable link, exactly as an MCP result's URL used to surface in chat. Non-zero exits are hard stops the caller surfaces, never retries blindly:
 
 | Exit | Meaning |
 |---|---|

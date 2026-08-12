@@ -228,7 +228,7 @@ async function main() {
 
   try {
     let pageId;
-    let url = null;
+    let url;
     if (args.mode === 'create') {
       const createBody = {
         parent: { type: 'page_id', page_id: args.parent },
@@ -237,10 +237,13 @@ async function main() {
       if (args.icon) createBody.icon = { type: 'emoji', emoji: args.icon };
       const created = (await apiRequest(base, token, 'POST', '/v1/pages', createBody)).json;
       pageId = created.id;
-      url = created.url || null;
+      url = created.url;
     } else {
       pageId = args.page;
     }
+    // Always report a link: the caller relays it to the user, so a write is
+    // never URL-less. notion.so/<id-without-dashes> is canonical and redirects.
+    if (!url) url = `https://www.notion.so/${pageId.replace(/-/g, '')}`;
 
     const readback = await replaceContent(base, token, pageId, markdown);
     const got = readback.markdown || '';
