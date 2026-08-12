@@ -2,6 +2,10 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.17.1 (2026-08-11)
+
+Notion writes always hand back a page link again. The script's replace mode returned "url": null (the REST PATCH response carries no URL), so sessions stopped citing links to the pages they wrote, an information regression versus the MCP write path, whose results always carried the URL. Both modes now always populate "url" (derived from the page id when the API response has none), and storage-resolution.md's write contract tells the caller to relay it to the user as a clickable link. Also fixes the test suite inheriting the host machine's NOTION_TOKEN_CMD, which broke the missing-token test on any machine with real token wiring configured.
+
 ## v0.17.0 (2026-08-11)
 
 The Notion write token no longer has to live in a plaintext file. `scripts/notion-write.js` gains a `NOTION_TOKEN_CMD` fallback: when `NOTION_TOKEN` is unset, the script executes that command and uses its stdout as the token, so the secret can stay in a keychain or password manager (`security find-generic-password -s notion-pat -w`, `op read …`) while config carries only the lookup command. `NOTION_TOKEN` wins when both are set; a failing or empty command, or neither variable set, is the usual exit-2 hard stop with an actionable message. Documented in `skills/_shared/storage-resolution.md`'s authentication boundary and the notion-mode setup steps; 4 new tests (83 total).

@@ -110,6 +110,7 @@ function writeTmp(content) {
 function runCli(argv, { base, token = 'secret-token' } = {}) {
   const env = { ...process.env, NOTION_TOKEN: token, NOTION_WRITE_POLL_BUDGET_MS: '5000' };
   if (token === null) delete env.NOTION_TOKEN;
+  delete env.NOTION_TOKEN_CMD; // never inherit the host machine's real token wiring
   if (base) env.NOTION_API_BASE = base;
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [SCRIPT, ...argv], { env });
@@ -165,6 +166,7 @@ test('cli: replace happy path verifies via the sync response markdown', async ()
     assert.strictEqual(out.ok, true);
     assert.strictEqual(out.mode, 'replace');
     assert.strictEqual(out.page_id, 'def456');
+    assert.strictEqual(out.url, 'https://www.notion.so/def456'); // derived from the page id
     assert.strictEqual(out.sent_chars, body.length);
     const patch = srv.seen.find((s) => s.method === 'PATCH');
     assert.strictEqual(patch.body.type, 'replace_content');
