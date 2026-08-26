@@ -47,6 +47,14 @@ When the task references a function defined in a file not in your `Reads:` list,
 
 Never say just "I need more context." Be specific. The PM uses this to decide whether to add files and re-dispatch you, grep + add the adjacent files, or surface to the user.
 
+## Visual artifacts (mockup and visual contract)
+
+When the task's `Reads:` carries a `mockup:NN` citation (a mockup version of the linked design), resolve it before starting work: call `skills/_shared/storage-resolution.md` (read_mockup) to get a local file (on the notion backend that is a `notion-download-attachment` fetch) and open it in source form. For the surfaces the task touches, implement what the mockup shows.
+
+Precedence when sources disagree on look or interaction: the `95-visual-contract` doc's text wins over the mockup, and the mockup wins over the design narrative. A visual conflict this ordering cannot resolve is a `NEEDS_CONTEXT` return, never a guess.
+
+An escape-hatch citation (a recorded local file path where a stored version would be) that does not exist on this machine is a normal missing-`Reads:` blocker: return `BLOCKED`, naming the recorded path and that escape-hatch mockups are machine-local.
+
 ## Report format (mandatory — PM enforces)
 
 Every return opens with one plain-English sentence stating what's done (or what's broken) and why it matters, written for someone who cannot read code. Then the structured detail.
