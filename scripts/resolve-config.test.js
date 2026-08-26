@@ -228,3 +228,27 @@ test('cli: missing defaults exits 2 (script copied beside no defaults dir)', () 
   assert.strictEqual(r.status, 2);
   assert.match(r.stderr, /plugin defaults not found/);
 });
+
+test('cli: mockups.dir ships as null, so an unset repo is asked rather than guessed at', () => {
+  const root = makeRepo({ '.cadence/config.yaml': 'config_version: 8\n' });
+  const r = runCli([], root);
+  assert.strictEqual(r.status, 0);
+  assert.strictEqual(JSON.parse(r.stdout).config.mockups.dir, null);
+});
+
+test('cli: mockups.dir is settable from the local layer without a team-policy notice', () => {
+  const root = makeRepo({
+    '.cadence/config.yaml': 'config_version: 8\n',
+    '.cadence/config.local.yaml': 'mockups:\n  dir: /tmp/my-mockups\n',
+  });
+  const r = runCli([], root);
+  assert.strictEqual(r.status, 0);
+  const out = JSON.parse(r.stdout);
+  assert.strictEqual(out.config.mockups.dir, '/tmp/my-mockups');
+  // The path is machine-specific, so the local layer is its intended home:
+  // overriding it must not be reported as diverging from team policy.
+  assert.deepStrictEqual(
+    out.team_policy_overrides.filter((o) => o.key.startsWith('mockups.')),
+    []
+  );
+});

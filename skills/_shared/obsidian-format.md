@@ -42,7 +42,7 @@ Column layouts (`<columns>`, notion-only) are allowed for short side-by-side com
 
 ## Reserved file slots
 
-**Design folder:** `00-overview`, `00a-plain-english`, `95-visual-contract` (opt-in), `97-infrastructure-inventory`, `98-architecture-diagrams`, `99-out-of-scope`. A design taking the 95 slot also gets a `mockups/` subfolder on the filesystem backend (`mockups/NN-{kebab-slug}.html`, zero-padded, append-only).
+**Design folder:** `00-overview`, `00a-plain-english`, `95-visual-contract` (opt-in), `97-infrastructure-inventory`, `98-architecture-diagrams`, `99-out-of-scope`. A design taking the 95 slot also stores mockup HTML files (`NN-{kebab-slug}.html`, zero-padded, append-only) in its resolved mockup directory: the design's own `mockups/` subfolder by default on the filesystem backend, or wherever `mockups.dir` points. Mockups are local files on every backend; see `skills/_shared/storage-resolution.md` § Mockup directory resolution.
 
 **Plan folder:** `00-overview`, `96-validation`, `97-infrastructure-inventory` (shell), `98-architecture-diagrams` (shell), `99-out-of-scope`.
 

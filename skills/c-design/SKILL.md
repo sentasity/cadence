@@ -22,7 +22,7 @@ You materialize a design folder from the `00-overview.md` stub. You write one ch
     00a-plain-english.md
     01-<topic>.md, 02-…
     95-visual-contract.md            # opt-in
-    mockups/01-<slug>.html, 02-…     # with 95 (filesystem view)
+    mockups/01-<slug>.html, 02-…     # with 95; default location, see mockups.dir
     97-infrastructure-inventory.md   # opt-in
     98-architecture-diagrams.md      # opt-in
     99-out-of-scope.md
@@ -53,15 +53,17 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 
 ## Visual contract and mockups (the 95 slot)
 
-`95-visual-contract` is an opt-in reserved slot for designs with significant user-facing UI/UX work: it declares the governed surfaces, indexes every mockup version, and carries the visual contract prose. Mockups are single self-contained HTML files with no build step (CSS/JS inlined; the only sanctioned external channel is a Google Fonts stylesheet with a declared fallback stack, because the Notion embed sandbox blocks every other external channel), authored at the surface's expected final width, stored via `skills/_shared/storage-resolution.md` (write_mockup) and read back via read_mockup.
+`95-visual-contract` is an opt-in reserved slot for designs with significant user-facing UI/UX work: it declares the governed surfaces, indexes every mockup version, and carries the visual contract prose. Mockups are single self-contained HTML files with no build step (CSS/JS inlined; the only sanctioned external channel is a web-font stylesheet with a declared fallback stack), authored at the surface's expected final width, stored via `skills/_shared/storage-resolution.md` (write_mockup) and read back via read_mockup. Self-containment is what makes a mockup a durable contract: it has to render the same when an implementer opens it weeks later, offline, on another machine, long after any CDN has moved on.
+
+Mockups are **local files on every storage backend**, including notion. There is no upload, no attachment, and no embedded preview; the 95 version index records each version's `file://` URL, and the reviewer opens it in a real browser. Where the files land is `mockups.dir` (see `skills/_shared/storage-resolution.md` § Mockup directory resolution): on the filesystem backend it defaults to the design's own `mockups/` subfolder, and on the notion backend, where there is no design folder, `/c-design` asks once before authoring version `01` and offers to persist the answer to `.cadence/config.local.yaml`.
 
 **Opt-in trigger.** As-needed, never default. During writing-flow step 1, when the overview describes significant user-facing UI/UX work and the doc index lacks `95-visual-contract`, offer it in the doc-index confirmation, the same way 97/98 opt-ins surface. Significance is the bar: a mostly-backend design with an incidental UI touch gets no offer; when the call is genuinely unclear, ask the user rather than deciding either way. A yes adds `[[95-visual-contract]]` to the doc index; a no leaves the design mockup-free with no further prompts. A brainstorm stub arriving with the slot already in its doc index counts as the opt-in taken.
 
 **Iteration loop** (runs alongside doc writing; conversational, not gated; the 95 doc itself is written via write_doc like any slot):
 
 1. **Author a version.** Write the HTML (self-contained, mockup content only — no rationale, decisions, vocabulary, or open-questions sections) and store it via write_mockup as the next `NN` (zero-padded, starting `01`). Version `01` may adopt a brainstorm-phase sketch (see Brainstorm boundary).
-2. **Add the index row.** Record the version in 95's version index: date, what changed, what drove it. On notion, place the version's embed; for an escape-hatch version, record the local path instead.
-3. **Present for feedback.** Point the user at the artifact: the vault file path on the filesystem backend, the live embed on notion.
+2. **Add the index row.** Record the version in 95's version index: date, what changed, what drove it, and the version's `file://` URL. Same on both backends.
+3. **Present for feedback.** Point the user at the file, by path and by `file://` URL, so they can open it in a browser. Note that a browser will refuse to follow a `file://` link clicked from a web page (Notion's included), so the URL is there to be copied when clicking does nothing.
 4. **Iterate or settle.** Substantive feedback produces a new `NN` (append-only: a version shown to a reviewer is never edited in place). Visual agreements land in 95's contract sections; decisions with rationale land in the overview's decisions log.
 
 **Design-system detection.** Before authoring version `01`, resolve 95's source-of-truth declaration. Detect candidates: design token files, a Tailwind config, CSS custom-property sheets, a shared component library (grep-and-look heuristics, not a fixed manifest). One candidate: use it and author the mockup against its tokens. Ambiguous or none found: ask via `AskUserQuestion` (options: each candidate found, or `none`); with `none`, the mockup's own concrete values become the contract and 95's table names only the load-bearing ones.
@@ -94,9 +96,9 @@ Beyond callouts, generators should reach for the readability constructs (equatio
 6. **Ambiguity check** — could any decision be read two ways? Sharpen inline.
 6a. **Readability-construct check** — scan for prose doing a construct's job: a multi-term formula or conditional definition written as a run-on sentence (should be an equation block), a flow/algorithm/state machine narrated step-by-step (should be a mermaid diagram), a long edge-case matrix or rejected-alternatives dump inline in the narrative (should be collapsible detail). Convert per `skills/_shared/obsidian-format.md` § Readability constructs — judgment-based, no decoration.
 7. **Callout-form check (notion backend only)** — scan the read-back for escaped callout remnants (`\[!` or a quote block starting `> [!`): either means a callout reached Notion in obsidian syntax and rendered as literal text. Rewrite that callout as a native `<callout>` block per `skills/_shared/notion-translation.md`.
-8. **Mockup self-containment scan (95 designs only)** — the current mockup HTML has no external `script src` reference, no external image reference, and no external stylesheet other than a Google Fonts link with a declared fallback stack (the three channels the sandbox was measured to block); rewrite violations, or route to the escape hatch with the user's consent when the blocked capability is genuinely required.
+8. **Mockup self-containment scan (95 designs only)** — the current mockup HTML has no external `script src` reference, no external image reference, and no external stylesheet other than a web-font link with a declared fallback stack. Rewrite violations by inlining: a CDN-loaded CSS framework is the common case, and the fix is to build the framework's purged stylesheet once and paste it into a `<style>` block. A mockup that still depends on the network is not a contract, because it renders differently the day the dependency changes.
 9. **Mockup content-scope check (95 designs only)** — no decided/vocabulary/explorations/open-questions sections inside the HTML.
-10. **Version-index integrity (95 designs only)** — every `NN` that exists as an artifact has an index row; every index row's artifact exists (file present, attachment fetchable, or escape-hatch path recorded); rows are append-only ordered.
+10. **Version-index integrity (95 designs only)** — every `NN` file in the mockup directory has an index row, and every index row names a file that exists on this machine with a `file://` URL that matches its path; rows are append-only ordered.
 11. **95 structure check (95 designs only)** — the 95 doc carries every required section in order: Surfaces (≥1 entry), Source of truth, Version index, Freeze record line, then the contract sections (Layout anchors, Control choices, Interaction idioms, Default states).
 
 Fix inline. No re-review needed.

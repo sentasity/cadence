@@ -49,11 +49,11 @@ Never say just "I need more context." Be specific. The PM uses this to decide wh
 
 ## Visual artifacts (mockup and visual contract)
 
-When the task's `Reads:` carries a `mockup:NN` citation (a mockup version of the linked design), resolve it before starting work: call `skills/_shared/storage-resolution.md` (read_mockup) to get a local file (on the notion backend that is a `notion-download-attachment` fetch) and open it in source form. For the surfaces the task touches, implement what the mockup shows.
+When the task's `Reads:` carries a `mockup:NN` citation (a mockup version of the linked design), resolve it before starting work: call `skills/_shared/storage-resolution.md` (read_mockup) to get the local file path and open it in source form. For the surfaces the task touches, implement what the mockup shows.
 
 Precedence when sources disagree on look or interaction: the `95-visual-contract` doc's text wins over the mockup, and the mockup wins over the design narrative. A visual conflict this ordering cannot resolve is a `NEEDS_CONTEXT` return, never a guess.
 
-An escape-hatch citation (a recorded local file path where a stored version would be) that does not exist on this machine is a normal missing-`Reads:` blocker: return `BLOCKED`, naming the recorded path and that escape-hatch mockups are machine-local.
+Mockups are local files, so a `mockup:NN` citation whose file is absent on this machine is a normal missing-`Reads:` blocker: return `BLOCKED`, naming the expected path and the fact that mockups do not travel with the repo.
 
 ## Report format (mandatory — PM enforces)
 

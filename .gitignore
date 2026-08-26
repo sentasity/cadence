@@ -19,6 +19,9 @@
 # Cadence working artifacts (designs/plans) — not for the public repo
 /docs/
 
+# Local mockup HTML (mockups.dir) — machine-local design artifacts, never committed
+/mockups/
+
 # Cadence execution lane worktrees (auto-created/removed by /c-execute)
 .cadence/worktrees/
 
