@@ -1,13 +1,17 @@
 ---
 // Starlight Footer override: renders the default footer (pagination, meta),
-// then a small muted credit line. Registered in astro.config.mjs under
-// starlight({ components: { Footer } }).
+// then a small muted credit line carrying the build credit and the license.
+// The license links to the repo's LICENSE file rather than restating MIT on
+// the site, so there is only ever one copy of the text. Registered in
+// astro.config.mjs under starlight({ components: { Footer } }).
 import Default from '@astrojs/starlight/components/Footer.astro';
 ---
 
 <Default><slot /></Default>
 <div class="sentasity-credit">
   Built by <a href="https://sentasity.com">Sentasity</a>
+  <span aria-hidden="true">·</span>
+  <a href="https://github.com/sentasity/cadence/blob/main/LICENSE">MIT licensed</a>
 </div>
 
 <style>
