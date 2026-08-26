@@ -9,9 +9,9 @@ You translate an approved design into an execution-ordered plan folder. Plans ar
 
 ## Entry contract
 
-**Requires:** the design artifact for `{yyyy-mm-dd-slug}` with `status: approved`. Read the entire design (overview + every child + 99-OOS) via `skills/_shared/storage-resolution.md` (read_artifact) before drafting; do not assume a `<paths.designs>/…` folder path.
+**Requires:** the design artifact for `{yyyy-mm-dd-slug}` with `status: approved`. Read the entire design (overview + every child + 99-OOS) via `skills/_shared/storage-resolution.md` (read_artifact) before drafting; do not assume a `<paths.designs>/…` folder path. When the design carries a `95-visual-contract` slot, the read includes it, and the planner also fetches the frozen mockup via `skills/_shared/storage-resolution.md` (read_mockup).
 
-**Refuses when:** design status is `draft` or `in-review` (tell user to finish/approve the design first); or when a plan artifact with the same slug already exists at non-draft status — check via `skills/_shared/storage-resolution.md` (artifact_exists) — which would overwrite.
+**Refuses when:** design status is `draft` or `in-review` (tell user to finish/approve the design first); or when the design's `95-visual-contract` freeze record still reads `frozen: none` (malformed approved design; point the user back to `/c-design`'s approval step); or when a plan artifact with the same slug already exists at non-draft status — check via `skills/_shared/storage-resolution.md` (artifact_exists) — which would overwrite.
 
 ## One design → one plan
 
@@ -65,6 +65,7 @@ Each phase file becomes the unit of worktree dispatch and the unit of per-lane r
 - **Design link** — `[[../../designs/{slug}/00-overview]]`.
 - **Plan Index** — one line per child: `[[01-foo]] — Tasks 1.1-1.M: <summary>`.
 - **File Map** — every file the plan creates or modifies, one line per file, with the change summary.
+- **Surface map** — only when the linked design has a `95-visual-contract` slot: one line per surface declared in 95's Surfaces section, `<surface name>: <file list>`, mapping the surface to the concrete files that implement it, ground-truthed per "Codebase verification". Recording the mapping is what makes the visual `Reads:` attachment below machine-checkable.
 
 No "Background," "Why," or plain-English. Those live in the design.
 
@@ -134,6 +135,10 @@ Every file path, line range, symbol, and import a plan cites must be ground-trut
 
 **Defense in depth:** `/c-audit`'s `code-behind-checkbox` audit still runs at completion as a backstop. This upstream verification is primary; the audit catches anything that slipped through.
 
+## Visual `Reads:` attachment (95 designs only)
+
+For every task whose `Touches:` intersects the Surface map's file set, automatically append two entries to that task's `Reads:`: the design's `95-visual-contract` doc (cited the way design docs are cited on the resolved backend: a `<paths.designs>/<slug>/95-visual-contract.md` path on the filesystem, the design's "95 Visual Contract" sub-page reference on notion), and the frozen mockup version, cited as `mockup:NN` against the design slug (the implementer resolves it via read_mockup). No new task field exists; `Reads:` already carries the read-before-writing contract. For an escape-hatch version, the citation is the recorded local path, and its machine-local caveat travels with it: a lane on another machine reports the missing file as a normal missing-`Reads:` blocker rather than guessing.
+
 ## `96-validation.md` — three explicit categories
 
 Walked by `/c-validate` only after the plan is `implemented` and the user has deployed. Three required sections:
@@ -188,8 +193,9 @@ Inline mode replaces items 2-3: the main session writes each remaining doc itsel
 8. **Callout-form check (notion backend only)** — scan the read-back for escaped callout remnants (`\[!` or a quote block starting `> [!`): either means a callout reached Notion in obsidian syntax and rendered as literal text. Rewrite that callout as a native `<callout>` block per `skills/_shared/notion-translation.md`.
 9. **Fragmented-file detector** — flag any phase file with 1–2 tasks whose `Reads:` core overlaps a sibling phase file's by >50% (candidate for consolidation). Surface to the user via `AskUserQuestion`; never auto-merge.
 10. **Mixed-topic detector** — flag any phase file whose tasks pairwise share zero `Reads:` (candidate-multi-topic). Surface to the user via `AskUserQuestion`; never auto-split.
+11. **Visual-citation check (95 designs only)** — every task whose `Touches:` intersects the Surface map carries both visual citations in `Reads:`; no task outside the intersection carries a `mockup:NN` citation (the contract doc may be cited freely where useful).
 
-Fix items 1–8 inline. For items 9 and 10, surface candidates to the user — consolidate / split / leave-as-is is the user's call, not `/c-plan`'s. No re-review needed.
+Fix items 1–8 and 11 inline. For items 9 and 10, surface candidates to the user — consolidate / split / leave-as-is is the user's call, not `/c-plan`'s. No re-review needed.
 
 ## What `/c-plan` doesn't do
 
