@@ -21,12 +21,14 @@ You materialize a design folder from the `00-overview.md` stub. You write one ch
     00-overview.md
     00a-plain-english.md
     01-<topic>.md, 02-…
+    95-visual-contract.md            # opt-in
+    mockups/01-<slug>.html, 02-…     # with 95 (filesystem view)
     97-infrastructure-inventory.md   # opt-in
     98-architecture-diagrams.md      # opt-in
     99-out-of-scope.md
 ```
 
-Reserved slots: 00-overview, 00a-plain-english, 97-infrastructure-inventory, 98-architecture-diagrams, 99-out-of-scope. Refuse to scaffold conflicting names. Each slot is materialized per `skills/_shared/storage-resolution.md` (write_doc), which the layer maps to a `<slot>.md` file on the filesystem backend and to a titled sub-page on the notion backend; the folder layout above is the filesystem view only.
+Reserved slots: 00-overview, 00a-plain-english, 95-visual-contract, 97-infrastructure-inventory, 98-architecture-diagrams, 99-out-of-scope. Refuse to scaffold conflicting names (a conflicting `95-*` name included). Each slot is materialized per `skills/_shared/storage-resolution.md` (write_doc), which the layer maps to a `<slot>.md` file on the filesystem backend and to a titled sub-page on the notion backend; the folder layout above is the filesystem view only.
 
 ## Frontmatter
 
@@ -34,7 +36,7 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 
 ## Writing flow
 
-1. **Read the stub** via `skills/_shared/storage-resolution.md` (read_artifact). List the proposed doc index. Confirm with user: *"Write `00a-plain-english.md` next, then `01-<x>`, `02-<y>`. Sound right?"* Then ask the generation-mode question (see Generation mode). Config values (`authoring.*`) come from running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (contract in `skills/_shared/config-resolution.md`; never read config files directly).
+1. **Read the stub** via `skills/_shared/storage-resolution.md` (read_artifact). List the proposed doc index. When the overview describes significant user-facing UI/UX work and the doc index lacks `95-visual-contract`, offer the slot in the same confirmation (see Visual contract and mockups); when significance is genuinely unclear, ask; a mostly-backend design with an incidental UI touch gets no offer. Confirm with user: *"Write `00a-plain-english.md` next, then `01-<x>`, `02-<y>`. Sound right?"* Then ask the generation-mode question (see Generation mode). Config values (`authoring.*`) come from running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (contract in `skills/_shared/config-resolution.md`; never read config files directly).
 2. **Write child docs per chosen mode.** Each doc is written to its reserved slot per `skills/_shared/storage-resolution.md` (write_doc); do not open or path-compute a `<paths.designs>/…/<slot>.md` file.
    - **All-at-once:** dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`). Every generator prompt names the resolved storage backend and the matching syntax reference: `skills/_shared/obsidian-format.md` always, **plus `skills/_shared/notion-translation.md` when the backend is notion** (so generators author callouts as native `<callout>` blocks, not obsidian syntax). After all complete, dispatch `cadence-doc-consistency` once over the set for a consistency sweep (see Generation mode). Then generate `00a-plain-english.md` last.
    - **One-by-one:** write one child doc, then proceed to step 3.
@@ -47,7 +49,24 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 8. **Resolve cross-references.** After every doc in the artifact exists, call `skills/_shared/storage-resolution.md` (resolve_links) once over the artifact to turn `[[…]]` wikilinks into Notion page mentions. Backend-neutral: a no-op on the filesystem backend, the mention second pass on notion (see `skills/_shared/notion-translation.md`).
 9. **Self-review pass** (see below). Read the written docs back via `skills/_shared/storage-resolution.md` (read_artifact) and run a final pass over the whole artifact.
 10. **Flip status to `in-review`** per `skills/_shared/storage-resolution.md` (set_status), which also bumps `updated:`. Print: *"Design ready for review. Walk through it and tell me when to mark it `approved`."*
-11. **Status `approved`.** User-driven only. User says "approved" → flip status per `skills/_shared/storage-resolution.md` (set_status) → print: *"Run `/c-plan` to write the implementation plan."*
+11. **Status `approved`.** User-driven only. User says "approved" → flip status per `skills/_shared/storage-resolution.md` (set_status); when the design has a `95-visual-contract` slot, rewrite its freeze record from `frozen: none` to `frozen: NN` (the latest version) via write_doc in the same moment: an approved design with a 95 slot always names a frozen version, the invariant `/c-plan` relies on. Post-approval mockup changes are design drift under the existing drift rules, never a silent new version. Then print: *"Run `/c-plan` to write the implementation plan."*
+
+## Visual contract and mockups (the 95 slot)
+
+`95-visual-contract` is an opt-in reserved slot for designs with significant user-facing UI/UX work: it declares the governed surfaces, indexes every mockup version, and carries the visual contract prose. Mockups are single self-contained HTML files with no build step (CSS/JS inlined; the only sanctioned external channel is a Google Fonts stylesheet with a declared fallback stack, because the Notion embed sandbox blocks every other external channel), authored at the surface's expected final width, stored via `skills/_shared/storage-resolution.md` (write_mockup) and read back via read_mockup.
+
+**Opt-in trigger.** As-needed, never default. During writing-flow step 1, when the overview describes significant user-facing UI/UX work and the doc index lacks `95-visual-contract`, offer it in the doc-index confirmation, the same way 97/98 opt-ins surface. Significance is the bar: a mostly-backend design with an incidental UI touch gets no offer; when the call is genuinely unclear, ask the user rather than deciding either way. A yes adds `[[95-visual-contract]]` to the doc index; a no leaves the design mockup-free with no further prompts. A brainstorm stub arriving with the slot already in its doc index counts as the opt-in taken.
+
+**Iteration loop** (runs alongside doc writing; conversational, not gated; the 95 doc itself is written via write_doc like any slot):
+
+1. **Author a version.** Write the HTML (self-contained, mockup content only — no rationale, decisions, vocabulary, or open-questions sections) and store it via write_mockup as the next `NN` (zero-padded, starting `01`). Version `01` may adopt a brainstorm-phase sketch (see Brainstorm boundary).
+2. **Add the index row.** Record the version in 95's version index: date, what changed, what drove it. On notion, place the version's embed; for an escape-hatch version, record the local path instead.
+3. **Present for feedback.** Point the user at the artifact: the vault file path on the filesystem backend, the live embed on notion.
+4. **Iterate or settle.** Substantive feedback produces a new `NN` (append-only: a version shown to a reviewer is never edited in place). Visual agreements land in 95's contract sections; decisions with rationale land in the overview's decisions log.
+
+**Design-system detection.** Before authoring version `01`, resolve 95's source-of-truth declaration. Detect candidates: design token files, a Tailwind config, CSS custom-property sheets, a shared component library (grep-and-look heuristics, not a fixed manifest). One candidate: use it and author the mockup against its tokens. Ambiguous or none found: ask via `AskUserQuestion` (options: each candidate found, or `none`); with `none`, the mockup's own concrete values become the contract and 95's table names only the load-bearing ones.
+
+**Brainstorm boundary.** `/c-brainstorm` stays artifact-free: a sketch produced during brainstorming is scratch (untracked, unnumbered) until this skill adopts it as version `01` via write_mockup. `/c-design` is the only skill that calls write_mockup.
 
 ## Generation mode
 
@@ -75,6 +94,10 @@ Beyond callouts, generators should reach for the readability constructs (equatio
 6. **Ambiguity check** — could any decision be read two ways? Sharpen inline.
 6a. **Readability-construct check** — scan for prose doing a construct's job: a multi-term formula or conditional definition written as a run-on sentence (should be an equation block), a flow/algorithm/state machine narrated step-by-step (should be a mermaid diagram), a long edge-case matrix or rejected-alternatives dump inline in the narrative (should be collapsible detail). Convert per `skills/_shared/obsidian-format.md` § Readability constructs — judgment-based, no decoration.
 7. **Callout-form check (notion backend only)** — scan the read-back for escaped callout remnants (`\[!` or a quote block starting `> [!`): either means a callout reached Notion in obsidian syntax and rendered as literal text. Rewrite that callout as a native `<callout>` block per `skills/_shared/notion-translation.md`.
+8. **Mockup self-containment scan (95 designs only)** — the current mockup HTML has no external `script src` reference, no external image reference, and no external stylesheet other than a Google Fonts link with a declared fallback stack (the three channels the sandbox was measured to block); rewrite violations, or route to the escape hatch with the user's consent when the blocked capability is genuinely required.
+9. **Mockup content-scope check (95 designs only)** — no decided/vocabulary/explorations/open-questions sections inside the HTML.
+10. **Version-index integrity (95 designs only)** — every `NN` that exists as an artifact has an index row; every index row's artifact exists (file present, attachment fetchable, or escape-hatch path recorded); rows are append-only ordered.
+11. **95 structure check (95 designs only)** — the 95 doc carries every required section in order: Surfaces (≥1 entry), Source of truth, Version index, Freeze record line, then the contract sections (Layout anchors, Control choices, Interaction idioms, Default states).
 
 Fix inline. No re-review needed.
 

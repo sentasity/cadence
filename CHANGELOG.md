@@ -2,6 +2,21 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.18.0 (2026-08-25)
+
+Mockups become first-class design artifacts. A design with significant user-facing UI/UX work can opt into a new reserved slot, `95-visual-contract`, holding the surfaces the mockups govern, an append-only version index (what changed, which feedback drove it), a source-of-truth declaration, a freeze record stamped at approval, and the contract prose an implementer follows when code and mockup disagree. Mockups are single self-contained HTML files (the Notion embed sandbox blocks external scripts, fetch, and images, measured live), stored inside the design on every backend: a `mockups/NN-<slug>.html` folder in the vault on the filesystem backend, an uploaded attachment rendered as a live interactive `<embed>` on the notion backend, with a machine-local escape-hatch path for mockups that genuinely need a blocked capability.
+
+### Added
+
+- **`write_mockup` / `read_mockup`** in `skills/_shared/storage-resolution.md`: backend-agnostic mockup storage. The notion write path uploads via `notion-create-attachment` and always verifies by downloading the attachment back and comparing against the source (the multipart upload flow is WAF-blocked from CLI clients and is not used); reads fetch via `notion-download-attachment` to a local file. Escape-hatch versions record a user-chosen persistent local path instead.
+- **`/c-design` mockup workflow**: an as-needed opt-in offer (significant UI/UX only; asks when significance is unclear; never raised for incidental UI), a conversational append-only mockup iteration loop, design-system detection feeding the source-of-truth declaration, an approval step that freezes the mockup version in the same gesture as the `approved` flip, and four mockup self-review checks (self-containment, content scope, version-index integrity, 95 structure).
+- **`/c-plan` wiring**: reads the 95 slot and frozen mockup at entry (refusing a `frozen: none` approved design), records a Surface map in the plan overview, automatically attaches the visual contract and `mockup:NN` citation to the `Reads:` of every task touching a mapped file, and enforces the attachment in self-review.
+- **Agent expectations**: `cadence-implementer` resolves `mockup:NN` via read_mockup, builds what the mockup shows, and applies the contract-over-mockup-over-narrative precedence (NEEDS_CONTEXT on unresolvable visual conflicts; BLOCKED on a machine-local escape-hatch path that is absent); `cadence-spec-reviewer` includes the visual contract in its spec baseline for tasks carrying the citations.
+
+### Changed
+
+- **`skills/_shared/obsidian-format.md`**: the design-folder reserved-slot list gains `95-visual-contract` (opt-in) and the filesystem `mockups/` subfolder.
+
 ## v0.17.1 (2026-08-11)
 
 Notion writes always hand back a page link again. The script's replace mode returned "url": null (the REST PATCH response carries no URL), so sessions stopped citing links to the pages they wrote, an information regression versus the MCP write path, whose results always carried the URL. Both modes now always populate "url" (derived from the page id when the API response has none), and storage-resolution.md's write contract tells the caller to relay it to the user as a clickable link. Also fixes the test suite inheriting the host machine's NOTION_TOKEN_CMD, which broke the missing-token test on any machine with real token wiring configured.
