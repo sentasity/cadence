@@ -49,7 +49,7 @@ See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child do
 8. **Resolve cross-references.** After every doc in the artifact exists, call `skills/_shared/storage-resolution.md` (resolve_links) once over the artifact to turn `[[…]]` wikilinks into Notion page mentions. Backend-neutral: a no-op on the filesystem backend, the mention second pass on notion (see `skills/_shared/notion-translation.md`).
 9. **Self-review pass** (see below). Read the written docs back via `skills/_shared/storage-resolution.md` (read_artifact) and run a final pass over the whole artifact.
 10. **Flip status to `in-review`** per `skills/_shared/storage-resolution.md` (set_status), which also bumps `updated:`. Print: *"Design ready for review. Walk through it and tell me when to mark it `approved`."*
-11. **Status `approved`.** User-driven only. User says "approved" → flip status per `skills/_shared/storage-resolution.md` (set_status) → print: *"Run `/c-plan` to write the implementation plan."*
+11. **Status `approved`.** User-driven only. User says "approved" → flip status per `skills/_shared/storage-resolution.md` (set_status); when the design has a `95-visual-contract` slot, rewrite its freeze record from `frozen: none` to `frozen: NN` (the latest version) via write_doc in the same moment: an approved design with a 95 slot always names a frozen version, the invariant `/c-plan` relies on. Post-approval mockup changes are design drift under the existing drift rules, never a silent new version. Then print: *"Run `/c-plan` to write the implementation plan."*
 
 ## Visual contract and mockups (the 95 slot)
 
@@ -94,6 +94,10 @@ Beyond callouts, generators should reach for the readability constructs (equatio
 6. **Ambiguity check** — could any decision be read two ways? Sharpen inline.
 6a. **Readability-construct check** — scan for prose doing a construct's job: a multi-term formula or conditional definition written as a run-on sentence (should be an equation block), a flow/algorithm/state machine narrated step-by-step (should be a mermaid diagram), a long edge-case matrix or rejected-alternatives dump inline in the narrative (should be collapsible detail). Convert per `skills/_shared/obsidian-format.md` § Readability constructs — judgment-based, no decoration.
 7. **Callout-form check (notion backend only)** — scan the read-back for escaped callout remnants (`\[!` or a quote block starting `> [!`): either means a callout reached Notion in obsidian syntax and rendered as literal text. Rewrite that callout as a native `<callout>` block per `skills/_shared/notion-translation.md`.
+8. **Mockup self-containment scan (95 designs only)** — the current mockup HTML has no external `script src` reference and no external stylesheet other than a Google Fonts link with a declared fallback stack; rewrite violations, or route to the escape hatch with the user's consent when the blocked capability is genuinely required.
+9. **Mockup content-scope check (95 designs only)** — no decided/vocabulary/explorations/open-questions sections inside the HTML.
+10. **Version-index integrity (95 designs only)** — every `NN` that exists as an artifact has an index row; every index row's artifact exists (file present, attachment fetchable, or escape-hatch path recorded); rows are append-only ordered.
+11. **95 structure check (95 designs only)** — the 95 doc carries every required section in order: Surfaces (≥1 entry), Source of truth, Version index, Freeze record line, then the contract sections (Layout anchors, Control choices, Interaction idioms, Default states).
 
 Fix inline. No re-review needed.
 
