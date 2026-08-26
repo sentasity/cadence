@@ -33,7 +33,7 @@ authoring:
   design_mode: all-at-once
 ```
 
-Keys intended for local override are the per-person, per-machine ones: `execute.max_parallel`, `execute.worktree_confirm`, `authoring.max_parallel`, `authoring.design_mode`, `authoring.plan_mode`, and the `validate.browser_*` and `advisors.*` keys. Everything else (paths, statuses, audits, plan policy, the whole `worktree:` section) is team policy: a local override of those still works, but Cadence prints a one-line notice so the divergence is never silent.
+Keys intended for local override are the per-person, per-machine ones: `execute.max_parallel`, `execute.worktree_confirm`, `authoring.max_parallel`, `authoring.design_mode`, `authoring.plan_mode`, `mockups.dir`, and the `validate.browser_*` and `advisors.*` keys. Everything else (paths, statuses, audits, plan policy, the whole `worktree:` section) is team policy: a local override of those still works, but Cadence prints a one-line notice so the divergence is never silent.
 
 <Aside type="caution" title="Keep it gitignored">
 A committed "local" file is just a second team config with a confusing name. `.cadence/config.local.yaml` must be in your repo's `.gitignore`; when Cadence finds the file present but the repo's `.gitignore` lacks the line, it adds it for you and says so. The repo line matters even if your personal global excludes file already covers the pattern: the global entry protects only your machine, while the repo line protects every clone.
@@ -45,7 +45,7 @@ A single top-level integer that records which config schema this file was writte
 
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
-| `config_version` | Schema version of this file; used to detect when a migration is needed. | `5` | Integer |
+| `config_version` | Schema version of this file; used to detect when a migration is needed. | `8` | Integer |
 
 ## `paths`
 
@@ -73,6 +73,26 @@ With `backend: filesystem` (the default) the `notion.*` keys are ignored and not
 
 <Aside type="caution" title="The whole storage block is team policy">
 `storage.backend`, `storage.notion.root_page`, and the two auto-filled database ids identify databases the whole team reads and writes. They belong in the committed `.cadence/config.yaml`, never in `.cadence/config.local.yaml`. A database id placed in the local overlay would point one person's Cadence at the databases while everyone else's config still shows empty ids and re-triggers provisioning.
+</Aside>
+
+## `mockups`
+
+Where mockup HTML files are written. A design that opts into the [`95-visual-contract` slot](/cadence/reference/c-design/#the-visual-contract-and-mockups) stores its mockups as local HTML files, on **every** storage backend, and records each version's `file://` URL in the `95` index.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `mockups.dir` | The directory mockup HTML is written to. A relative value resolves against the repo root; an absolute one is taken as given. The directory is created when missing. | `null` (unset) | Path, or `null` |
+
+How `null` resolves depends on the backend:
+
+| `mockups.dir` | Backend | Resolves to |
+| --- | --- | --- |
+| set | either | `<mockups.dir>/<slug>/` |
+| `null` | `filesystem` | `<paths.designs>/<slug>/mockups/`, the design's own subfolder |
+| `null` | `notion` | Unresolvable, so `/c-design` asks once before writing version `01` |
+
+<Aside title="Unlike `worktree.dir`, this is not team policy">
+`mockups.dir` is usually an absolute, machine-specific path, so a `.cadence/config.local.yaml` override is the intended use and raises no divergence notice. On the notion backend there is no design folder to fall back on, which is why a `null` value is the one case that prompts: `/c-design` asks before authoring version `01` and offers to persist your answer, with the local overlay the usual home for it. Writing it to the committed `.cadence/config.yaml` is offered too, for a team that has agreed on a repo-relative location.
 </Aside>
 
 ## `plan`
@@ -240,10 +260,10 @@ Defaults for `/c-find-bugs`.
 
 ## A realistic config
 
-This repo dogfoods Cadence, and its own `.cadence/config.yaml` is a good example of the "override only what differs" pattern. It keeps the default paths and audits, bumps `execute.max_parallel` to `5`, and opts into `plan.parallel_grain: in-file`. As of `config_version: 5` the file also carries a `storage:` block at the filesystem default: the migrator appends that whole block verbatim on the `4 → 5` bump (it is a new top-level block, not an override), and the worktree keys live in their own `worktree:` block (relocated back in `config_version: 4`):
+This repo dogfoods Cadence, and its own `.cadence/config.yaml` is a good example of the "override only what differs" pattern. It keeps the default paths and audits, bumps `execute.max_parallel` to `5`, and opts into `plan.parallel_grain: in-file`. The trimmed shape below shows the blocks that have arrived over the last few schema bumps: `worktree:` (relocated out of `execute:` in `config_version: 4`), `storage:` (new in `5`), `execute.mode` (new in `7`), and `mockups:` (new in `8`). Each of those bumps is additive, so `scripts/migrate-config.js` appends the new block or key verbatim and leaves your values and comments alone:
 
 ```yaml
-config_version: 5
+config_version: 8
 paths:
   designs: docs/designs
   plans:   docs/plans
@@ -262,10 +282,13 @@ execute:
   resume_on_dirty_tree: false
   parallel: true
   worktree_confirm: true
+  mode: ask
 
 worktree:
   dir: .cadence/worktrees
   integrate: rebase-ff
+  merge_lock: true
+  lock_stale_threshold: 600
 
 advisors:
   enabled: false
@@ -277,4 +300,7 @@ storage:
     root_page:  ""
     designs_db: ""
     plans_db:   ""
+
+mockups:
+  dir: null        # filesystem backend: the design's own mockups/ subfolder
 ```

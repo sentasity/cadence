@@ -53,6 +53,16 @@ Cadence writes every doc body with a bundled script (`scripts/notion-write.js`) 
 
 The reason for the script is client-side rather than anything about Notion. A large tool argument can be sheared while it streams, producing a call that succeeds while carrying a mangled tail ([anthropics/claude-code#67765](https://github.com/anthropics/claude-code/issues/67765), still open). Earlier Cadence releases managed that risk by capping MCP content writes at roughly 8,000 characters, chunking longer docs, and checking every page by reading it back. The script removes the risk instead: the content travels from a file to Notion in a plain HTTP request and never rides in a streamed tool argument, so there is no cap, no chunking, and no session-poisoning failure mode. Interrupting a write is now harmless; the next write simply replaces the page wholesale.
 
+## Mockups stay on disk
+
+Mockups are the one Cadence artifact Notion mode does not move. A design that opts into the [`95-visual-contract` slot](/cadence/reference/c-design/#the-visual-contract-and-mockups) writes its mockup HTML as local files on every backend: no attachment upload, no embedded preview, no download round-trip. The `95` doc in Notion stays the authority on which version is frozen and what the contract says, and records each version's `file://` URL beside its index row; the file itself lives on your machine and opens in a real browser.
+
+Because there is no design folder on this backend to put them beside, `/c-design` asks once, before writing version `01`, where mockups should live, and offers to persist your answer as [`mockups.dir`](/cadence/reference/config/#mockups). `.cadence/config.local.yaml` is the usual home for it, since that path is machine-specific.
+
+<Aside type="caution" title="A `file://` link clicked from Notion goes nowhere">
+Browsers refuse to follow a `file://` link clicked from a web page, Notion included. That's why the URL is recorded as plain text rather than a link: copy it into your address bar when clicking does nothing. It also means mockups don't travel with the repo: a `mockup:NN` citation whose file is absent on this machine is reported as a normal missing-`Reads:` blocker, never guessed around.
+</Aside>
+
 ## What changes and what does not
 
 Changes:
@@ -64,4 +74,5 @@ Does not change:
 
 - Source code, tests, and git commits. Implementers and reviewers stay Notion-blind: they receive a task spec as plain text and write code and commits to git exactly as on the filesystem backend.
 - The slug stays the human handle; Notion page ids hide behind resolution.
+- Mockups. They are local HTML files on both backends, as described above.
 - Filesystem repos. A repo that never sets `storage.backend: notion` behaves byte-for-byte as before. Existing on-disk artifacts in a repo that switches backends stay on disk: Notion mode applies to new artifacts (migrating old ones is out of scope).

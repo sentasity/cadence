@@ -39,8 +39,17 @@ When you run `/c-design`, it asks how to write the child docs:
 
 - **All-at-once** (the default): it writes all the technical child docs in parallel, then runs a single consistency sweep across them, then writes the plain-English narrative last. One review pause, at the end.
 - **One-by-one**: it writes a single child doc, pauses for you to review, then continues. More control, more pauses.
+- **Inline**: the main session writes every doc itself. No sub-agents, no pauses, no consistency sweep. Useful when you'd rather watch one session do the whole thing than hand work to parallel agents.
 
-Either way, the plain-English narrative is generated last, from the settled docs.
+Whichever you pick, the plain-English narrative is generated last, from the settled docs.
+
+## Mockups, when the work is visual
+
+A design with real user-facing UI/UX work can opt into one more document: `95-visual-contract`. It names the surfaces the mockups govern, indexes every mockup version, and holds the contract an implementer follows when the code and the mockup disagree.
+
+The mockups themselves are self-contained HTML files you open in a browser, and they're versioned append-only: feedback produces a new version rather than editing the one you already looked at, so the visual history is as reviewable as the decisions log. When you approve the design, the version you approved is frozen by name, and that frozen version is what `/c-plan` hands to the implementers.
+
+This is offered only when the design is genuinely visual. A mostly-backend design with an incidental UI touch never gets the question.
 
 ## The self-review gate before `in-review`
 
