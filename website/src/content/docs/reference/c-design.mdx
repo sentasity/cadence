@@ -4,6 +4,8 @@ sidebar:
   order: 2
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
 Source of truth: `skills/c-design/SKILL.md`. For the *why* behind this stage, read the [Design deep dive](/cadence/design/).
 
 ## Purpose
@@ -26,12 +28,28 @@ A `00-overview.md` with `status: draft` and a populated doc index. It refuses to
 
 ## What it produces
 
-A full design folder: `00-overview.md`, `00a-plain-english.md`, the numbered child docs (`01-…`, `02-…`), optional `97-infrastructure-inventory.md` and `98-architecture-diagrams.md` when the doc index calls for them, and a `99-out-of-scope.md`. After a self-review pass it flips the overview's status to `in-review`.
+A full design folder: `00-overview.md`, `00a-plain-english.md`, the numbered child docs (`01-…`, `02-…`), optional `95-visual-contract.md`, `97-infrastructure-inventory.md` and `98-architecture-diagrams.md` when the doc index calls for them, and a `99-out-of-scope.md`. A design that takes the `95` slot also produces the mockup HTML files it indexes. After a self-review pass it flips the overview's status to `in-review`.
+
+## The visual contract and mockups
+
+A design with significant user-facing UI/UX work can opt into `95-visual-contract`, a reserved slot that names the surfaces the mockups govern, indexes every mockup version, declares the design system that is the source of truth, and carries the contract prose an implementer follows when code and mockup disagree.
+
+The offer is as-needed, never a default. When the overview describes significant UI/UX work and the doc index lacks the slot, `/c-design` raises it in the same doc-index confirmation that surfaces the `97`/`98` opt-ins; when significance is genuinely unclear it asks. A mostly-backend design with an incidental UI touch is never offered it. A stub that already carries the slot in its doc index counts as the opt-in taken.
+
+Mockups themselves are **single self-contained HTML files** with no build step: CSS and JS inlined, no CDN, the one sanctioned external channel being a web-font stylesheet with a declared fallback stack. Self-containment is what makes a mockup a durable contract, since an implementer has to open it weeks later, offline, on another machine.
+
+Versions are append-only. Substantive feedback produces a new `NN`; a version a reviewer has already seen is never edited in place. Each version gets a row in the `95` index recording the date, what changed, what drove the change, and the file's `file://` URL.
+
+<Aside type="note" title="Mockups are local files on every backend">
+There is no upload, no attachment, and no embedded preview, in Notion mode included. Where the files land is [`mockups.dir`](/cadence/reference/config/#mockups): on the filesystem backend it defaults to the design's own `mockups/` subfolder, and on the notion backend, where there is no design folder to fall back on, `/c-design` asks once before writing version `01` and offers to persist your answer. Because a browser refuses to follow a `file://` link clicked from a web page, the recorded URL is there to be copied when clicking does nothing.
+</Aside>
 
 ## Gates & guarantees
 
-- A self-review pass (placeholder scan, wikilink integrity, decisions consistency, out-of-scope integrity, open-questions audit) runs before the status flips to `in-review`.
+- A self-review pass (placeholder scan, wikilink integrity, decisions consistency, out-of-scope integrity, open-questions audit) runs before the status flips to `in-review`. A design carrying the `95` slot adds four mockup checks: self-containment, content scope, version-index integrity, and `95` structure.
 - Status only advances to `approved` when you say so, never automatically.
+- Approving a design that has a `95` slot stamps the freeze record in the same gesture, so an approved design always names a frozen mockup version. Changing a mockup after that is design drift under the normal drift rules, never a quiet new version.
+- `write_mockup` refuses to overwrite an existing version, so the version history can only ever grow.
 - It never writes or modifies code, never writes plans, and never writes a child doc that isn't in the doc index (it loops back to update the overview first).
 
 ## Related commands

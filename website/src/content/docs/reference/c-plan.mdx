@@ -24,16 +24,19 @@ It then asks one generation-mode question: **all-at-once** (the default — para
 
 ## Inputs & preconditions
 
-A design whose `00-overview.md` has `status: approved`. It refuses if the design is still `draft` or `in-review` (finish and approve it first), or if a plan folder with the same slug already exists at a non-draft status (it won't overwrite).
+A design whose `00-overview.md` has `status: approved`. When the design carries a `95-visual-contract` slot, the read includes that doc and the frozen mockup version it names.
+
+It refuses if the design is still `draft` or `in-review` (finish and approve it first), if a plan folder with the same slug already exists at a non-draft status (it won't overwrite), or if the design has a `95` slot whose freeze record still reads `frozen: none`. That last case is a malformed approved design: approval is what stamps the freeze, so an unstamped one means the approval step didn't complete, and the fix is back in [`/c-design`](/cadence/reference/c-design/).
 
 ## What it produces
 
-A plan folder at `<paths.plans>/{yyyy-mm-dd-slug}/`: a `00-overview.md` (goal, architecture, design link, plan index, file map), one or more execution-ordered phase docs (`01-…`, `02-…`) with fully-specified tasks, a `96-validation.md`, shell `97`/`98` docs pointing back to the design, and a `99-out-of-scope.md`. It also writes `linked_design:` onto the new plan and `linked_plan:` (singular) onto the design.
+A plan folder at `<paths.plans>/{yyyy-mm-dd-slug}/`: a `00-overview.md` (goal, architecture, design link, plan index, file map, plus a **Surface map** for a design with a `95` slot, naming the concrete files that implement each governed surface), one or more execution-ordered phase docs (`01-…`, `02-…`) with fully-specified tasks, a `96-validation.md`, shell `97`/`98` docs pointing back to the design, and a `99-out-of-scope.md`. It also writes `linked_design:` onto the new plan and `linked_plan:` (singular) onto the design.
 
 ## Gates & guarantees
 
 - Every file path, line range, symbol, and import the plan cites is ground-truthed against the real code before it lands.
 - Every task carries `Reads:`, `Touches:`, and `Depends:` fields and ends with a commit step; banned placeholder phrases (`TBD`, `TODO`, "handle edge cases", "similar to Task N") are blocked in self-review.
+- For a design with a `95` slot, every task whose `Touches:` intersects the Surface map gets the visual contract and a `mockup:NN` citation appended to its `Reads:` automatically, and self-review checks that the attachment is complete and hasn't leaked onto tasks outside the map. There is no new task field: `Reads:` already carries the read-before-writing contract.
 - It never writes code, never runs anything, and never auto-executes; `/c-execute` is invoked separately.
 
 ## Related commands
