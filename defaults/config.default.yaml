@@ -3,7 +3,7 @@
 # never migrated); resolution order is defined in skills/_shared/config-resolution.md.
 # No assumption of obsidian or any specific repo layout.
 
-config_version: 7          # schema version; drives migration detection
+config_version: 8          # schema version; drives migration detection
 
 paths:
   designs: docs/designs
@@ -17,6 +17,15 @@ storage:
     root_page:  ""             # Notion page URL or id to provision under; share it with the MCP integration
     designs_db: ""             # auto-filled on first Notion-mode run, then commit
     plans_db:   ""             # auto-filled on first Notion-mode run, then commit
+
+mockups:
+  # Where mockup HTML files are written. Mockups are always local files, on every
+  # storage backend; a design's 95-visual-contract records each version's file:// URL.
+  # null on the filesystem backend  -> the design's own mockups/ subfolder (no prompt).
+  # null on the notion backend      -> /c-design asks once, and offers to persist the
+  #                                    answer here (config.local.yaml is the usual home,
+  #                                    since the path is machine-specific).
+  dir: null
 
 naming:
   date_format: "YYYY-MM-DD"

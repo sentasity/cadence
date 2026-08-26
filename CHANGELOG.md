@@ -2,6 +2,30 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.19.0 (2026-08-25)
+
+Mockups stop going into Notion. The attachment upload, the interactive `<embed>`, the download round-trip, and the escape-hatch concept are all removed. A mockup is now a local HTML file on every storage backend, and the design's `95-visual-contract` records each version's `file://` URL beside its index row.
+
+This is a retreat from the v0.18.0 embed path, which did not survive contact. The multipart upload flow is blocked at Cloudflare (measured: HTTP 403 with a challenge interstitial on both the public `/v1/file_uploads/{id}/send` route and the MCP-scoped `/v1/mcp/file_uploads/{id}/send` route, while a plain JSON POST to the same host with the same token returns 200). That leaves inline attachment `content` as the only upload, which carries the whole mockup in a streamed MCP tool argument: precisely the failure mode `scripts/notion-write.js` was written to eliminate for doc bodies, and mockups are larger than doc bodies. A local file has neither problem, opens in a real browser rather than a sandbox, and is the same operation on both backends.
+
+Where mockups land is now configurable. `mockups.dir` is unset by default. On the filesystem backend that keeps today's behavior, the design's own `mockups/` subfolder. On the notion backend there is no design folder to fall back on, so `/c-design` asks once before authoring version `01` and offers to persist the answer, with `.cadence/config.local.yaml` the usual home because the path is machine-specific.
+
+### Added
+
+- **`mockups.dir`** (config v8, defaults to `null`): the directory mockup HTML is written to. Resolution and the ask-once behavior are specified in `skills/_shared/storage-resolution.md` under "Mockup directory resolution". Deliberately not a team-policy key, unlike `worktree.dir`: it is an absolute machine-specific path, so a `config.local.yaml` override is the intended use and raises no divergence notice.
+
+### Changed
+
+- **`write_mockup` / `read_mockup`** are now local file operations with no backend branch at all. `write_mockup` copies the source into the resolved mockup directory as `NN-<slug>.html` and stays append-only; `read_mockup` returns that path and hard-stops when it is absent on this machine. Neither binds to any MCP tool, and the Notion MCP no longer needs the attachment pair for mockup work.
+- **`/c-design`** records each version's `file://` URL in the 95 index instead of placing an embed, and points reviewers at the file to open in a browser. Because a browser refuses to follow a `file://` link clicked from a web page, Notion included, the URL is documented as something to copy when clicking does nothing.
+- **Mockup self-containment** is still required, but for a different reason. The rule was the Notion sandbox; it is now durability, since a mockup is a contract an implementer opens weeks later, offline, on another machine. Self-review check 8 now names inlining a CDN-loaded CSS framework as the common fix rather than offering an escape hatch.
+
+### Removed
+
+- The Notion attachment upload, the mandatory download round-trip verification, and `<embed>` placement in the 95 version index.
+- The escape-hatch concept in `/c-design`, `/c-plan`, `cadence-implementer`, and `storage-resolution.md`. Local storage was the escape hatch; it is now the only road, so the special case has no meaning.
+- The 200 KiB inline-attachment size cap on a mockup.
+
 ## v0.18.0 (2026-08-25)
 
 Mockups become first-class design artifacts. A design with significant user-facing UI/UX work can opt into a new reserved slot, `95-visual-contract`, holding the surfaces the mockups govern, an append-only version index (what changed, which feedback drove it), a source-of-truth declaration, a freeze record stamped at approval, and the contract prose an implementer follows when code and mockup disagree. Mockups are single self-contained HTML files (the Notion embed sandbox blocks external scripts, fetch, and images, measured live), stored inside the design on every backend: a `mockups/NN-<slug>.html` folder in the vault on the filesystem backend, an uploaded attachment rendered as a live interactive `<embed>` on the notion backend, with a machine-local escape-hatch path for mockups that genuinely need a blocked capability.

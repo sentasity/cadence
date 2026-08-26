@@ -1,7 +1,7 @@
 # Cadence config for the Cadence plugin source repo (dogfooding).
 # Overrides only what differs from defaults/config.default.yaml.
 
-config_version: 5
+config_version: 8
 paths:
   designs: docs/designs
   plans:   docs/plans
@@ -20,6 +20,7 @@ execute:
   resume_on_dirty_tree: false
   parallel: true           # master switch; false => sequential, no worktrees
   worktree_confirm: true   # one-time pre-flight worktree confirmation
+  mode: ask                # ask | parallel | inline (pre-flight execution-mode gate for /c-execute)
 
 worktree:
   dir: .cadence/worktrees     # canonical home (relocated from execute.worktree_dir)
@@ -51,6 +52,7 @@ frontmatter:
 authoring:
   max_parallel: 6          # concurrent doc-generator agents (no worktrees; cheap)
   design_mode: ask         # ask | all-at-once | one-by-one (standing default for /c-design)
+  plan_mode: ask           # ask | all-at-once | inline (standing default for /c-plan)
 
 audits:
   default:
@@ -95,3 +97,12 @@ storage:
     root_page:  ""             # Notion page URL or id to provision under; share it with the MCP integration
     designs_db: ""             # auto-filled on first Notion-mode run, then commit
     plans_db:   ""             # auto-filled on first Notion-mode run, then commit
+
+mockups:
+  # Where mockup HTML files are written. Mockups are always local files, on every
+  # storage backend; a design's 95-visual-contract records each version's file:// URL.
+  # null on the filesystem backend  -> the design's own mockups/ subfolder (no prompt).
+  # null on the notion backend      -> /c-design asks once, and offers to persist the
+  #                                    answer here (config.local.yaml is the usual home,
+  #                                    since the path is machine-specific).
+  dir: null

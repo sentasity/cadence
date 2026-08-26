@@ -13,6 +13,8 @@ const TEAM_POLICY_KEYS = [
   'worktree.dir', 'worktree.integrate', 'worktree.merge_lock',
   'worktree.lock_stale_threshold', 'worktree.hooks.',
   'execute.branch_check', 'execute.auto_resolve_drift',
+  // mockups.dir is deliberately NOT team policy: unlike worktree.dir it is an
+  // absolute, machine-specific path, and config.local.yaml is its intended home.
 ];
 
 function isPlainObject(v) {
