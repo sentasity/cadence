@@ -2,6 +2,19 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.20.0 (2026-09-28)
+
+`/c-validate` now closes the linked design on its own. When a validation walk passes clean, it flips the plan to `completed` and then flips the plan's linked design to `completed` in the same step, with no prompt.
+
+### Changed
+
+- **`/c-validate` design flip**: the "Flip design to `completed` too?" prompt (default no) is gone. On a full pass the design flip runs through `skills/_shared/storage-resolution.md` (set_status), so it behaves the same on the filesystem and notion backends, and the completion message reports both flips. Only an `approved` design flips, per the transition table in `skills/_shared/frontmatter.md`: a design already `completed` (a re-validation) is left as is, and any other status is surfaced as a warning and left unchanged. A `linked_design:` that doesn't resolve is still a warning, never a silent skip. Nothing flips with any 96 item unchecked.
+- The status-transition table, `/c-plan`'s linkage note, the README, and the docs site (the `/c-validate` reference, the Validate and Plan stage pages, the status lifecycle, and the get-started lesson) describe the automatic flip.
+
+### Why
+
+A clean validation pass is the point where the work is done, so the design now closes with its plan instead of waiting on a separate confirmation that defaulted to no.
+
 ## v0.19.0 (2026-08-25)
 
 Mockups stop going into Notion. The attachment upload, the interactive `<embed>`, the download round-trip, and the escape-hatch concept are all removed. A mockup is now a local HTML file on every storage backend, and the design's `95-visual-contract` records each version's `file://` URL beside its index row.
