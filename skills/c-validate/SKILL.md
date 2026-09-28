@@ -1,6 +1,6 @@
 ---
 name: c-validate
-description: Walks a plan's 96-validation.md post-deploy. Category C (prereqs) first, then A (automated), then B (manual workflow). Checks off items as it walks. Flips plan status to `completed` on full pass. Reads `linked_design:` and offers to flip the design to `completed` (user confirms).
+description: Walks a plan's 96-validation.md post-deploy. Category C (prereqs) first, then A (automated), then B (manual workflow). Checks off items as it walks. On a full pass, flips the plan to `completed`, then flips the linked design to `completed` in the same step (no prompt).
 ---
 
 # `/c-validate`
@@ -54,9 +54,9 @@ Status NEVER advances to `completed` with any unchecked 96 item. No silent passe
 ## On full pass
 
 1. Set this plan's overview status to `completed` per `skills/_shared/storage-resolution.md` (set_status), which bumps `updated:`.
-2. Print: *"Validation walked clean. `<N>` automated, `<M>` manual workflows, `<P>` prereqs confirmed."*
-3. Find the parent design through the design↔plan link: the plan overview already read via `skills/_shared/storage-resolution.md` (read_artifact) carries the link, and the design is then resolved via (resolve) — never by reading a raw `linked_design:` frontmatter line.
-4. Prompt: *"Flip design `[[...]]` to `completed` too?"* User picks. Default no — `approved` is the operational signal; `completed` is a formal close. On yes, set the design's status via `skills/_shared/storage-resolution.md` (set_status).
+2. Find the parent design through the design↔plan link: the plan overview already read via `skills/_shared/storage-resolution.md` (read_artifact) carries the link, and the design is then resolved via (resolve) — never by reading a raw `linked_design:` frontmatter line.
+3. Flip the design to `completed` in the same step, via `skills/_shared/storage-resolution.md` (set_status). No prompt: a full pass closes the plan and its design together. Only an `approved` design flips (the transition in `skills/_shared/frontmatter.md`). A design already `completed` (a re-validation) is left as is; any other status is surfaced as a warning and left unchanged.
+4. Print: *"Validation walked clean. `<N>` automated, `<M>` manual workflows, `<P>` prereqs confirmed. Plan and design `[[...]]` flipped to `completed`."* When step 3 didn't flip the design, replace the last sentence with what happened instead (plan flipped; design already `completed`, left at `<status>`, or not found).
 
 **Linkage discipline:**
 - If `linked_design:` points to a design that doesn't exist, surface as a warning — don't silently drop.
@@ -68,7 +68,7 @@ Status NEVER advances to `completed` with any unchecked 96 item. No silent passe
 - Doesn't deploy.
 - Doesn't modify plan or design content other than checkboxes and status.
 - Doesn't run `/c-execute` on failure — escalation is to the user.
-- Doesn't auto-flip the linked design's status without user confirmation.
+- Doesn't flip the linked design on anything short of a full pass.
 
 ## References
 

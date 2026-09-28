@@ -53,7 +53,7 @@ title: "Plan — <Human title> Phase NN: <PHASE_NAME>"
 |---|---|---|---|
 | Design | draft | in-review | /c-design after self-review |
 | Design | in-review | approved | User says "approved" |
-| Design | approved | completed | /c-validate offers when the linked plan hits completed |
+| Design | approved | completed | /c-validate, automatically, in the same step as the linked plan's flip to completed |
 | Plan | draft | in-progress | /c-execute starts |
 | Plan | in-progress | implemented | /c-execute after /c-audit passes |
 | Plan | implemented | completed | /c-validate after 96-validation walks clean |
