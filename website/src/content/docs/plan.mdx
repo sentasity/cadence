@@ -30,7 +30,7 @@ Each phase file is a coherent chunk of work a reviewer can hold in their head: o
 
 This is the part worth internalizing. When `/c-plan` writes the plan, it records a **two-way link**: the plan's overview names its source design (`linked_design:`), and the design's overview is updated to name its plan (`linked_plan:`).
 
-That linkage is how Cadence prevents silent drift between what you approved and what gets built. The design and plan know about each other. A design only ever becomes formally `completed` once its linked plan has been validated. The two move together, by design, never independently.
+That linkage is how Cadence prevents silent drift between what you approved and what gets built. The design and plan know about each other. A design only ever becomes `completed` once its linked plan has been validated, and `/c-validate` flips both at once. The two move together, by design, never independently.
 
 <Aside type="caution" title="Plan never writes code, never auto-executes">
 `/c-plan` writes the plan and stops. It doesn't run anything and it doesn't roll into `/c-execute`. As always, advancing to the next stage is an explicit step you take.

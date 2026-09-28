@@ -40,7 +40,7 @@ Each phase file becomes the unit of worktree dispatch and the unit of per-lane r
 ## Bidirectional linkage
 
 - Establish the design↔plan link with a single call to `skills/_shared/storage-resolution.md` (link): it is bidirectional and idempotent, setting `linked_design` on the plan and `linked_plan` (singular) on the design in one step and bumping the design's `updated:`. Do not write the two `linked_*` frontmatter keys by hand.
-- The design flips to `completed` only when its `linked_plan` reaches status `completed` (gated by `/c-validate`).
+- The design flips to `completed` only when its `linked_plan` reaches status `completed`: `/c-validate` flips both in one step on a full validation pass.
 
 ## Folder layout
 
