@@ -41,7 +41,7 @@ You then run `/c-design` (writes child docs one at a time, with "look good?" pau
 | `/c-plan` | Translates approved design into an execution-ordered plan, written for AI. |
 | `/c-execute <plan-path>` | PM-and-sub-agent execution. Calls `/c-audit` at completion. |
 | `/c-audit <plan-path>` | Strict check that the plan was actually implemented. Auto-invoked by `/c-execute`; also callable standalone for spot-checks. |
-| `/c-validate <plan-path>` | Post-deploy walk of `96-validation.md`. Flips status to `completed`. |
+| `/c-validate <plan-path>` | Post-deploy walk of `96-validation.md`. Flips the plan and its linked design to `completed`. |
 
 **Diagnostics** — ad hoc, run any time:
 

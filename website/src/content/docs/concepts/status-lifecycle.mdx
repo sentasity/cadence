@@ -19,13 +19,13 @@ stateDiagram-v2
     [*] --> draft
     draft --> in_review: /c-design self-review
     in_review --> approved: you say "approved"
-    approved --> completed: /c-validate offers when the plan completes
+    approved --> completed: /c-validate when the plan completes
     completed --> [*]
 ```
 
 - **draft → in-review**: triggered by **[/c-design](/cadence/design/)** after it finishes its own self-review pass. The design is written and internally checked; now it's ready for *your* eyes.
 - **in-review → approved**: triggered by **you**. This is a human gate: the design sits in review until you explicitly say "approved." Nothing downstream (no plan, no code) proceeds until you do.
-- **approved → completed**: offered by **[/c-validate](/cadence/validate/)** once the plan built from this design reaches `completed`. Cadence offers it; you confirm.
+- **approved → completed**: triggered by **[/c-validate](/cadence/validate/)** in the same step that flips the plan built from this design to `completed`. No prompt: validating the plan is what closes the design.
 
 <Aside type="note" title="Approval is yours alone">
 The jump to `approved` is the one transition no Cadence stage will ever make for you. It's the design gate: the place where your judgment, not the machine's, decides the work is right.
@@ -55,7 +55,7 @@ Read top to bottom, the statuses are the chain that lets you trust a result you 
 
 ## The two lifecycles connect at the end
 
-The lifecycles aren't independent. When a plan reaches `completed`, `/c-validate` reads the design it was linked to and offers to flip *that* design to `completed` as well, closing the loop on the whole piece of work, design and plan together. You confirm that final step.
+The lifecycles aren't independent. When a plan reaches `completed`, `/c-validate` reads the design it was linked to and flips *that* design to `completed` as well, closing the loop on the whole piece of work, design and plan together, in one step.
 
 There are also two parking statuses, `superseded` and `on-hold`, for work that's been replaced or paused. They aren't part of the normal forward flow.
 
