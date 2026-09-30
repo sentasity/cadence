@@ -17,7 +17,7 @@ You hunt concrete, fixable defects. Each defect comes with a citation, severity,
 | `/c-find-bugs <file-path>` | One file's source | Light |
 | `/c-find-bugs --repo` | Whole repo | **Heavy** — confirms before starting |
 
-**Default scope when no target is given:** current branch's diff against `main` (or `config.find_bugs.default_baseline`). If on `main` itself, ask for explicit target.
+**Default scope when no target is given:** the current branch's changes since it diverged from `main` (or `config.find_bugs.default_baseline`), i.e. `git diff <baseline>...HEAD` with three dots. A two-dot or bare `git diff <baseline>` also shows work that landed on the baseline after the branch point, as if the branch had deleted it. If on `main` itself, ask for explicit target.
 
 **Token-cost warning:** `--repo` prints estimated scope (file count, approximate token count) and waits for explicit user confirmation. Other scopes start without confirmation.
 
