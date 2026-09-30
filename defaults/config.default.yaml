@@ -41,17 +41,14 @@ frontmatter:
 plan:
   tdd: true
   commit_cadence: per-task
-  # No split_thresholds — split decisions are judgment-based in /c-plan,
-  # not threshold-based. See designs/2026-05-17-cadence/03-plan.md.
+  # No split_thresholds: split decisions are judgment-based in /c-plan,
+  # not threshold-based.
 
 execute:
-  branch_check: true
-  auto_resolve_drift: false
   parallel: true           # master switch; false => legacy sequential path (sub-agents, no worktrees)
   mode: ask                # ask | parallel | inline (pre-flight execution-mode gate for /c-execute)
   max_parallel: 4          # concurrent implementer lanes (= worktrees); reviewers uncapped
   worktree_confirm: true   # one-time pre-flight worktree confirmation
-  resume_on_dirty_tree: false
 
 worktree:
   dir: .cadence/worktrees     # canonical home (relocated from execute.worktree_dir)

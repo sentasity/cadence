@@ -29,7 +29,7 @@ Real code committed to the branch (one commit per task), every plan checkbox fli
 
 ## Gates & guarantees
 
-- Two-stage review on every change: a spec review then a code review; on conflict, spec wins. For a task carrying visual citations, the spec review takes the design's [visual contract](/cadence/reference/c-design/#the-visual-contract-and-mockups) into its baseline, so a divergence from a named contract value is a spec gap like any other.
+- Two-stage review on every change: a spec review and a code review, run at the same time; on conflict, spec wins. For a task carrying visual citations, the spec review takes the design's [visual contract](/cadence/reference/c-design/#the-visual-contract-and-mockups) into its baseline, so a divergence from a named contract value is a spec gap like any other.
 - Parallel work runs in isolated worktrees scheduled by each task's dependencies, with a guard that serializes any two tasks touching the same files. Inline mode trades that machinery (and independent per-task review) for a single sequential session; the completion audit is unchanged in both modes.
 - Merging a lane back (merge-on-land) acquires the shared merge lock, so cross-session merges into the same working branch (for example, a concurrent `/c-worktree` merge) serialize instead of colliding (gated by `worktree.merge_lock`).
 - A completion audit must pass before the status can flip to `implemented`.

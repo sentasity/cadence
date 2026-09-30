@@ -2,6 +2,22 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.20.1 (2026-09-30)
+
+Stale text cleanup across the shipped skills, agents, and docs, plus removal of three config keys nothing ever read. No workflow behavior changes.
+
+### Removed
+
+- **`execute.auto_resolve_drift`, `execute.branch_check`, `execute.resume_on_dirty_tree`** are gone from `defaults/config.default.yaml`, the resolver's team-policy list, and the config reference. `/c-execute` never read any of them: drift always surfaces its three response paths, a `main`/`master`/`develop` branch always prompts, and a dirty tree always stops the run. Configs that still set them keep working; the migrator never deletes keys and nothing reads them.
+
+### Fixed
+
+- **Reviewer ordering**: the `/c-execute` dispatch table and both reviewer agents now say spec and code review run concurrently (as they have since v0.4.0), with the legacy sequential path's spec-then-code order noted where it applies.
+- **Legacy task fields**: the reviewer, implementer, `/c-execute`, and `/c-check` text refers to `Reads:` / `Touches:` / `Depends:` instead of the retired `Files:` list and `Parallel:` marker.
+- **Dead design links**: every wikilink and path into the gitignored `docs/designs/` is gone from `skills/` and `agents/`. Where a link carried a fact skills need, the fact is now inline: `skills/_shared/storage-resolution.md` gains a Database schema section (the Designs and Plans property sets first-run provisioning creates), the Slug-versus-title rationale, and how `tick` matches a Notion to-do block; `skills/_shared/notion-translation.md` spells out the structural parsing rules for plan read-back.
+- **README and docs site**: config scaffolding asks four questions, not three; `execute.max_parallel` defaults to 4, not 5; `/c-design` writes all child docs at once by default rather than one at a time with pauses.
+- **CONTRIBUTING and CLAUDE.md**: acknowledge the helper scripts in `scripts/`, add `bash scripts/test-merge-lock.sh` to the test command, and drop steps and links that pointed into gitignored docs.
+
 ## v0.20.0 (2026-09-28)
 
 `/c-validate` now closes the linked design on its own. When a validation walk passes clean, it flips the plan to `completed` and then flips the plan's linked design to `completed` in the same step, with no prompt.

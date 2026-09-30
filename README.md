@@ -20,7 +20,7 @@ Built for the AI-driven coding age: reviewing every line of AI-written code is t
 /plugin install cadence@cadence
 ```
 
-After session restart, all ten `/c-*` commands work in every repo on your machine (the tenth, `/c-worktree`, is a standalone worktree utility, not a pipeline stage). First time you run `/c-brainstorm` in a fresh repo, Cadence detects there's no config and offers to scaffold one with three questions — no separate setup step.
+After session restart, all ten `/c-*` commands work in every repo on your machine (the tenth, `/c-worktree`, is a standalone worktree utility, not a pipeline stage). First time you run `/c-brainstorm` in a fresh repo, Cadence detects there's no config and offers to scaffold one with four questions. No separate setup step.
 
 ## Demo
 
@@ -28,7 +28,7 @@ A real `/c-brainstorm` session, recorded live (not a mockup): Cadence scans the 
 
 ![A recorded /c-brainstorm session: context scan, two questions, approach pick, design stub written](demos/c-brainstorm.gif)
 
-You then run `/c-design` (writes child docs one at a time, with "look good?" pauses), `/c-plan` (translates the approved design into an execution-ordered plan), `/c-execute` (PM-and-sub-agents drives the plan to completion with two-stage review per task), and `/c-validate` (walks the post-deploy validation doc).
+You then run `/c-design` (writes the child docs, all at once by default or one at a time with review pauses), `/c-plan` (translates the approved design into an execution-ordered plan), `/c-execute` (PM-and-sub-agents drives the plan to completion with two-stage review of every change), and `/c-validate` (walks the post-deploy validation doc).
 
 ## The ten skills
 
@@ -37,7 +37,7 @@ You then run `/c-design` (writes child docs one at a time, with "look good?" pau
 | Skill | What it does |
 |---|---|
 | `/c-brainstorm <idea>` | Q&A loop. Writes a `00-overview.md` stub. |
-| `/c-design` | Writes the full design folder, child by child, written for humans. |
+| `/c-design` | Writes the full design folder, written for humans. |
 | `/c-plan` | Translates approved design into an execution-ordered plan, written for AI. |
 | `/c-execute <plan-path>` | PM-and-sub-agent execution. Calls `/c-audit` at completion. |
 | `/c-audit <plan-path>` | Strict check that the plan was actually implemented. Auto-invoked by `/c-execute`; also callable standalone for spot-checks. |
@@ -75,16 +75,16 @@ See [`examples/hello-cadence/`](examples/hello-cadence/) for a complete design +
 
 [`superpowers`](https://github.com/obra/superpowers) atomically chains brainstorm → write-plan → execute and produces one AI-generated artifact (the spec) that serves as both brainstorm output and plan input. When nobody is reviewing line by line, that artifact often looks "complete" enough to approve without real review; bugs only surface during execution.
 
-Cadence's `/c-brainstorm` → `/c-design` split is deliberate: the design is a separate human-readable artifact, written child-doc-by-child-doc with explicit "look good?" pauses, plain-English callouts at every H2 section, and a mandatory plain-English narrative (`00a-plain-english.md`). It's meant to be reviewable by someone who isn't going to read implementation diffs. The plan is then written for AI consumption from the approved design — exact paths, exact commands, no narrative.
+Cadence's `/c-brainstorm` → `/c-design` split is deliberate: the design is a separate human-readable artifact, with plain-English callouts at every H2 section and a mandatory plain-English narrative (`00a-plain-english.md`). It's meant to be reviewable by someone who isn't going to read implementation diffs, and `/c-plan` won't start until you've approved it. The plan is then written for AI consumption from the approved design — exact paths, exact commands, no narrative.
 
 The two tools coexist. Install both, pick per task. Cadence doesn't deprecate or replace anything in your existing setup.
 
 ## How it scales
 
-Cadence is built for large repos (200k+ LOC, multi-language). The PM stays in your session; fresh sub-agents per task read only the task block + linked files (never the whole repo). Built-in safeguards:
+Cadence is built for large repos (200k+ LOC, multi-language). The PM stays in your session; fresh sub-agents read only their task blocks + linked files (never the whole repo). Built-in safeguards:
 
 - **Judgment-based plan splitting** — `/c-plan` asks one question; large plans are treated as an upstream scoping failure, not a tunable knob.
-- **`execute.max_parallel`** caps simultaneous sub-agent dispatch (default 5).
+- **`execute.max_parallel`** caps concurrent implementer lanes, one git worktree each (default 4).
 - **Resume protocol**: a long plan can execute across multiple sessions; status `in-progress` is resumable.
 - **`NEEDS_CONTEXT` escalation**: when an implementer hits a gap, it asks the PM for specific files; PM fetches and re-dispatches. Prevents the "hallucinate to fill the void" failure mode.
 

@@ -1,6 +1,6 @@
 ---
 name: c-execute
-description: Drives a `draft`-status plan to `implemented`. PM-and-sub-agent model — user's main session is the PM; fresh `cadence-implementer` per task; DAG-scheduled parallel lanes per `Depends:` edges with a `Touches:` conflict guard; two-stage review (`cadence-spec-reviewer` then `cadence-code-reviewer`, spec wins on conflicts); records `base_sha` on first invocation; at completion dispatches `cadence-completion-auditor` directly (NOT via the /c-audit skill — skill-calls-skill is not a documented mechanism). Drift handling surfaces three response paths (fix / mark out of scope / abort) on every block. Never auto-deploys. Never amends commits. Never skips hooks.
+description: Drives a `draft`-status plan to `implemented`. PM-and-sub-agent model — user's main session is the PM; fresh `cadence-implementer` per task; DAG-scheduled parallel lanes per `Depends:` edges with a `Touches:` conflict guard; two-stage review (`cadence-spec-reviewer` and `cadence-code-reviewer` run concurrently, spec wins on conflicts); records `base_sha` on first invocation; at completion dispatches `cadence-completion-auditor` directly (NOT via the /c-audit skill — skill-calls-skill is not a documented mechanism). Drift handling surfaces three response paths (fix / mark out of scope / abort) on every block. Never auto-deploys. Never amends commits. Never skips hooks.
 ---
 
 # `/c-execute`
@@ -51,16 +51,16 @@ SHA-based pinning is robust against rebases, merges, and unrelated commits that 
 4. Dispatch lanes concurrently up to `execute.max_parallel`, respecting `Touches:` disjointness.
 5. **After each task lands** (spec ✓ + code ✓ + Invariant 3 clean), record the lane's progress by ticking every `- [ ]` step under `### Task N.M` per `skills/_shared/storage-resolution.md` (tick). See [Marking task complete](#marking-task-complete-mandatory--required-for-resume).
 6. Surface blockers to user — never work around silently.
-7. Run audit gate at the end; on pass, set status to `implemented` per `skills/_shared/storage-resolution.md` (set_status). Committing accumulated plan-file changes in one commit is the filesystem backend's mechanism only; in Notion mode every tick and status write already landed live, so there is no plan file to commit (see [[../../docs/designs/2026-07-10-notion-mode/05-execute-integration]]).
+7. Run audit gate at the end; on pass, set status to `implemented` per `skills/_shared/storage-resolution.md` (set_status). Committing accumulated plan-file changes in one commit is the filesystem backend's mechanism only; in Notion mode every tick and status write already landed live, so there is no plan file to commit.
 
-**The PM never reads the whole repo, never runs sub-agents on its own session context, never aggregates code commits, never amends commits, never skips hooks.** The PM is also the sole caller of `skills/_shared/storage-resolution.md`: it issues the one `read_artifact` and every `tick`/`set_status`/`set_property` write. Implementers and reviewers receive their task spec as plain text and touch git only; they stay storage-backend-blind exactly as today (see [[../../docs/designs/2026-07-10-notion-mode/05-execute-integration]]).
+**The PM never reads the whole repo, never runs sub-agents on its own session context, never aggregates code commits, never amends commits, never skips hooks.** The PM is also the sole caller of `skills/_shared/storage-resolution.md`: it issues the one `read_artifact` and every `tick`/`set_status`/`set_property` write. Implementers and reviewers receive their task spec as plain text and touch git only; they stay storage-backend-blind.
 
 ## Lane model and DAG scheduling
 
 Applies in `parallel` mode; `inline` mode replaces this whole engine with the Inline mode section below. The PM builds a dependency DAG from each task's `Depends:` edges (cross-file allowed), then runs **lanes** — the ready subset of one phase file's tasks — concurrently in isolated worktrees. The phase file is the lane: the unit of dispatch, the unit of review, and the unit of merge.
 
 - **Lane** = the ready subset of one phase file `F`'s tasks, run by one `cadence-implementer` in one worktree, committing per-task internally. Lane boundaries are author-visible (the `0X-*.md` filename); they are NOT a runtime-derived chain.
-- **Lane formation (per phase file):** for every phase file `F` with at least one ready task, compute `eligible(F)` = tasks of `F` whose cross-file `Depends:` are merged AND whose `Touches:` are disjoint from every in-flight lane. If `eligible(F)` is non-empty, dispatch it as one lane. Internal `Depends:` (both endpoints in the same eligible subset) do NOT gate dispatch — the implementer resolves them inside the lane by running predecessors first. The phase file = lane rule supersedes the older greedy-chain-extension rule from `docs/designs/2026-05-21-cadence-parallelism/01-execution-engine.md` §"Lane formation".
+- **Lane formation (per phase file):** for every phase file `F` with at least one ready task, compute `eligible(F)` = tasks of `F` whose cross-file `Depends:` are merged AND whose `Touches:` are disjoint from every in-flight lane. If `eligible(F)` is non-empty, dispatch it as one lane. Internal `Depends:` (both endpoints in the same eligible subset) do NOT gate dispatch — the implementer resolves them inside the lane by running predecessors first.
 - **Ready set:** a task is ready when every **cross-file** `Depends:` predecessor has merged to the working branch. Internal `Depends:` are intra-lane ordering, not ready-set gates. Recompute on every land.
 - **Co-schedule guard (hard):** two ready lanes may run concurrently only if `Touches(A) ∩ Touches(B) = ∅`. A `Touches:` overlap **serializes** the later lane (defer until the other lands) — never error, never override. The guard now operates between phase-file lanes; same semantics as before.
 - **Cap:** up to `execute.max_parallel` lanes (default 4 = concurrent worktrees). Reviewers run on top, uncapped.
@@ -139,7 +139,7 @@ Use the `Task` tool with one of these named agents:
 |---|---|---|
 | `cadence-implementer` | Per task | Task block + linked files extracted from task's `Reads:` block + `Touches:` list + CLAUDE.md excerpt + resolved-config slice (from the resolver's JSON output; see `skills/_shared/config-resolution.md`) |
 | `cadence-spec-reviewer` | After implementer DONE | Task spec + diff |
-| `cadence-code-reviewer` | After spec-review ✓ | Diff + repo conventions |
+| `cadence-code-reviewer` | After implementer DONE, concurrently with spec review (legacy sequential path: after spec-review ✓) | Diff + repo conventions |
 
 Sub-agents are generic — they don't know any specific repo. PM passes only what they need.
 
@@ -173,7 +173,7 @@ A return without a plain-English lead is malformed — re-dispatch the sub-agent
 |---|---|
 | **Narrow** — one or two specific files | Fetch named files; re-dispatch implementer. |
 | **Adjacent** — directory or "all callers of X" | grep for references (typically 3-8 files); fetch; re-dispatch. |
-| **Broad** — "whole module" or "all callers across codebase" | STOP. Surface to user. Usually indicates plan defect. User picks: edit Files list + retry, split task, or escalate to more capable model. Never auto-fetch the whole repo. |
+| **Broad** — "whole module" or "all callers across codebase" | STOP. Surface to user. Usually indicates plan defect. User picks: edit the task's `Reads:` list + retry, split task, or escalate to more capable model. Never auto-fetch the whole repo. |
 
 ## Review loops (two-stage, run in parallel)
 
@@ -235,7 +235,7 @@ When a lane returns BLOCKED, hits unresolvable drift, or surfaces a review gap n
 
 **Interaction with partial readiness (follow-up lanes).** Under the lane = phase file rule, a phase file can have ready tasks the PM has not yet dispatched (waiting for a free slot or for a `Touches:` conflict to clear) at the moment one of its earlier lanes blocks. Quiesce treats those tasks as part of the no-new-dispatch freeze: the in-flight subset of the blocking phase file completes whatever was already dispatched, lands or remains preserved on the worktree, and **no follow-up lane from that phase file (or any other phase file) opens during quiesce**. Concretely: if `L₁ = {1.1, 1.2, 1.3, 1.5}` from `01-foo.md` is the blocking lane and `1.4` was waiting in the ready set for a cross-file `Depends:` to clear, `1.4` stays unscheduled along with everything else awaiting the quiesce decision — the PM is not forming new lanes during quiesce regardless of which file they would come from. The user's decision (fix / mark out of scope / abort) is read from the clean post-quiesce tree.
 
-**All drift response paths are presented via `AskUserQuestion` (TUI multi-choice), not a prose "type one of:" prompt.** Per [[designs/2026-05-17-cadence/00-overview#Decisions log]].
+**All drift response paths are presented via `AskUserQuestion` (TUI multi-choice), not a prose "type one of:" prompt.**
 
 > **Hard gate — every `AskUserQuestion`, no exceptions:** (1) the `question` opens with a plain-English lead a newcomer could follow — what's being decided and why it matters now (the user may have been heads-down on the task for hours and lost the bigger plan context); (2) exactly one option is marked `(Recommended)` and listed **first** — triage / "which next?" menus included ("your call" is a non-answer); (3) each option's `description` gives the one-sentence trade-off. Full spec: `skills/_shared/ask-user-question.md`.
 
@@ -286,6 +286,5 @@ Once every task in every phase file is complete:
 
 ## References
 
-- Design source: [[designs/2026-05-17-cadence/04-execute]].
-- Companion agents (Plan 2): `cadence-implementer`, `cadence-spec-reviewer`, `cadence-code-reviewer`, `cadence-completion-auditor`.
-- Standalone audit skill (Phase 05 of this plan): `/c-audit` (a thin user-facing wrapper around `cadence-completion-auditor`).
+- Companion agents: `cadence-implementer`, `cadence-spec-reviewer`, `cadence-code-reviewer`, `cadence-completion-auditor`.
+- Standalone audit skill: `/c-audit` (a thin user-facing wrapper around `cadence-completion-auditor`).

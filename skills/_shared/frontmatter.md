@@ -1,6 +1,6 @@
 # Frontmatter spec (shared by /c-design, /c-plan, /c-validate)
 
-Authoritative reference for the YAML frontmatter Cadence skills read and write on designs and plans. Sourced from [[designs/2026-05-17-cadence/02-design#Frontmatter spec]] and [[designs/2026-05-17-cadence/03-plan#00-overview.md content]].
+Authoritative reference for the YAML frontmatter Cadence skills read and write on designs and plans.
 
 ## Design overview (`<paths.designs>/<slug>/00-overview.md`)
 

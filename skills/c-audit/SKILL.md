@@ -72,7 +72,7 @@ Repo-configurable add-ons (declared in `.cadence/config.yaml` → `audits.option
 
 > Note: the right column describes `/c-execute`'s behavior for completeness — those outcomes are produced by `/c-execute` dispatching the same agent this skill dispatches. The agent is identical; only the caller's reaction differs.
 
-**Three response paths on failure** (consistent with `/c-execute`'s drift handling). Presented via `AskUserQuestion` (TUI multi-choice) with "Fix" marked `(Recommended)` in most cases — per [[designs/2026-05-17-cadence/00-overview#Decisions log]].
+**Three response paths on failure** (consistent with `/c-execute`'s drift handling). Presented via `AskUserQuestion` (TUI multi-choice) with "Fix" marked `(Recommended)` in most cases.
 
 > **Hard gate — every `AskUserQuestion`, no exceptions:** (1) the `question` opens with a plain-English lead a newcomer could follow — here, *which* audit failed and what's at stake (the user has waited through a long execution and may not remember which audit covers what); (2) exactly one option is marked `(Recommended)` and listed **first** — triage / "which next?" menus included ("your call" is a non-answer); (3) each option's `description` gives the one-sentence trade-off. Full spec: `skills/_shared/ask-user-question.md`.
 
@@ -108,5 +108,4 @@ Returned by `cadence-completion-auditor`; surface unchanged to the caller. Leads
 
 ## References
 
-- Design source: [[designs/2026-05-17-cadence/05-audit]].
-- Companion agent: `cadence-completion-auditor` (Plan 2).
+- Companion agent: `cadence-completion-auditor`.

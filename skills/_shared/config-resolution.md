@@ -89,7 +89,7 @@ The local layer exists for preferences that legitimately differ per person or pe
 
 **Intended for local override:** `execute.max_parallel`, `execute.worktree_confirm`, `authoring.*`, `validate.browser_driver`, `validate.browser_command`, `validate.browser_env_preamble`, `advisors.*`.
 
-**Team policy:** the `TEAM_POLICY_KEYS` constant in `scripts/resolve-config.js` is the source of truth; this list mirrors it. Prefix entries cover the subtree: `paths.*`, `naming.*`, `status.*`, `frontmatter.*`, `plan.*`, `audits.*`, `oos.*`, `worktree.hooks.*`; exact entries: `storage.backend`, `storage.notion.root_page`, `storage.notion.designs_db`, `storage.notion.plans_db`, `worktree.dir`, `worktree.integrate`, `worktree.merge_lock`, `worktree.lock_stale_threshold`, `execute.branch_check`, `execute.auto_resolve_drift`.
+**Team policy:** the `TEAM_POLICY_KEYS` constant in `scripts/resolve-config.js` is the source of truth; this list mirrors it. Prefix entries cover the subtree: `paths.*`, `naming.*`, `status.*`, `frontmatter.*`, `plan.*`, `audits.*`, `oos.*`, `worktree.hooks.*`; exact entries: `storage.backend`, `storage.notion.root_page`, `storage.notion.designs_db`, `storage.notion.plans_db`, `worktree.dir`, `worktree.integrate`, `worktree.merge_lock`, `worktree.lock_stale_threshold`.
 
 **Divergence notice, never a block:** the script reports each local override of a team-policy key in `team_policy_overrides`; the skill honors the value but prints one line, once per session per key, e.g. *"Note: `.cadence/config.local.yaml` overrides team-policy key `audits.default`."* The user is in control; the notice just keeps the divergence from being silent.
 

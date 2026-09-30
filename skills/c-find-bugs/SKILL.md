@@ -95,7 +95,7 @@ Same shape as `/c-check` and `/c-audit`.
 
 ## Interactive finding application (optional follow-up)
 
-After the report, ask via `AskUserQuestion` whether to enter fix mode. Default is report-only. Per [[designs/2026-05-17-cadence/00-overview#Decisions log]] TUI decision.
+After the report, ask via `AskUserQuestion` whether to enter fix mode. Default is report-only.
 
 > **Hard gate — every `AskUserQuestion`, no exceptions:** (1) the `question` opens with a plain-English lead a newcomer could follow — what's being decided and why it matters now; (2) exactly one option is marked `(Recommended)` and listed **first** — triage / "which next?" menus included ("your call" is a non-answer); (3) each option's `description` gives the one-sentence trade-off. Full spec: `skills/_shared/ask-user-question.md`.
 
@@ -137,6 +137,5 @@ When `--repo`:
 
 ## References
 
-- Design source: [[designs/2026-05-17-cadence/08-find-bugs]].
 - Shared question/option formatting: `skills/_shared/ask-user-question.md`.
 - Sister diagnostic: `/c-check` (substance/quality vs. this skill's concrete-defects framing).
