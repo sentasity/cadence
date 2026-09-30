@@ -2,4 +2,4 @@
 
 Config migration is now handled automatically by the Cadence `SessionStart` hook — no skill runs this routine in its pre-flight anymore.
 
-See [[../../docs/designs/2026-05-26-config-migration-reliability/01-mechanism]] for the mechanism.
+The hook (`hooks/hooks.json`) runs `scripts/migrate-config.js` at session start.

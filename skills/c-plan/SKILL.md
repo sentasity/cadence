@@ -21,7 +21,7 @@ Size is handled by phase decomposition, not by spawning sibling plans — `/c-ex
 
 ### Phase file sizing — fewer, coherent files
 
-Each phase file becomes the unit of worktree dispatch and the unit of per-lane review under `/c-execute`'s lane = phase file rule (`docs/designs/2026-05-28-lane-by-phase-file/01-execution-engine-change.md`). Consolidate related work into fewer, larger phase files:
+Each phase file becomes the unit of worktree dispatch and the unit of per-lane review under `/c-execute`'s lane = phase file rule (`skills/c-execute/SKILL.md`, Lane model and DAG scheduling). Consolidate related work into fewer, larger phase files:
 
 - **One substantive topic per file.** A topic is a coherent slice the reviewer can hold in their head — closely-related codebase slice (one skill, one service, one feature surface), shared `Reads:` core across tasks, a one-sentence reviewer headline with no "and also" clauses, and an internal DAG shape (chain, fan-out, fan-in — not fully disconnected).
 - **Target 5–10+ tasks per file.** Below 5 is too thin to amortize worktree spin-up + per-lane review. 10+ is fine as long as topical coherence holds. The 5–10+ figure is a **target, not a threshold** — a genuinely 3-task plan still ships as a 3-task phase file.
@@ -206,6 +206,5 @@ Fix items 1–8 and 11 inline. For items 9 and 10, surface candidates to the use
 
 ## References
 
-- Design source: [[designs/2026-05-17-cadence/03-plan]].
 - Shared frontmatter: `skills/_shared/frontmatter.md`.
 - Shared format: `skills/_shared/obsidian-format.md`.

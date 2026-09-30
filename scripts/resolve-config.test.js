@@ -66,7 +66,7 @@ test('isTeamPolicyKey: prefix entries, exact entries, and personal keys', () => 
   assert.strictEqual(isTeamPolicyKey('paths.designs'), true);
   assert.strictEqual(isTeamPolicyKey('storage.backend'), true);
   assert.strictEqual(isTeamPolicyKey('worktree.hooks.provision'), true);
-  assert.strictEqual(isTeamPolicyKey('execute.branch_check'), true);
+  assert.strictEqual(isTeamPolicyKey('worktree.merge_lock'), true);
   assert.strictEqual(isTeamPolicyKey('execute.max_parallel'), false);
   assert.strictEqual(isTeamPolicyKey('authoring.design_mode'), false);
   assert.strictEqual(isTeamPolicyKey('advisors.enabled'), false);
@@ -119,7 +119,7 @@ test('resolveConfig: repo layer overrides defaults per key path', () => {
   });
   const r = resolveConfig(root);
   assert.strictEqual(r.config.execute.max_parallel, 9);
-  assert.strictEqual(r.config.execute.branch_check, true);
+  assert.strictEqual(r.config.execute.parallel, true);
 });
 
 test('resolveConfig: local layer wins over repo; policy override reported', () => {

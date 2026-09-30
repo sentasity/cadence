@@ -50,7 +50,7 @@ Before entering Q&A, run the resolver; if its output has `"root": null` (no `.ca
    - **Paths:** *"Where should designs and plans live?"* — options: `docs/designs` (default), `docs/obsidian/designs`, or other (free text).
    - **TDD default:** *"Should plans default to TDD-shaped tasks (test → fail → impl → pass → commit)?"* — yes / no.
    - **Advisors:** *"Any repo-specific agents to register as advisors?"* — comma-separated names or "none."
-   - **Storage backend:** *"Store designs and plans on the filesystem (default) or in Notion?"* — filesystem / notion. When the user picks notion, ask one follow-up for `storage.notion.root_page` (the parent page under which Cadence provisions its databases); see [[../../docs/designs/2026-07-10-notion-mode/03-connection-provisioning]]. Filesystem needs no follow-up.
+   - **Storage backend:** *"Store designs and plans on the filesystem (default) or in Notion?"* — filesystem / notion. When the user picks notion, ask one follow-up for `storage.notion.root_page` (the parent page under which Cadence provisions its databases); see `skills/_shared/storage-resolution.md` (First-run provisioning). Filesystem needs no follow-up.
 3. Read `${CLAUDE_PLUGIN_ROOT}/defaults/config.default.yaml` as the source of truth, then write `.cadence/config.yaml` to the repo root: take its `config_version` verbatim, fold the user's four brainstorm answers (paths, TDD default, advisors, and — when the user chose notion — `storage.backend` plus `storage.notion.root_page`) over the corresponding default keys, and write the merged result with every other default key included as-is. Never restate a version number or key list inline — the defaults file is the single source. Confirm the file was created, and mention that personal per-machine overrides can later go in `.cadence/config.local.yaml` (gitignored; see `skills/_shared/config-resolution.md`). (This scaffolding write is a sanctioned write path per config-resolution.md; the direct-read ban covers resolution only.)
 4. Enter the regular Q&A loop (below) for the user's brainstorm input.
 5. **If user says no,** exit cleanly with a one-line note: *"Config required to proceed. Run /c-brainstorm again when ready."* No error, no pointer dump.
@@ -127,6 +127,5 @@ Handoff: *"Stub written to `<path>/00-overview.md`. Run `/c-design` to write the
 
 ## References
 
-- Design source: [[designs/2026-05-17-cadence/01-brainstorm]] (in the consuming repo, if it carries Cadence's own design).
 - Shared frontmatter spec: `skills/_shared/frontmatter.md`.
 - Shared question/option formatting: `skills/_shared/ask-user-question.md`.

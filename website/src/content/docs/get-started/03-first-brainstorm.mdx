@@ -36,7 +36,7 @@ The very first time you run `/c-brainstorm` in a repo that has no Cadence config
 No .cadence/config.yaml found in this repo or any parent.
 Scaffold defaults to get started? (y/n)
 ```
-Answer `y`, then answer three questions: where designs and plans should live (default `docs/designs`), whether plans should be test-first by default, and any helper agents to register (or "none").
+Answer `y`, then answer four questions: where designs and plans should live (default `docs/designs`), whether plans should be test-first by default, any helper agents to register (or "none"), and whether to store designs and plans on the filesystem (the default) or in Notion.
   </TabItem>
 </Tabs>
 
@@ -46,7 +46,7 @@ With the config written, Cadence enters the Q&A loop. Each question leads with a
 
 <Walkthrough title="Brainstorm the current-time function">
   <Fragment slot="step-1-title">Run the command with your idea</Fragment>
-  <Fragment slot="step-1-body">`/c-brainstorm a function that prints the current time`. On a fresh repo, accept the config scaffold first (three quick questions).</Fragment>
+  <Fragment slot="step-1-body">`/c-brainstorm a function that prints the current time`. On a fresh repo, accept the config scaffold first (four quick questions).</Fragment>
   <Fragment slot="step-2-title">Answer one question at a time</Fragment>
   <Fragment slot="step-2-body">Cadence asks focused questions: output format, whether to include a way to run it directly, what's explicitly not in scope. Each has a Recommended pick. You choose; you don't write prose.</Fragment>
   <Fragment slot="step-3-title">Pick an approach</Fragment>

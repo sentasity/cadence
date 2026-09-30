@@ -409,4 +409,3 @@ the enforcement.
   skills honor. If this skill and that doc ever read differently, the shared doc
   wins.
 - Merge mechanics: `references/merging.md`.
-- Design source: [[designs/2026-06-09-c-worktree/03-c-worktree-skill]].

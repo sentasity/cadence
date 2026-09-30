@@ -6,7 +6,7 @@ Cadence is a phase-aware system; the contribution flow follows the same phases.
 
 1. **Open an issue first.** Especially for new skills, agent changes, or audit roster additions. Aligning on the problem before writing the change saves both sides a re-litigation pass.
 2. **For design changes,** run `/c-check` on the modified design folder. The review report should be clean before you submit.
-3. **For plan changes** (e.g. when fixing the bootstrap plans), run `/c-check` on the plan folder and `/c-find-bugs` on the affected code.
+3. **For plan changes,** run `/c-check` on the plan folder and `/c-find-bugs` on the affected code.
 4. **For skill or agent prompt changes,** include a smoke-test transcript in the PR description showing the new behavior.
 
 ## PR scope
@@ -21,11 +21,11 @@ Cadence is a phase-aware system; the contribution flow follows the same phases.
 - YAML for config and frontmatter.
 - JSON for plugin manifests (matches Claude Code's expectations).
 - Skill/agent text must route config reads through `scripts/resolve-config.js` — never instruct a direct read of `.cadence/config.yaml`, `.cadence/config.local.yaml`, or `defaults/config.default.yaml`. See `skills/_shared/config-resolution.md`.
-- No code in this repo (it's documentation + prompts). If you find yourself wanting to write a helper script, ask in the issue first — usually the right answer is "the skill prompt should handle it."
+- Mostly documentation and prompts. The exception is `scripts/`: small Node and bash helpers for the jobs prose can't do reliably (config resolution and migration, Notion writes, the merge lock). If you want to add a helper script, ask in the issue first; often the right answer is still "the skill prompt should handle it."
 
 ## Tests
 
-The scripts under `scripts/` have a `node --test` suite: run `node --test 'scripts/*.test.js'` before any PR that touches them. Skill and agent prompts have no automated suite; their validation lives in each plan's `98-validation.md` / `96-validation.md` and is walked manually via `/c-validate`. If you change a skill or agent, walk the relevant plan's validation doc as part of your PR.
+The scripts under `scripts/` have two suites: `node --test 'scripts/*.test.js'` for the Node scripts and `bash scripts/test-merge-lock.sh` for the merge lock. Run both before any PR that touches `scripts/`. Skill and agent prompts have no automated suite; the smoke-test transcript from step 4 above is their validation.
 
 ## Demo GIFs
 
@@ -46,7 +46,7 @@ The `version-guard.yml` workflow enforces the same three edits at PR time: any P
 ## What we don't take PRs for
 
 - **Renaming skills** (`/c-brainstorm` → `/c-bs`, etc.). The names are part of the v0.1 contract; breaking them breaks every plan that references them. Naming changes need an explicit migration plan.
-- **Adding "easier" entry points** (e.g. a unified `/cadence` umbrella). Explicit phase invocation is a deliberate design choice — see [the design's OOS list](docs/designs/2026-05-17-cadence/99-out-of-scope.md#1-unified-cadence-umbrella-command) in this repo (or your local clone of the source design).
+- **Adding "easier" entry points** (e.g. a unified `/cadence` umbrella). Explicit phase invocation is a deliberate design choice: each stage is a gate you run on purpose, and an umbrella command would turn them back into one atomic chain.
 - **Removing the OOS discipline** (rationale + wikilink requirement). The discipline is what keeps `99-out-of-scope.md` from becoming a TODO graveyard.
 
 ## License

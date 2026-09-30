@@ -1,6 +1,6 @@
 # Obsidian format conventions (shared by /c-design, /c-plan)
 
-Authoritative reference for the obsidian-flavored markdown conventions Cadence's design and plan skills use. Sourced from [[designs/2026-05-17-cadence/02-design#Callout conventions]] and [[designs/2026-05-17-cadence/02-design#Folder layout]].
+Authoritative reference for the obsidian-flavored markdown conventions Cadence's design and plan skills use.
 
 ## Callouts (fixed set — no inventions)
 

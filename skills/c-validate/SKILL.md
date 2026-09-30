@@ -72,5 +72,4 @@ Status NEVER advances to `completed` with any unchecked 96 item. No silent passe
 
 ## References
 
-- Design source: [[designs/2026-05-17-cadence/06-validate]].
-- Plan structure spec (where 96-validation lives): [[designs/2026-05-17-cadence/03-plan]].
+- Plan structure spec (where 96-validation lives): `skills/c-plan/SKILL.md`.

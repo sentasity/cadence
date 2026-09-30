@@ -92,7 +92,7 @@ Same shape as `/c-find-bugs` and `/c-audit` (consistency is load-bearing).
 
 Apply conservatively. **Default to Important when uncertain** — `Critical` is reserved for things that block the next phase outright. Sub-agent prompts dispatched by this skill must include this calibration verbatim so individual lenses don't drift upward.
 
-- **Critical** — the doc **cannot move forward** as written; the user has to stop and resolve before approval or execution. Examples: a required decision is missing entirely (not "two docs disagree" — that's Important); a plan's `Files:` list contradicts the change description; a plan task is impossible to execute as specified; a contradiction inside the same doc with no obvious resolution.
+- **Critical** — the doc **cannot move forward** as written; the user has to stop and resolve before approval or execution. Examples: a required decision is missing entirely (not "two docs disagree" — that's Important); a plan task's `Touches:` list contradicts the change description; a plan task is impossible to execute as specified; a contradiction inside the same doc with no obvious resolution.
 - **Important** — gaps or inconsistencies the build will hit, but the work isn't blocked. A developer can pick one interpretation, note the choice, and move on. Cross-doc inconsistencies, undefined-but-recoverable terms, missing failure modes for non-critical paths, hidden assumptions that need surfacing.
 - **Minor** — polish, clarity, redundancy. The build won't notice; future readers might.
 
@@ -100,7 +100,7 @@ Apply conservatively. **Default to Important when uncertain** — `Critical` is 
 
 ## Interactive finding application (optional follow-up)
 
-After the report is printed, ask via `AskUserQuestion` how to handle findings. Default is report-only; any application path is opt-in. When a finding is applied, the edit to the reviewed doc is written via `skills/_shared/storage-resolution.md` (write_doc) — this is the only write `/c-check` ever performs, and only on this opt-in path; the default report-only flow makes no writes. Per [[designs/2026-05-17-cadence/00-overview#Decisions log]] TUI decision.
+After the report is printed, ask via `AskUserQuestion` how to handle findings. Default is report-only; any application path is opt-in. When a finding is applied, the edit to the reviewed doc is written via `skills/_shared/storage-resolution.md` (write_doc) — this is the only write `/c-check` ever performs, and only on this opt-in path; the default report-only flow makes no writes.
 
 > **Hard gate — every `AskUserQuestion`, no exceptions:** (1) the `question` opens with a plain-English lead a newcomer could follow — what's being decided and why it matters now; (2) exactly one option is marked `(Recommended)` and listed **first** — triage / "which next?" menus included ("your call" is a non-answer); (3) each option's `description` gives the one-sentence trade-off. Full spec: `skills/_shared/ask-user-question.md`.
 
@@ -165,7 +165,6 @@ A bare option list like "A. Schema-version stamp / B. Re-stamp at runtime / C. D
 
 ## References
 
-- Design source: [[designs/2026-05-17-cadence/07-check]].
 - Shared format spec: `skills/_shared/obsidian-format.md`.
 - Shared question/option formatting: `skills/_shared/ask-user-question.md`.
 - Sister diagnostic: `/c-find-bugs` (concrete defects vs. this skill's "is it good?" framing).

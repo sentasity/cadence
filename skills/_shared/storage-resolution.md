@@ -1,6 +1,6 @@
 # Storage resolution (shared by every artifact-storing skill and agent)
 
-Authoritative reference for how Cadence turns a slug into stored bytes and back. Any skill or agent that reads or writes a design, plan, or brainstorm stub follows this document; if a skill's own text ever describes storage differently, this doc wins. Sourced from [[../../docs/designs/2026-07-10-notion-mode/01-storage-abstraction]] (operations and contracts), [[../../docs/designs/2026-07-10-notion-mode/02-notion-data-model]] (property schema), [[../../docs/designs/2026-07-10-notion-mode/03-connection-provisioning]] (discovery, provisioning, auth), and [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]] (block translation).
+Authoritative reference for how Cadence turns a slug into stored bytes and back. Any skill or agent that reads or writes a design, plan, or brainstorm stub follows this document; if a skill's own text ever describes storage differently, this doc wins.
 
 The layer defines a small set of abstract operations. Each operation has one contract and two implementations behind it, a filesystem backend and a notion backend; skills call the operation by name and stay backend-agnostic, and the branch on `storage.backend` happens inside this layer and nowhere else.
 
@@ -32,7 +32,7 @@ Operations take an artifact type (`design` or `plan`) plus a slug; the type sele
 
 **`create_artifact(type, slug, frontmatter)`** is the only operation that brings an artifact into being, kept distinct from `write_doc` for that reason. On the filesystem it makes the folder and writes `00-overview.md` with the given frontmatter. On Notion it creates a database row and must set the row's title and its initial typed properties (status, created, updated, tags) in the same call, because a Notion row cannot exist without a title; there is no create-then-fill sequence. Before the create, the notion backend runs the Tags pre-step: fetch the target database's data-source schema, diff the frontmatter `tags` against the Tags property's existing option names (exact, case-sensitive match), and when any are missing add them via `notion-update-data-source` (add-only: pass names only so Notion assigns colors; never remove or recolor existing options). The official MCP hard-rejects unknown multi-select values, so skipping this step fails the create on any fresh tag. Operational sequence and payload shape: `skills/_shared/notion-translation.md`.
 
-**`read_artifact(type, slug)`** returns a backend-neutral view: the overview's frontmatter and body, plus each child doc's slot id, frontmatter, and body. A caller that only needs the overview reads that entry and ignores the rest. This operation promises the shape of the return; the fidelity of Notion block-to-markdown reconstruction on read-back belongs to [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]].
+**`read_artifact(type, slug)`** returns a backend-neutral view: the overview's frontmatter and body, plus each child doc's slot id, frontmatter, and body. A caller that only needs the overview reads that entry and ignores the rest. This operation promises the shape of the return; the fidelity of Notion block-to-markdown reconstruction on read-back belongs to `skills/_shared/notion-translation.md` (Read-back inverse).
 
 **`write_doc(type, slug, slot, content)`** replaces one slot's content wholesale. The filesystem writes `<slot>.md` in the artifact's folder. On Notion, callouts are authored as native `<callout>` blocks from the start (per the authoring rule in `skills/_shared/notion-translation.md`); `write_doc` runs that doc's pre-send guard — scan the body for `> [!` and translate any surviving obsidian callout — then writes the full body to a local file and invokes `scripts/notion-write.js`, which pushes the content to Notion and verifies it landed whole before exiting; see [[#Content write path]]. Doc bodies never travel in an MCP tool argument. Wikilinks resolve to mentions in the `resolve_links` second pass, not here. Partial edits are the caller's responsibility to assemble before the call; there is no append or patch form of this operation for callers.
 
@@ -44,7 +44,7 @@ Operations take an artifact type (`design` or `plan`) plus a slug; the type sele
 
 **`link(design_slug, plan_slug)`** is bidirectional and idempotent: one call establishes the design-to-plan relationship from both sides. The filesystem writes two frontmatter fields, `linked_plan:` and `linked_design:`, one on each overview; Notion sets a single Relation, which Notion surfaces on both rows automatically. There is no half-linked state where one side points and the other does not.
 
-**`tick(slug, task_ref)`** checks off a single task's checkbox and is the write `/c-execute` and `/c-validate` call most. `task_ref` is a stable reference to a specific checkbox within a plan doc, never a line number. The filesystem rewrites `- [ ]` to `- [x]` at that reference; Notion locates and flips the matching to-do block's checked state. How `task_ref` is shaped and matched to a Notion block is owned by [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]]; this layer only fixes that `tick` is the verb and that it targets exactly one checkbox. `tick` also runs in the clearing direction — setting the checked state back to unchecked — which today has a single caller: `/c-validate`'s re-run reset (`validate.reset_checkboxes_on_rerun`).
+**`tick(slug, task_ref)`** checks off a single task's checkbox and is the write `/c-execute` and `/c-validate` call most. `task_ref` is a stable reference to a specific checkbox within a plan doc, never a line number: the owning doc plus the checkbox's enclosing heading and label (for a plan step, its `### Task N.M` heading and bold step label such as `Step 5: Commit`). The filesystem rewrites `- [ ]` to `- [x]` at that reference. Notion fetches the owning doc's page, walks its to-do blocks in document order under that heading, matches on the label (the heading disambiguates identical labels in different sections), and flips the matched block's checked state. It re-resolves the block id from the current page on every call and never persists it, so the match survives edits made in Notion. A missing or ambiguous match fails loudly to the caller instead of ticking a guess, because a wrong tick misreports progress to everyone watching the page. `tick` also runs in the clearing direction — setting the checked state back to unchecked — which today has a single caller: `/c-validate`'s re-run reset (`validate.reset_checkboxes_on_rerun`).
 
 **`query(type, status_filter)`** returns a type's artifacts, optionally filtered by status, for listing and roadmap-style reads. The filesystem scans `<paths.type>/`, reads each overview's frontmatter, and filters in memory; Notion runs a single database query with a Status filter, which is where boards and filtered views pay off.
 
@@ -72,7 +72,7 @@ The slug (for example `2026-07-10-notion-mode`) is the one name skills and human
 
 **Filesystem.** The slug maps directly and deterministically to `<paths.type>/<slug>/` (`paths.designs` or `paths.plans` from resolved config). This is pure path arithmetic on type, slug, and resolved config: no lookup, no state, exactly today's behavior.
 
-**Notion.** The slug maps to a database row's page id by querying the type's database for the row whose Slug property matches the given slug; which property carries the slug, and why it is a stored property rather than the page title, is defined in [[../../docs/designs/2026-07-10-notion-mode/02-notion-data-model]]. The resolved page id is then carried inside the handle for the rest of the operation's work. The page id never appears in config, in frontmatter, or in a skill's text; the slug is the durable, committed, human-facing key, and the page id is a transient, resolved detail hidden behind `resolve`.
+**Notion.** The slug maps to a database row's page id by querying the type's database for the row whose Slug property matches the given slug. Slug is a Rich text property Cadence writes once at creation (see [[#Database schema]]), deliberately separate from the page title: Title is what people read on a board and are free to rename, and a rename must never break a `/c-*` lookup. The resolved page id is then carried inside the handle for the rest of the operation's work. The page id never appears in config, in frontmatter, or in a skill's text; the slug is the durable, committed, human-facing key, and the page id is a transient, resolved detail hidden behind `resolve`.
 
 This asymmetry is the whole point of the layer: a skill says "the artifact `<slug>`" and gets correct behavior on either backend without knowing that one resolution is arithmetic and the other is a query.
 
@@ -88,7 +88,7 @@ Because the backend is a whole-repo property the team shares, the entire `storag
 
 The filesystem backend is not new code so much as a name for what Cadence skills already do: compute `<paths.type>/<slug>/`, read and write `.md` files inside that folder, edit the overview's frontmatter in place, and flip `- [ ]` checkboxes to `- [x]`. It is a named extraction of existing behavior, not new behavior.
 
-When `storage.backend` is `filesystem`, the resolved behavior of every operation in [[#The abstract operation set]] is byte-for-byte what Cadence does today; nothing about how a repo reads or writes designs and plans on disk changes because this layer exists. Each operation's "Filesystem behavior" column in the table above IS this backend: there is no separate filesystem implementation to consult beyond what that column already states. Source: [[../../docs/designs/2026-07-10-notion-mode/01-storage-abstraction]].
+When `storage.backend` is `filesystem`, the resolved behavior of every operation in [[#The abstract operation set]] is byte-for-byte what Cadence does today; nothing about how a repo reads or writes designs and plans on disk changes because this layer exists. Each operation's "Filesystem behavior" column in the table above IS this backend: there is no separate filesystem implementation to consult beyond what that column already states.
 
 ## The notion backend
 
@@ -112,7 +112,7 @@ The notion backend never degrades to the filesystem backend under any circumstan
 
 Mockups are not an exception to this. They are not a Notion-stored artifact class that degrades to disk under pressure; they are local files on every backend by definition, and the design that owns them still lives wholly in Notion. Nothing about the source of truth is split: the `95-visual-contract` doc in Notion remains the authority on which version is frozen and what the contract says, and it points at the file.
 
-Obsidian-to-Notion-flavored-Markdown translation on the way in, the read-back inverse, and wikilink resolution are specified operationally in `skills/_shared/notion-translation.md` and by design in [[../../docs/designs/2026-07-10-notion-mode/04-content-translation]]; the `tick` checkbox mechanics live there too. This layer fixes the operation contracts those implementations satisfy and does not restate the mapping.
+Obsidian-to-Notion-flavored-Markdown translation on the way in, the read-back inverse, and wikilink resolution are specified operationally in `skills/_shared/notion-translation.md`; `tick`'s checkbox matching is in its contract above. This layer fixes the operation contracts those implementations satisfy and does not restate the mapping.
 
 ### Content write path
 
@@ -147,13 +147,44 @@ Provisioning runs from the notion branch of the storage layer before the first r
 1. **Resolve config.** Read `storage.backend`, `storage.notion.root_page`, `storage.notion.designs_db`, and `storage.notion.plans_db` from the resolver's output (`node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"`; contract in `skills/_shared/config-resolution.md`). If `backend` is not `notion`, provisioning does nothing.
 2. **Short-circuit when already provisioned.** If both `designs_db` and `plans_db` are already set, the databases exist; skip straight to normal operation. This makes provisioning idempotent, a no-op on every run after the first.
 3. **Search under the root page.** For each unset database id, search under `root_page` for an existing Designs or Plans database identified by a known title, using the discovered MCP's query or search capability. This recovers a database that exists but whose id was never recorded, for example one a teammate provisioned but has not yet committed.
-4. **Create any still-missing database.** For a database that is neither in config nor found under the root page, create it under `root_page` with the property schema defined in [[../../docs/designs/2026-07-10-notion-mode/02-notion-data-model]].
+4. **Create any still-missing database.** For a database that is neither in config nor found under the root page, create it under `root_page` with the property schema in [[#Database schema]].
 5. **Write ids back to committed config.** Write the resolved and newly created database ids into `storage.notion.designs_db` and `storage.notion.plans_db` in the repo's committed `.cadence/config.yaml`, preserving surrounding content. This write-back edits the committed file additively and must never touch `.cadence/config.local.yaml`. This is a sanctioned write path per config-resolution.md; the read ban covers resolution only.
 6. **Tell the user and remind them to commit.** Report which databases were found versus created, and remind the user to commit `.cadence/config.yaml` so the whole team shares the same databases and no one re-provisions.
 
+## Database schema
+
+Notion mode uses exactly two databases, both direct children of `root_page`: **Designs** holds every brainstorm stub and design, and **Plans** holds every plan. Each artifact is one row. The overview's frontmatter becomes the row's properties (never page body), the overview's markdown body is the row's page body, and every other child doc is a sub-page under the row.
+
+**Designs**
+
+| Property | Type | Source |
+|---|---|---|
+| Title | Title | overview `title` |
+| Slug | Rich text | the artifact slug; written once by Cadence, queried by `resolve` |
+| Status | Select | overview `status` |
+| Created | Date | overview `created` |
+| Updated | Date | overview `updated` |
+| Tags | Multi-select | overview `tags` |
+| Linked Plan | Relation to Plans | overview `linked_plan` |
+
+**Plans**
+
+| Property | Type | Source |
+|---|---|---|
+| Title | Title | overview `title` |
+| Slug | Rich text | the artifact slug; written once by Cadence, queried by `resolve` |
+| Status | Select | overview `status` |
+| Created | Date | overview `created` |
+| Updated | Date | overview `updated` |
+| Tags | Multi-select | overview `tags` |
+| Linked Design | Relation to Designs | overview `linked_design` |
+| Base SHA | Rich text | overview `base_sha` (set once by `/c-execute`) |
+
+Status options are created at provisioning to exactly match the resolved config's status vocabulary (`status.design` / `status.plan`; by default `draft`, `in-review`, `approved`, `completed`, `superseded`, `on-hold` for designs and `draft`, `in-progress`, `implemented`, `completed`, `superseded`, `on-hold` for plans). `set_status` only ever selects an existing option. Linked Plan and Linked Design are the two ends of one bidirectional Relation, so setting either end populates the other.
+
 ## Schema ownership
 
-Because Cadence creates the two databases with a schema it defines, that schema is Cadence's to own and evolve: a future change to the property set is a Cadence-driven database migration, not a user's hand-edit. This is distinct from `config_version` migration, which migrates keys inside the config file; a database-schema migration instead alters Notion database structure through the MCP. The reconciliation mechanism itself, detecting a provisioned database that predates the current schema and updating it, is deferred to future work; this doc fixes only the responsibility, that Cadence owns and migrates the schema. Source: [[../../docs/designs/2026-07-10-notion-mode/03-connection-provisioning]].
+Because Cadence creates the two databases with a schema it defines, that schema is Cadence's to own and evolve: a future change to the property set is a Cadence-driven database migration, not a user's hand-edit. This is distinct from `config_version` migration, which migrates keys inside the config file; a database-schema migration instead alters Notion database structure through the MCP. The reconciliation mechanism itself, detecting a provisioned database that predates the current schema and updating it, is deferred to future work; this doc fixes only the responsibility, that Cadence owns and migrates the schema.
 
 ## The authentication boundary
 

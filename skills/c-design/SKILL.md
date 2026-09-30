@@ -113,6 +113,5 @@ Fix inline. No re-review needed.
 
 ## References
 
-- Design source: [[designs/2026-05-17-cadence/02-design]].
 - Shared frontmatter: `skills/_shared/frontmatter.md`.
 - Shared callout/format conventions: `skills/_shared/obsidian-format.md`.
