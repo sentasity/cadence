@@ -1,6 +1,6 @@
 ---
 name: c-execute
-description: Drives a `draft`-status plan to `implemented`. PM-and-sub-agent model — user's main session is the PM; fresh `cadence-implementer` per task; DAG-scheduled parallel lanes per `Depends:` edges with a `Touches:` conflict guard; two-stage review (`cadence-spec-reviewer` and `cadence-code-reviewer` run concurrently, spec wins on conflicts); records `base_sha` on first invocation; at completion dispatches `cadence-completion-auditor` directly (NOT via the /c-audit skill — skill-calls-skill is not a documented mechanism). Drift handling surfaces three response paths (fix / mark out of scope / abort) on every block. Never auto-deploys. Never amends commits. Never skips hooks.
+description: Use when the user wants to implement a Cadence plan, or resume one that is already in progress.
 ---
 
 # `/c-execute`

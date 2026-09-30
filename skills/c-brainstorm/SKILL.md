@@ -1,6 +1,6 @@
 ---
 name: c-brainstorm
-description: Interactive Q&A — works in two modes. Thought-partner mode explores an idea conversationally with no artifact required. Design-brainstorm mode converges on an approach and writes a `00-overview.md` stub under `<paths.designs>/{yyyy-mm-dd-slug}/`. Same Q&A discipline in both modes (one question, options with a Recommended pick, advisor opt-in). Detects missing `.cadence/config.yaml` on first run in a fresh repo and offers to scaffold defaults inline. Never auto-chains into /c-design.
+description: Use when the user wants to explore an idea, think through a feature, or start a new Cadence design, including a first Cadence run in a repo with no .cadence/config.yaml.
 ---
 
 # `/c-brainstorm`

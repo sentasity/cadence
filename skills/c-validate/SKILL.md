@@ -1,6 +1,6 @@
 ---
 name: c-validate
-description: Walks a plan's 96-validation.md post-deploy. Category C (prereqs) first, then A (automated), then B (manual workflow). Checks off items as it walks. On a full pass, flips the plan to `completed`, then flips the linked design to `completed` in the same step (no prompt).
+description: Use when a Cadence plan is implemented and deployed and the user wants to walk its post-deploy validation checklist.
 ---
 
 # `/c-validate`

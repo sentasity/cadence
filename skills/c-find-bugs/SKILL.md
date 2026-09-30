@@ -1,6 +1,6 @@
 ---
 name: c-find-bugs
-description: Concrete defect hunting on a target. Operates on docs OR code. Different lens from /c-check ("is this good?"); this asks "what specific defects exist?" Targets: design folder, plan folder, branch, file, or --repo. Repo scope is token-heavy and requires explicit confirmation before starting. Output is a prioritized list of defects with file:line citations and one-line fix directions.
+description: Use when the user wants concrete defects found in a design, plan, branch, file, or the whole repo.
 ---
 
 # `/c-find-bugs`

@@ -1,6 +1,6 @@
 ---
 name: c-design
-description: Takes a `00-overview.md` stub from /c-brainstorm and materializes the full design folder (child docs in reading order, plain-English narrative, optional 97/98 sections, OOS shell). Generation modes: all-at-once (parallel generators, the default), one-by-one (write, pause for review, repeat), or inline (main session writes every doc itself, no sub-agents, no pauses). Self-review pass before flipping status to `in-review`. Never writes plans or code.
+description: Use when a Cadence design stub (00-overview.md from /c-brainstorm) exists and the user wants the full design written out.
 ---
 
 # `/c-design`

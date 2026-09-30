@@ -19,13 +19,14 @@ Cadence is a phase-aware system; the contribution flow follows the same phases.
 
 - Markdown for skill and agent files — keep the body terse, structure with clear H2/H3.
 - YAML for config and frontmatter.
+- A skill's `description:` says only when to use it: start with "Use when", stay under 250 characters, and leave the workflow to the body.
 - JSON for plugin manifests (matches Claude Code's expectations).
 - Skill/agent text must route config reads through `scripts/resolve-config.js` — never instruct a direct read of `.cadence/config.yaml`, `.cadence/config.local.yaml`, or `defaults/config.default.yaml`. See `skills/_shared/config-resolution.md`.
 - Mostly documentation and prompts. The exception is `scripts/`: small Node and bash helpers for the jobs prose can't do reliably (config resolution and migration, Notion writes, the merge lock). If you want to add a helper script, ask in the issue first; often the right answer is still "the skill prompt should handle it."
 
 ## Tests
 
-The scripts under `scripts/` have two suites: `node --test 'scripts/*.test.js'` for the Node scripts and `bash scripts/test-merge-lock.sh` for the merge lock. Run both before any PR that touches `scripts/`. Skill and agent prompts have no automated suite; the smoke-test transcript from step 4 above is their validation.
+The scripts under `scripts/` have two suites: `node --test 'scripts/*.test.js'` for the Node scripts and `bash scripts/test-merge-lock.sh` for the merge lock. The Node suite also includes `skill-structure.test.js`, which checks the shipped skill and agent text: references resolve to shipped files, same-file anchors match a heading, descriptions follow the rule above, and no thinking-budget keywords slip in. Run both before any PR that touches `scripts/`, `skills/`, `agents/`, or `templates/`. Skill and agent behavior has no automated suite; the smoke-test transcript from step 4 above is its validation.
 
 ## Demo GIFs
 

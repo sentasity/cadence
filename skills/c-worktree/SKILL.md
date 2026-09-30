@@ -1,6 +1,6 @@
 ---
 name: c-worktree
-description: Full git-worktree lifecycle for isolated interactive sessions — create an isolated worktree, optionally run its dev server on a dedicated port, ship the branch home by local merge or by GitHub PR, and clean up. Generic and standalone: works in any git repo with no Cadence design, plan, or other /c-* skill; local merges are lock-guarded so they serialize with /c-execute lane landings and other sessions; the PR-flow exit pushes the branch, opens the PR, and cleans up after it merges. Use whenever starting isolated or parallel feature work, spinning up a worktree, asking which port a worktree's dev server runs on, merging/integrating a worktree branch back to its base, or shipping one as a PR — from the feature session OR from the main worktree. Use it even when the user just says 'new worktree', 'isolate this', 'merge my branch back', 'push this up and open a PR', or 'the PR merged, clean up'.
+description: Use when starting isolated or parallel work in a git worktree, asking which port a worktree dev server uses, merging a worktree branch back or shipping it as a PR, or cleaning up after it merges. Works in any git repo.
 ---
 
 # `/c-worktree`
