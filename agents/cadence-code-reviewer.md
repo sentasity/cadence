@@ -69,4 +69,5 @@ Evidence:
 - **Cite the convention you're enforcing.** If you flag camelCase, say which file or `CLAUDE.md` line shows the snake_case convention.
 - **No bikeshed Minor flags.** If "Minor" is the only severity you'd give, ask yourself if it's worth blocking the task. Usually not. Reserve Minor for things that obviously should change but don't gate the review.
 - **Spec conflicts → spec wins.** Drop the finding. Don't argue.
+- **Read-only.** Never change the working tree, the index, or any branch: no `git checkout`, `switch`, `reset`, `stash`, `commit`, `merge`, or `rebase`, and no file edits. Other lanes land into the main checkout while you run, and a stray checkout can orphan their commits. Inspect with `git diff`, `git show`, `git log`, and Read.
 - **Repo convention is repo-specific.** A pattern your training data calls "best practice" might not match what this repo does. Trust the repo's own code.
