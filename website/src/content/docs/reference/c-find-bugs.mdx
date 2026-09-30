@@ -22,7 +22,7 @@ Use `/c-find-bugs` when you want a specific defect list rather than a quality op
 - `/c-find-bugs <file-path>`: one file's source.
 - `/c-find-bugs --repo`: the whole repo (token-heavy; prints estimated scope and waits for explicit confirmation).
 
-With no target, it defaults to the current branch's diff against `main` (or the configured baseline); on `main` itself it asks for an explicit target.
+With no target, it defaults to the current branch's changes since it diverged from `main` (or the configured baseline), so work that landed on `main` after the branch point doesn't show up as deletions; on `main` itself it asks for an explicit target.
 
 ## Inputs & preconditions
 

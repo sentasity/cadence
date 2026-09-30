@@ -6,4 +6,8 @@ Skill and agent text in this repo must route every Cadence config read through `
 
 ## Tests
 
-`node --test 'scripts/*.test.js'` runs the Node script suites (`migrate-config.test.js`, `resolve-config.test.js`, `notion-write.test.js`), and `bash scripts/test-merge-lock.sh` smoke-tests `merge-lock.sh`. Run both before any PR that touches `scripts/`.
+`node --test 'scripts/*.test.js'` runs the Node script suites (`migrate-config.test.js`, `resolve-config.test.js`, `notion-write.test.js`, and `skill-structure.test.js`, which checks the shipped skill and agent text), and `bash scripts/test-merge-lock.sh` smoke-tests `merge-lock.sh`. Run both before any PR that touches `scripts/`, `skills/`, `agents/`, or `templates/`.
+
+## Skill descriptions
+
+A skill's `description:` frontmatter says only when to use the skill: it starts with "Use when", stays under 250 characters, and never summarizes the workflow. An agent that reads a workflow summary in the description can follow it instead of the skill body. Guarantees ("never writes code") belong in the body. `scripts/skill-structure.test.js` enforces the shape.

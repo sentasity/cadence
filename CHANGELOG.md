@@ -2,6 +2,25 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.21.0 (2026-09-30)
+
+Skill descriptions now say only when to use each skill, a new structure test guards the shipped skill and agent text, and three small safety fixes land in review, cleanup, and `/c-find-bugs`. The README now credits superpowers as Cadence's inspiration.
+
+### Changed
+
+- **Skill descriptions are triggers, not workflow summaries.** Every `/c-*` skill's `description:` now starts with "Use when", names the situation, and stays under 250 characters (down from 282 to 921). Superpowers found that an agent reading a workflow summary in the description can follow it instead of the skill body (its example: one review run where the skill required two), and `/c-execute`'s old description summarized its two-stage review. Every guarantee the old descriptions carried ("never writes code", "never amends commits") was already in the skill bodies.
+- **Reviewers are read-only.** `cadence-spec-reviewer` and `cadence-code-reviewer` now say outright not to change the working tree, index, or branches. Both have Bash and run while other lanes land into the main checkout, where a stray `git checkout` can orphan commits.
+
+### Fixed
+
+- **`/c-execute`'s completion sweep no longer force-deletes leftover lane work.** It used `git worktree remove --force` and `git branch -D`, which meant the "surface it if removal fails" instruction could never fire and uncommitted or unmerged lane work was deleted without a word. It now uses `git worktree remove` and `git branch -d`, and when either refuses, shows the user what's there and asks.
+- **`/c-find-bugs`' default diff uses the merge-base.** With no target it now diffs `<baseline>...HEAD` (three dots). A plain diff against `main` showed work that landed on `main` after the branch point as if the branch had deleted it.
+
+### Added
+
+- **`scripts/skill-structure.test.js`**, part of the `node --test 'scripts/*.test.js'` suite. It checks that plugin file references in `skills/`, `agents/`, and `templates/` resolve to shipped files, that no wikilink points into the gitignored `docs/`, that same-file `[[#Heading]]` anchors match a heading, that skill descriptions follow the rule above, and that no thinking-budget keyword (such as "ultrathink") slips into shipped text.
+- **README credit.** The superpowers section is now "Relationship to `superpowers`" and opens by crediting it as Cadence's inspiration and the source of its execution model.
+
 ## v0.20.1 (2026-09-30)
 
 Stale text cleanup across the shipped skills, agents, and docs, plus removal of three config keys nothing ever read. No workflow behavior changes.

@@ -1,6 +1,6 @@
 ---
 name: c-audit
-description: User-facing standalone skill that audits a plan against the codebase. Reads `base_sha:` from the plan's overview frontmatter to compute the diff range. Dispatches `cadence-completion-auditor` agent which fans out per-audit sub-agents in parallel and synthesizes results. /c-execute does NOT route through this skill — it dispatches the same agent directly. Both paths produce identical results because both dispatch the same agent. Standalone mode never modifies the plan or status.
+description: Use when the user wants a Cadence plan's implementation audited against the codebase, such as re-running the completion audit after /c-execute or after hand edits.
 ---
 
 # `/c-audit`

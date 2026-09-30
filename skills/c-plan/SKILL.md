@@ -1,6 +1,6 @@
 ---
 name: c-plan
-description: Takes an approved design and writes an AI-readable plan folder with the same slug. Plans are exact paths, exact diffs, exact commands — no narrative. One design always becomes one plan; phase docs handle decomposition. Bidirectional linkage: writes `linked_design:` on the new plan and `linked_plan:` (singular) on the design. Never writes code; never auto-executes.
+description: Use when a Cadence design is approved and the user wants the implementation plan written from it.
 ---
 
 # `/c-plan`

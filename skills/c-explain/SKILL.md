@@ -1,6 +1,6 @@
 ---
 name: c-explain
-description: Interactive discussion of an existing design or plan — opens with a one-screen orientation (section list + plain-English summaries) then drops into open user-driven Q&A. Answers lead with plain English; cite both design sections and code locations when implementation comes up. Gaps trigger investigation (design → code → git → related docs) then `[INFERRED]` markers if still unclear. Artifact-free by default; offers to save a note or append a Q&A appendix on exit. Targets: design or plan folder, single child doc, or section anchor. Use --any for imported / non-Cadence-managed docs. Sister skills: `/c-check` (substance review), `/c-find-bugs` (concrete defects). This skill explains; it does not critique.
+description: Use when the user wants to understand or ask questions about an existing design or plan (Cadence-managed or not) and wants explanation, not critique.
 ---
 
 # `/c-explain`

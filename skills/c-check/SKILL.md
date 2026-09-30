@@ -1,6 +1,6 @@
 ---
 name: c-check
-description: Substance review of an existing design or plan. Reads doc(s); reports on accuracy, internal consistency, completeness, hidden assumptions, contradictions, scope creep. Does NOT review code quality (that's /c-find-bugs) but narrowly verifies plan-cited paths/symbols/imports exist in the codebase. Default: substance only. --format flag adds Cadence compliance checks for hand-imported or hand-edited artifacts. Output never modifies the reviewed doc; report stays in chat.
+description: Use when the user wants an existing design or plan reviewed for substance (accuracy, consistency, gaps, hidden assumptions, scope creep), or a hand-edited or imported doc checked against Cadence format.
 ---
 
 # `/c-check`
