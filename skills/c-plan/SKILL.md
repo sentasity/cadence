@@ -42,6 +42,18 @@ Each phase file becomes the unit of worktree dispatch and the unit of per-lane r
 - Establish the design↔plan link with a single call to `skills/_shared/storage-resolution.md` (link): it is bidirectional and idempotent, setting `linked_design` on the plan and `linked_plan` (singular) on the design in one step and bumping the design's `updated:`. Do not write the two `linked_*` frontmatter keys by hand.
 - The design flips to `completed` only when its `linked_plan` reaches status `completed`: `/c-validate` flips both in one step on a full validation pass.
 
+## Plan style
+
+`plan.style` (resolved config) picks what a plan's steps contain:
+
+- `full-code` (default): every code step shows the full code. "Task structure" and "Plan content rules" below describe this style.
+- `decisions`: steps record the decisions the implementer can't make alone and leave the code to them. See "Decision plans" below.
+- `ask`: ask once per plan via `AskUserQuestion`, in writing-flow step 3 alongside the generation-mode question, with `full-code` marked `(Recommended)` (the shipped default).
+
+Every new plan records its style in the overview as a `**Plan style:** full-code` or `**Plan style:** decisions` line directly after the Tech Stack line. That line, not config, is the plan's style for its whole life: `/c-execute` and its agents read it from the plan, so changing `plan.style` later never changes the rules under a plan already written. A plan with no style line (written before the line existed) is `full-code`.
+
+The companion sections, "Global Constraints" and "Review Focus" below, apply to every plan whatever its style; `plan.style` gates only step content and the per-task Interfaces block.
+
 ## Folder layout
 
 ```
@@ -62,7 +74,10 @@ Each phase file becomes the unit of worktree dispatch and the unit of per-lane r
 - **Goal** — one sentence.
 - **Architecture** — 2-3 sentences linking back to the design.
 - **Tech Stack** — one line.
+- **Plan style** — `**Plan style:** full-code` or `**Plan style:** decisions`, directly after Tech Stack (see "Plan style").
 - **Design link** — `[[../../designs/{slug}/00-overview]]`.
+- **Global Constraints** — a `## Global Constraints` section, every plan (see "Global Constraints").
+- **Review Focus** — a `## Review Focus` section, every plan (see "Review Focus").
 - **Plan Index** — one line per child: `[[01-foo]] — Tasks 1.1-1.M: <summary>`.
 - **File Map** — every file the plan creates or modifies, one line per file, with the change summary.
 - **Surface map** — only when the linked design has a `95-visual-contract` slot: one line per surface declared in 95's Surfaces section, `<surface name>: <file list>`, mapping the surface to the concrete files that implement it, ground-truthed per "Codebase verification". Recording the mapping is what makes the visual `Reads:` attachment below machine-checkable.
@@ -159,11 +174,12 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 
 ## Writing flow
 
-1. Resolve config by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (`plan.tdd`, `authoring.*`; contract in `skills/_shared/config-resolution.md`; never read config files directly). Read approved design end-to-end (overview + every child + 99-OOS).
-2. Confirm phase decomposition (no split question — one plan always). Decompose into the **minimal coherent grouping** that covers the design — prefer one substantive topic per phase file (5–10+ tasks per file), not one phase file per design child-doc. A phase file is the unit of worktree dispatch and per-lane review under `/c-execute`'s lane = phase file rule; fragmented files create cold-start churn without parallelism gain. Confirm with the user: *"Plan files will be `01-<topic>`, `02-<topic>`, …. Sound right?"*
-3. Resolve `authoring.plan_mode`; when it names a concrete mode (`all-at-once`, `inline`) use it without asking. When it is `ask`, ask via `AskUserQuestion` (default `(Recommended)` = all-at-once): **All-at-once** — one generator agent per remaining doc in parallel plus the `cadence-doc-consistency` sweep (today's behavior); **Inline** (label: "Inline, no sub-agents") — the main session writes every doc itself, sequentially, running the codebase verification pass on each doc before moving on; no generators, no sweep.
-4. Create the plan artifact first via `skills/_shared/storage-resolution.md` (create_artifact), writing the `00-overview` (frontmatter + phase index + File Map — generators need it) with `base_sha` initialized empty; do not path-compute `<paths.plans>/…/00-overview.md`.
+1. Resolve config by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (`plan.tdd`, `plan.style`, `authoring.*`; contract in `skills/_shared/config-resolution.md`; never read config files directly). Read approved design end-to-end (overview + every child + 99-OOS), collecting Global Constraints candidates as you read (see "Global Constraints").
+2. Confirm phase decomposition (no split question — one plan always). Decompose into the **minimal coherent grouping** that covers the design — prefer one substantive topic per phase file (5–10+ tasks per file), not one phase file per design child-doc. A phase file is the unit of worktree dispatch and per-lane review under `/c-execute`'s lane = phase file rule; fragmented files create cold-start churn without parallelism gain. Confirm with the user: *"Plan files will be `01-<topic>`, `02-<topic>`, …. Sound right?"* In the same exchange, confirm the Global Constraints list (see "Global Constraints").
+3. Resolve `authoring.plan_mode`; when it names a concrete mode (`all-at-once`, `inline`) use it without asking. When it is `ask`, ask via `AskUserQuestion` (default `(Recommended)` = all-at-once): **All-at-once** — one generator agent per remaining doc in parallel plus the `cadence-doc-consistency` sweep (today's behavior); **Inline** (label: "Inline, no sub-agents") — the main session writes every doc itself, sequentially, running the codebase verification pass on each doc before moving on; no generators, no sweep. When `plan.style` is `ask`, ask the style question in the same exchange (see "Plan style").
+4. Create the plan artifact first via `skills/_shared/storage-resolution.md` (create_artifact), writing the `00-overview` (frontmatter + Plan style line + Global Constraints + phase index + File Map — generators need them; Review Focus is written in step 5a) with `base_sha` initialized empty; do not path-compute `<paths.plans>/…/00-overview.md`.
 5. (all-at-once mode) Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`; each generated doc is written to its slot per `skills/_shared/storage-resolution.md` (write_doc), never to a hand-computed `<paths.plans>/…` file. Before each generator finalizes its doc, run the codebase verification pass (above) on every path, symbol, and import it cites. Fix inline. (inline mode) The main session writes each remaining doc itself, in order, applying the same codebase verification pass per doc.
+5a. **Review Focus.** Once the phase docs are drafted, select the Review Focus entries, add each entry's pin to its owning task, and write the `## Review Focus` section into the overview via write_doc (see "Review Focus").
 6. **Invariant 2 in reverse.** If a phase reveals a gap or inconsistency in the design, surface it. Apply drift policy (default: update plan only; user-elective: update plan + design).
 7. (all-at-once mode; inline skips the sweep — single author) Dispatch `cadence-doc-consistency` once over the full set. Reconcile trivial wording; surface substantive contradictions to the user via `AskUserQuestion`. Re-dispatch only affected generators on resolution. The plan is not finalized until the sweep is clean.
 8. **Bidirectional linkage write.** Establish the design↔plan link via `skills/_shared/storage-resolution.md` (link) — one idempotent call sets `linked_plan` on the design and `linked_design` on the plan and bumps the design's `updated:`.
@@ -174,8 +190,8 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 ## Generation modes
 
 Plan docs are mechanical, so `/c-plan` offers `all-at-once` (default) and `inline` — never the paused one-by-one mode (review happens on the assembled plan, so a per-doc pause buys nothing). All-at-once:
-1. Write `00-overview.md` first (frontmatter + phase index + File Map — generators need it).
-2. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`. Each generator gets the approved design (or relevant slice), the plan overview, its doc's scope, the resolved storage backend, and the format conventions (`skills/_shared/obsidian-format.md`; **plus `skills/_shared/notion-translation.md` when the backend is notion**, so callouts are authored as native `<callout>` blocks, never obsidian `> [!type]` syntax).
+1. Write `00-overview.md` first (frontmatter + Plan style line + Global Constraints + phase index + File Map — generators need them).
+2. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`. Each generator gets the approved design (or relevant slice), the plan overview (whose Plan style line tells the generator which step rules apply), its doc's scope, the resolved storage backend, and the format conventions (`skills/_shared/obsidian-format.md`; **plus `skills/_shared/notion-translation.md` when the backend is notion**, so callouts are authored as native `<callout>` blocks, never obsidian `> [!type]` syntax).
 3. Dispatch `cadence-doc-consistency` once over the full set. Reconcile trivial wording; surface substantive contradictions to the user via `AskUserQuestion`. Re-dispatch only affected generators on resolution.
 4. The plan is not finalized until the sweep is clean.
 
