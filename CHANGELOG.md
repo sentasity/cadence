@@ -20,10 +20,11 @@ Plans can now record decisions instead of full code. A new `plan.style` setting 
 - **Spec review is style-aware.** Full-code plans keep exact-match review. For decision plans the decisions are binding (signatures, file placement, tests and their assertions, pinned values, algorithm bodies the plan spells out, Global Constraints), and private helpers and internal structure are the implementer's call.
 - **The code reviewer receives Global Constraints**, so it doesn't flag a constraint-mandated choice as a style issue.
 - **Inline execution** applies the same style-aware review, records test evidence, and follows the root-cause rule.
+- **`/c-brainstorm`'s first-run scaffold** leaves never-insert keys (today `plan.style`) out of the new `.cadence/config.yaml`.
 
 ### Why
 
-- **`plan.style` is never written into your config.** There is no `config_version` bump for it, and `scripts/migrate-config.js` gains a never-insert list so no migration writes it. An inserted `plan.style: full-code` would read as a deliberate choice and keep every existing repo on full-code when the default later flips.
+- **`plan.style` is never written into your config.** There is no `config_version` bump for it, and `scripts/migrate-config.js` gains a never-insert list so no migration writes it; `/c-brainstorm`'s first-run scaffold leaves it out too. An inserted `plan.style: full-code` would read as a deliberate choice and keep every existing repo on full-code when the default later flips.
 
 ## v0.21.0 (2026-09-30)
 
