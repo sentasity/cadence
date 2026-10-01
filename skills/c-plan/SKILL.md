@@ -25,7 +25,7 @@ Each phase file becomes the unit of worktree dispatch and the unit of per-lane r
 
 - **One substantive topic per file.** A topic is a coherent slice the reviewer can hold in their head — closely-related codebase slice (one skill, one service, one feature surface), shared `Reads:` core across tasks, a one-sentence reviewer headline with no "and also" clauses, and an internal DAG shape (chain, fan-out, fan-in — not fully disconnected).
 - **Target 5–10+ tasks per file.** Below 5 is too thin to amortize worktree spin-up + per-lane review. 10+ is fine as long as topical coherence holds. The 5–10+ figure is a **target, not a threshold** — a genuinely 3-task plan still ships as a 3-task phase file.
-- **Task size inside a phase file is unchanged.** The per-task contract (`Reads:`/`Touches:`/`Depends:`/`Steps`, every step one action, every code step shows the FULL code) is exactly today's rule. Consolidation is at the file level, not the task level.
+- **Task size inside a phase file is unchanged.** The per-task contract (`Reads:`/`Touches:`/`Depends:`/`Steps`, every step one action, step content per the plan's style) is unchanged. Consolidation is at the file level, not the task level.
 
 **Doc size is not a storage concern on any backend.** The notion backend writes a doc of any size in one script call (`skills/_shared/storage-resolution.md`, "Content write path"), so topical coherence and the 5–10+ task target alone decide the file boundaries; never split a coherent lane on size.
 
@@ -86,6 +86,8 @@ No "Background," "Why," or plain-English. Those live in the design.
 
 ## Task structure (every task, every phase doc)
 
+This is the full-code shape. Decision plans keep the same fields and step sequence, add an `**Interfaces:**` field, and change what each step contains (see "Decision plans").
+
 ````````markdown
 ### Task N.M: <Name>
 
@@ -122,15 +124,71 @@ No "Background," "Why," or plain-English. Those live in the design.
 
 ## Plan content rules
 
-- Every step is one action (2-5 minutes of work).
-- Every code step shows the FULL code — no `// implement here` placeholders.
-- No cross-references like "similar to Task N" — repeat code inline.
+These rules apply to every plan, except the three marked *(full-code)*, which decision plans replace (see "Decision plans").
+
+- *(full-code)* Every step is one action (2-5 minutes of work).
+- *(full-code)* Every code step shows the FULL code — no `// implement here` placeholders.
+- *(full-code)* No cross-references like "similar to Task N" — repeat code inline.
 - Every run-command step shows the exact command and expected output/status.
 - Every task ends with a commit step (cadence: per task).
 - **Banned phrases:** `TBD`, `TODO`, `add error handling`, `fill in details`, `handle edge cases`, `write tests for the above`. Plan failures; block self-review.
 - **`Reads:`/`Touches:`/`Depends:` required** on every task. `Touches:` must name every file the task writes (the `/c-execute` co-scheduling guard depends on it). `Depends:` lists task ids that must merge first (`[]` = independent). The former per-task concurrency marker is superseded by these three fields.
 
 **TDD default; opt-out in config.** `config.plan.tdd: true` → test → fail → impl → pass → commit. `false` → impl → run → commit (test steps omitted).
+
+## Decision plans
+
+When the plan's style is `decisions`, the plan records the decisions the implementer cannot make alone and leaves the code to them. Write for an engineer who has not seen this codebase or this design, who writes idiomatic code in the project's language once they know the exact interface and the exact test, and who makes a reasonable choice wherever the plan leaves one open. What they cannot know is what was decided: which files, which names and signatures, which values from the design, which tests prove each task. Document those.
+
+**A step is done when the implementer can write exactly one reasonable thing from it.** Unambiguous, not complete. Each kind of step carries what makes it unambiguous and nothing more:
+
+| Step kind | Carries |
+|---|---|
+| Test step | The test's name and its assertions, as code, with the design's exact values in them. |
+| Code step | The exact signature (name, parameters, return type), the file it lives in, and the values the design pins. A body only for an algorithm the signature and tests don't determine, or for exact copy the design fixes. One line on the approach when the signature and tests leave a real choice. |
+| Verification step | The command and the output that means it passed (for the RED run, the expected failure). |
+| Reference to another task | Through that task's Interfaces block. Never repeat another task's code. |
+| Commit step | The files and the message. |
+
+A plan longer than the code it describes has written the code instead. Lines that decide nothing (the banned phrases above, a type or function no task defines) are the opposite failure; self-review catches both.
+
+**Step sizing:** one action with a checkable result (write the failing test; run it; implement the signature; run the tests; commit), not minutes.
+
+**Interfaces block (required in decision plans, omitted in full-code plans).** Every task carries `**Interfaces:**` directly after `**Depends:**`, with two lines:
+
+- `Consumes:` the exact signatures this task uses from other tasks, each tagged with the producing task id, or `none`.
+- `Produces:` the exact signatures later tasks rely on, or `none`.
+
+An implementer sees only its own task block and its `Reads:` files, so this block is the only place shared names travel. Every `Consumes:` entry must be produced by a task in the consumer's `Depends:` closure or already exist in the codebase (ground-truthed per "Codebase verification").
+
+Task shape:
+
+````markdown
+### Task 2.3: Parse retry budget from config
+
+**Reads:** [`src/config/loader.py`, `tests/config/test_loader.py`]
+**Touches:** [`src/config/retry.py`, `tests/config/test_retry.py`]
+**Depends:** [2.1]
+**Interfaces:**
+- Consumes: `load_section(name: str) -> dict` (Task 2.1)
+- Produces: `retry_budget(cfg: dict) -> RetryBudget` where `RetryBudget(max_attempts: int, backoff_s: float)`
+
+- [ ] **Step 1: Write failing tests** in `tests/config/test_retry.py`
+  `test_defaults_when_absent`: `retry_budget({})` == `RetryBudget(3, 0.5)`
+  `test_rejects_zero_attempts`: `retry_budget({"max_attempts": 0})` raises `ValueError("max_attempts must be >= 1")`
+
+- [ ] **Step 2: Run, expect FAIL**
+  `pytest tests/config/test_retry.py -v` → Expected: FAIL, `ImportError: cannot import name 'retry_budget'`
+
+- [ ] **Step 3: Implement `retry_budget(cfg: dict) -> RetryBudget` and the `RetryBudget` dataclass in `src/config/retry.py`**
+  Defaults 3 and 0.5 come from the design's retry section.
+
+- [ ] **Step 4: Run, expect PASS**
+  `pytest tests/config/test_retry.py -v` → Expected: 2 passed
+
+- [ ] **Step 5: Commit**
+  `git add src/config/retry.py tests/config/test_retry.py && git commit -m "feat(config): parse retry budget"`
+````
 
 ## Codebase verification (mandatory)
 
