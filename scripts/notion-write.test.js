@@ -6,6 +6,7 @@ const {
   parseArgs,
   calloutGuardViolations,
   verifyLengths,
+  normalizeMentions,
 } = require('./notion-write.js');
 
 // ---------------------------------------------------------------------------
@@ -83,6 +84,56 @@ test('verifyLengths: fails on a large shortfall', () => {
 
 test('verifyLengths: read-back longer than sent is fine', () => {
   assert.strictEqual(verifyLengths('abc', 'abcdef').ok, true);
+});
+
+// A small plan 99-out-of-scope shell, shaped like the 2026-10-01 case that
+// exited 5: Notion read it back with the mention self-closed, display text gone.
+const MENTION_URL = 'https://www.notion.so/2f8a19837fd81ed8140e917ef29b07a1';
+const MENTION_SHELL = '# 99 Out of Scope\n\n'
+  + 'Nothing beyond what the design already rules out. See '
+  + `<mention-page url="${MENTION_URL}">99 Out of Scope (design)</mention-page>.\n`;
+const MENTION_SHELL_READBACK = '# 99 Out of Scope\n\n'
+  + 'Nothing beyond what the design already rules out. See '
+  + `<mention-page url="${MENTION_URL}"/>.\n`;
+
+test('verifyLengths: a body whose only shortfall is mention display text verifies ok', () => {
+  const v = verifyLengths(MENTION_SHELL, MENTION_SHELL_READBACK);
+  assert.strictEqual(v.ok, true);
+  assert.strictEqual(v.ratio, 1);
+});
+
+test('verifyLengths: a truncated body with a mention still fails', () => {
+  const sent = MENTION_SHELL + 'content line\n'.repeat(20);
+  assert.strictEqual(verifyLengths(sent, MENTION_SHELL_READBACK).ok, false);
+});
+
+// ---------------------------------------------------------------------------
+// normalizeMentions
+// ---------------------------------------------------------------------------
+
+test('normalizeMentions: collapses a paired mention-page to the self-closing read-back form', () => {
+  assert.strictEqual(normalizeMentions(MENTION_SHELL), MENTION_SHELL_READBACK);
+});
+
+test('normalizeMentions: collapses every display-text mention type', () => {
+  for (const tag of ['mention-user', 'mention-page', 'mention-database', 'mention-data-source', 'mention-agent']) {
+    assert.strictEqual(
+      normalizeMentions(`a <${tag} url="https://x/1">Some name</${tag}> b`),
+      `a <${tag} url="https://x/1"/> b`,
+      tag,
+    );
+  }
+});
+
+test('normalizeMentions: leaves self-closing mentions alone and never spans into a later mention', () => {
+  const input = 'see <mention-page url="https://x/a"/> then a long middle, then '
+    + '<mention-page url="https://x/b">B title</mention-page> and '
+    + '<mention-date start="2026-10-01"/>';
+  assert.strictEqual(
+    normalizeMentions(input),
+    'see <mention-page url="https://x/a"/> then a long middle, then '
+      + '<mention-page url="https://x/b"/> and <mention-date start="2026-10-01"/>',
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -303,6 +354,22 @@ test('cli: exits 5 when read-back is sheared short', async () => {
     const r = await runCli(['replace', '--page', 'p1', '--file', writeTmp(body)], { base: srv.base });
     assert.strictEqual(r.status, 5);
     assert.match(r.stderr, /verif/i);
+  } finally {
+    srv.close();
+  }
+});
+
+test('cli: a mention read back self-closed does not fail verification', async () => {
+  const srv = await mockServer([
+    {
+      method: 'PATCH', path: '/v1/pages/p1/markdown', status: 200,
+      body: { object: 'page_markdown', id: 'p1', markdown: MENTION_SHELL_READBACK, truncated: false },
+    },
+  ]);
+  try {
+    const r = await runCli(['replace', '--page', 'p1', '--file', writeTmp(MENTION_SHELL)], { base: srv.base });
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.strictEqual(JSON.parse(r.stdout).sent_chars, MENTION_SHELL.length);
   } finally {
     srv.close();
   }

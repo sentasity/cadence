@@ -2,6 +2,14 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.21.1 (2026-10-01)
+
+`notion-write.js` no longer fails post-write verification on a small page whose only "loss" is a mention's display text.
+
+### Fixed
+
+- **Mentions no longer trip the read-back length check.** Notion stores a mention as a bare reference and reads it back self-closing, so `<mention-page url="X">Title</mention-page>` returns as `<mention-page url="X"/>`. On a short page that dropped text alone pushed the read-back under the 0.85 ratio and the script exited 5 even though the content landed whole (a 235-char plan `99-out-of-scope` shell with one page mention read back at 196). The check now collapses paired `mention-user`, `mention-page`, `mention-database`, `mention-data-source`, and `mention-agent` tags in the sent markdown to the same self-closing form before comparing, so it measures like with like. A genuinely sheared write still fails.
+
 ## v0.21.0 (2026-09-30)
 
 Skill descriptions now say only when to use each skill, a new structure test guards the shipped skill and agent text, and three small safety fixes land in review, cleanup, and `/c-find-bugs`. The README now credits superpowers as Cadence's inspiration.

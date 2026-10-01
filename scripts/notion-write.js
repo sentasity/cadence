@@ -80,11 +80,24 @@ function calloutGuardViolations(markdown) {
   return hits;
 }
 
+// Notion stores a mention as a bare reference and reads it back self-closing:
+// <mention-page url="X">Title</mention-page> returns as <mention-page url="X"/>.
+// Rewrite sent markdown the same way so a dropped display text is not mistaken
+// for lost content. The attribute list cannot contain "/", so an already
+// self-closing tag never pairs with a later closing tag.
+function normalizeMentions(markdown) {
+  return markdown.replace(
+    /<(mention-[a-z-]+)((?:\s+[a-zA-Z-]+="[^"]*")*)\s*>[\s\S]*?<\/\1>/g,
+    '<$1$2/>'
+  );
+}
+
 // Read-back is not byte-exact (Notion reconstructs the markdown), so compare
 // lengths with tolerance. Shortfall past it means the write did not land whole.
 function verifyLengths(sent, got) {
-  const ratio = sent.length === 0 ? 1 : got.length / sent.length;
-  return { ok: ratio >= VERIFY_MIN_RATIO, ratio };
+  const expectedChars = normalizeMentions(sent).length;
+  const ratio = expectedChars === 0 ? 1 : got.length / expectedChars;
+  return { ok: ratio >= VERIFY_MIN_RATIO, ratio, expectedChars };
 }
 
 // NOTION_TOKEN wins when set; otherwise NOTION_TOKEN_CMD is executed and its
@@ -247,10 +260,11 @@ async function main() {
 
     const readback = await replaceContent(base, token, pageId, markdown);
     const got = readback.markdown || '';
-    const { ok, ratio } = verifyLengths(markdown, got);
+    const { ok, ratio, expectedChars } = verifyLengths(markdown, got);
     if (!ok && !readback.truncated) {
       fail(5, `Post-write verification failed for page ${pageId}: read-back is `
-        + `${got.length} chars vs ${markdown.length} sent (ratio ${ratio.toFixed(2)}, `
+        + `${got.length} chars vs ${expectedChars} expected (${markdown.length} sent, mentions `
+        + `self-closed; ratio ${ratio.toFixed(2)}, `
         + `minimum ${VERIFY_MIN_RATIO}). The page content did not land whole; re-author and rewrite.`);
     }
 
@@ -269,7 +283,7 @@ async function main() {
   }
 }
 
-module.exports = { parseArgs, calloutGuardViolations, verifyLengths };
+module.exports = { parseArgs, calloutGuardViolations, verifyLengths, normalizeMentions };
 
 if (require.main === module) {
   main().catch((e) => fail(4, e.message));
