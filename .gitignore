@@ -29,3 +29,6 @@
 website/node_modules/
 website/dist/
 website/.astro/
+
+# Personal per-machine Cadence overrides
+.cadence/config.local.yaml
