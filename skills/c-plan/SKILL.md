@@ -190,6 +190,35 @@ Task shape:
   `git add src/config/retry.py tests/config/test_retry.py && git commit -m "feat(config): parse retry budget"`
 ````
 
+## Global Constraints
+
+Every plan, whatever its style, carries a `## Global Constraints` section in the overview: the rules that bind every task, one per line, with exact values copied verbatim from their source.
+
+**What qualifies:** language and runtime version floors, platform requirements, dependency limits (no new dependencies, or an allowed set), naming and user-facing copy rules, exact values the design pins globally (limits, timeouts, units), and repo rules from `CLAUDE.md` that bind code. A rule that binds one task belongs in that task's steps, not here.
+
+**Sources:** while reading the design (writing-flow step 1), collect candidates from the approved design (every doc, including decisions-log entries that state a global rule), the repo's `CLAUDE.md`, and the repo's manifests where present (`package.json` `engines`, `.nvmrc`, `pyproject.toml` `requires-python`, `.python-version`, `go.mod` `go` directive, `Cargo.toml` `rust-version`, and the like), ground-truthed like any other cited path. Each line ends with a short source parenthetical: `(design 03)`, `(CLAUDE.md)`, `(package.json engines)`.
+
+**Confirmation:** show the list in writing-flow step 2, in the same exchange as the phase-decomposition confirmation, via `AskUserQuestion` with **Looks right** `(Recommended)` and **Edit the list**. An edit loops once through the list and back.
+
+**Placement:** `## Global Constraints` in the overview, after the header lines and before `## Review Focus`. An empty list is written as `None.` (checked, found nothing; never skipped). Constraints are not repeated inside tasks: `/c-execute` passes the section to every implementer and both reviewers.
+
+## Review Focus
+
+Every plan carries a `## Review Focus` section in the overview: up to five input classes or failure modes the design implies but no task's tests exercise, the ones most likely to bite a person using the software first. The design's silence on an input is not permission for that input to break the program.
+
+**Selection:** after the phase docs are drafted (writing-flow step 5a), walk the design's inputs, states, and boundaries with the design in front of you, list the ones no task's tests exercise, and keep the five most likely to hurt a user. Fewer is fine; an empty section is written as `None found.` (checked, found nothing).
+
+**Line format:** `- <input or condition> → <behavior a reasonable person would expect> (pinned in Task N.M)`.
+
+**Pinning:** add a check for each entry to the task that owns the code, in that task's own step style:
+
+| `plan.tdd` | The pin |
+|---|---|
+| `true` | A test in the owning task's test step (a new test function, or new assertions in its existing test), with the expected behavior as its assertion, run by the task's RED and GREEN steps. |
+| `false` | A run step in the owning task with the exact command that exercises the input and the output that means it behaved. |
+
+`/c-execute` passes the section to the spec reviewer, which checks that each owning task's diff carries its pin.
+
 ## Codebase verification (mandatory)
 
 Every file path, line range, symbol, and import a plan cites must be ground-truthed against the current code BEFORE it lands in the plan. Imagined APIs are the single biggest cost in `/c-execute` — implementers burn ~30-40% of each dispatch rediscovering what the planner could have grepped for once. Pay it here.
