@@ -2,6 +2,14 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.22.1 (2026-10-01)
+
+`notion-write.js` no longer fails post-write verification on a small page whose only "loss" is a mention's display text.
+
+### Fixed
+
+- **Mentions no longer trip the read-back length check.** Notion stores a mention as a bare reference and reads it back self-closing, so `<mention-page url="X">Title</mention-page>` returns as `<mention-page url="X"/>`. On a short page that dropped text alone pushed the read-back under the 0.85 ratio and the script exited 5 even though the content landed whole (a 235-char plan `99-out-of-scope` shell with one page mention read back at 196). The check now collapses paired `mention-user`, `mention-page`, `mention-database`, `mention-data-source`, and `mention-agent` tags in the sent markdown to the same self-closing form before comparing, so it measures like with like. A genuinely sheared write still fails.
+
 ## v0.22.0 (2026-10-01)
 
 Plans can now record decisions instead of full code. A new `plan.style` setting (`full-code`, the default; `decisions`; or `ask`) picks what `/c-plan` writes, and every plan, of either style, gains Global Constraints and Review Focus sections, real test output in implementer reports, and a root-cause-first rule for implementers. Decision plans stay opt-in until a head-to-head pilot shows they are at least a third cheaper to write and no worse in the results.
