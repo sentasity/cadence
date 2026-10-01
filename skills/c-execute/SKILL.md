@@ -160,7 +160,7 @@ Evidence:
 
 A return without a plain-English lead is malformed — re-dispatch the sub-agent with a reminder.
 
-Implementer returns also carry a `Tests:` block right after the plain-English lead: for each run step in the task, the command and the decisive output lines quoted from the real run (the RED failure and the GREEN pass; for a `plan.tdd: false` task, each run step's output). A missing or paraphrased `Tests:` block is malformed the same way: re-dispatch with a reminder. Pass the block to the spec reviewer, which checks it against each step's Expected line instead of re-running the suite.
+Implementer returns that ran any step command also carry a `Tests:` block right after the plain-English lead: for each run step in the task, the command and the decisive output lines quoted from the real run (the RED failure and the GREEN pass; for a `plan.tdd: false` task, each run step's output). A missing or paraphrased `Tests:` block is malformed the same way: re-dispatch with a reminder. Pass the block to the spec reviewer, which checks it against each step's Expected line instead of re-running the suite.
 
 ## Implementer status handling
 
