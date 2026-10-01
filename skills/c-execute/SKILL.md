@@ -45,7 +45,7 @@ SHA-based pinning is robust against rebases, merges, and unrelated commits that 
 
 ## PM responsibilities
 
-1. Read the plan once via `skills/_shared/storage-resolution.md` (read_artifact): a single pass materializes the overview + every phase doc + 96-validation + 97/98/99 into the in-memory task list. This is the only plan read, and only the PM issues it; do not read phase-file markdown by path.
+1. Read the plan once via `skills/_shared/storage-resolution.md` (read_artifact): a single pass materializes the overview + every phase doc + 96-validation + 97/98/99 into the in-memory task list. This is the only plan read, and only the PM issues it; do not read phase-file markdown by path. From the overview, take three things here, once: the **plan style** from the `**Plan style:**` line (no line means `full-code`; any value other than `full-code` or `decisions` is a malformed plan, so stop and surface it before dispatching anything), the `## Global Constraints` section, and the `## Review Focus` section (both absent on plans written before they existed; then pass nothing). Never read `plan.style` from config during execution.
 2. Build an internal task list — every `### Task N.M` becomes a tracked item with its `Depends:` edges, `Reads:` block, `Touches:` list, and full step block extracted.
 3. Build the dependency DAG from each task's `Depends:` edges and form lanes per the scheduling loop in "Lane model and DAG scheduling".
 4. Dispatch lanes concurrently up to `execute.max_parallel`, respecting `Touches:` disjointness.
@@ -137,11 +137,13 @@ Use the `Task` tool with one of these named agents:
 
 | Agent | When | What PM passes |
 |---|---|---|
-| `cadence-implementer` | Per task | Task block + linked files extracted from task's `Reads:` block + `Touches:` list + CLAUDE.md excerpt + resolved-config slice (from the resolver's JSON output; see `skills/_shared/config-resolution.md`) |
-| `cadence-spec-reviewer` | After implementer DONE | Task spec + diff |
-| `cadence-code-reviewer` | After implementer DONE, concurrently with spec review (legacy sequential path: after spec-review ✓) | Diff + repo conventions |
+| `cadence-implementer` | Per task | Task block + linked files extracted from task's `Reads:` block + `Touches:` list + CLAUDE.md excerpt + resolved-config slice (from the resolver's JSON output; see `skills/_shared/config-resolution.md`) + plan style + Global Constraints |
+| `cadence-spec-reviewer` | After implementer DONE | Task spec + diff + plan style + Global Constraints + the Review Focus entries pinned in this lane's tasks + the implementer's `Tests:` evidence |
+| `cadence-code-reviewer` | After implementer DONE, concurrently with spec review (legacy sequential path: after spec-review ✓) | Diff + repo conventions + Global Constraints |
 
 Sub-agents are generic — they don't know any specific repo. PM passes only what they need.
+
+Global Constraints go to the code reviewer so it doesn't flag a constraint-mandated choice as a style problem; checking the diff against them is the spec reviewer's job.
 
 ## Required report format (PM enforces; sub-agents return this natively)
 
