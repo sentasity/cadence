@@ -102,7 +102,7 @@ Selected by `execute.mode: inline` or the `ask` gate. The PM session implements 
 
 - **Order:** topological over `Depends:` edges (the same DAG; acyclicity check unchanged), walking phase files in numeric order and task order within a file as the tie-break. `Touches:` overlaps are irrelevant — nothing runs concurrently.
 - **Per task, unchanged from the lane engine's per-task contract:** follow the task's steps exactly (TDD shape included), commit per task with the task's commit step, run the Invariant 3 grep on the task's diff, and tick the task's checkboxes per `skills/_shared/storage-resolution.md` (tick) the moment it lands. The progress-checkpoint rule holds: never carry landed-but-unmarked work through a pause.
-- **Review:** the PM self-reviews each task's diff against the task spec and repo conventions before ticking. This is a real trade-off — the author is the reviewer — and is exactly what the user opts into by picking inline; do not silently dispatch reviewer sub-agents anyway.
+- **Review:** the PM self-reviews each task's diff against the task spec and repo conventions before ticking, applying the spec reviewer's style-aware rules (`agents/cadence-spec-reviewer.md`: exact match for full-code plans, the decisions for decision plans), the plan's Global Constraints, and any Review Focus pins the task owns. It records the task's `Tests:` evidence before ticking, and when a run doesn't match its Expected line it follows the implementer's root-cause-first rule (`agents/cadence-implementer.md`). This is a real trade-off — the author is the reviewer — and is exactly what the user opts into by picking inline; do not silently dispatch reviewer sub-agents anyway.
 - **No worktree machinery:** no lane branches, no `git worktree add`, no merge-on-land, and no merge-lock acquisition (commits land directly on the working branch; there is nothing to integrate). The completion-time worktree-cleanup sweep still runs and should trivially find nothing.
 - **Drift and blockers:** the drift `AskUserQuestion` table applies unchanged; quiesce is trivial (nothing else is in flight). Implementer status handling and NEEDS_CONTEXT routing don't apply — there is no implementer to route.
 - **Completion gate: unchanged in every mode.** The `cadence-completion-auditor` dispatch stays a real sub-agent — its value is independence from the author, which matters MORE when the author also reviewed. Never run the audit inline.
@@ -160,6 +160,8 @@ Evidence:
 
 A return without a plain-English lead is malformed — re-dispatch the sub-agent with a reminder.
 
+Implementer returns also carry a `Tests:` block right after the plain-English lead: for each run step in the task, the command and the decisive output lines quoted from the real run (the RED failure and the GREEN pass; for a `plan.tdd: false` task, each run step's output). A missing or paraphrased `Tests:` block is malformed the same way: re-dispatch with a reminder. Pass the block to the spec reviewer, which checks it against each step's Expected line instead of re-running the suite.
+
 ## Implementer status handling
 
 | Status | PM response |
@@ -167,7 +169,7 @@ A return without a plain-English lead is malformed — re-dispatch the sub-agent
 | **DONE** | Proceed to spec review. |
 | **DONE_WITH_CONCERNS** | Read concerns. If correctness/scope, fix before review. If observational, note and proceed. |
 | **NEEDS_CONTEXT** | Route per scope (see below). |
-| **BLOCKED** | Assess: context problem → more context + re-dispatch; reasoning problem → escalate model; task too large → split; plan wrong → surface to user. Never retry with same model + same context. |
+| **BLOCKED** | Assess: context problem → more context + re-dispatch; reasoning problem → escalate model; task too large → split; plan wrong (the implementer labels it plan ambiguity) → route to the **Plan ambiguity** row of the drift table. Never retry with same model + same context. |
 
 ### NEEDS_CONTEXT escalation routing
 
