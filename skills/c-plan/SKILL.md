@@ -15,7 +15,7 @@ You translate an approved design into an execution-ordered plan folder. Plans ar
 
 ## One design → one plan
 
-A design always becomes exactly **one** plan folder. Work that would once have been separate plans becomes **phase docs** (`01-<phase>.md`, `02-<phase>.md`, …) inside that one plan. There is no split question and no `linked_plans:` array. After reading the design, confirm the **phase decomposition** with the user (writing-flow step 3); do not ask about splitting into multiple plans.
+A design always becomes exactly **one** plan folder. Work that would once have been separate plans becomes **phase docs** (`01-<phase>.md`, `02-<phase>.md`, …) inside that one plan. There is no split question and no `linked_plans:` array. After reading the design, confirm the **phase decomposition** with the user (writing-flow step 2); do not ask about splitting into multiple plans.
 
 Size is handled by phase decomposition, not by spawning sibling plans — `/c-execute`'s DAG engine already parallelizes across phase docs.
 
@@ -286,9 +286,9 @@ Inline mode replaces items 2-3: the main session writes each remaining doc itsel
 
 ## Self-review pass
 
-1. **Placeholder scan** — no banned phrases (`TBD`, `TODO`, `implement here`, `similar to Task N`, `add validation`).
+1. **Placeholder scan** — no banned phrases (`TBD`, `TODO`, `implement here`, `similar to Task N`, `add validation`). In decision plans it also flags a code step with no signature ("Implement the parser" decides nothing).
 2. **Task shape** — every task has `Reads:`, `Touches:`, and `Depends:` fields, ≥3 steps, and a final commit step; every `Touches:` entry is a real path; every `Depends:` id references a real task.
-3. **Code completeness (full-code plans)** — every code step has actual code, not a stub. **Step sufficiency (decision plans)** — every step lets the implementer write exactly one reasonable thing, and no step carries more: a line that decides nothing is a gap, a function body the signature and tests already determine is a transcript, and a code step with no signature ("Implement the parser") decides nothing.
+3. **Code completeness (full-code plans)** — every code step has actual code, not a stub. **Step sufficiency (decision plans)** — every step lets the implementer write exactly one reasonable thing, and no step carries more: a line that decides nothing is a gap, and a function body the signature and tests already determine is a transcript.
 4. **Command completeness** — every run-command step has exact command + expected output.
 5. **Symbol/path/import verification** — every cited file path, line range, symbol, and import was ground-truthed against the current code per "Codebase verification" rules. Intra-plan consistency also holds: names referenced across later tasks match earlier ones. (`/c-audit`'s `code-behind-checkbox` audit remains a backstop at completion.)
 6. **File Map honesty** — every file in tasks appears in File Map; nothing in File Map is missing from tasks.
@@ -297,7 +297,7 @@ Inline mode replaces items 2-3: the main session writes each remaining doc itsel
 9. **Fragmented-file detector** — flag any phase file with 1–2 tasks whose `Reads:` core overlaps a sibling phase file's by >50% (candidate for consolidation). Surface to the user via `AskUserQuestion`; never auto-merge.
 10. **Mixed-topic detector** — flag any phase file whose tasks pairwise share zero `Reads:` (candidate-multi-topic). Surface to the user via `AskUserQuestion`; never auto-split.
 11. **Visual-citation check (95 designs only)** — every task whose `Touches:` intersects the Surface map carries both visual citations in `Reads:`; no task outside the intersection carries a `mockup:NN` citation (the contract doc may be cited freely where useful).
-12. **Proportion (decision plans)** — flag the plan when its total word count exceeds the design's (overview plus every child doc), or when code blocks make up more than half of any phase doc's lines. Replace bodies with signatures, test names, and assertions, then re-check step sufficiency.
+12. **Proportion (decision plans)** — flag the plan when its total word count exceeds the design's (overview plus every child doc), or when code blocks make up more than half of any phase doc's lines. Test code counts as code here, which is why the threshold is a half and not lower. Replace bodies with signatures, test names, and assertions, then re-check step sufficiency.
 13. **Interface closure (decision plans)** — every task has an Interfaces block; every `Consumes:` entry is produced by a task in the consumer's `Depends:` closure or verified to exist in the codebase; every `Produces:` name a later task uses matches exactly.
 14. **Global Constraints sourced (every plan)** — the section exists; every line has a source parenthetical that resolves (a design doc, `CLAUDE.md`, or a manifest the plan cites); no line binds only one task.
 15. **Review Focus closure (every plan)** — the section exists with at most five entries; every entry names a real task id; that task carries the pin (a test assertion when `plan.tdd` is true, a run step with expected output when false).

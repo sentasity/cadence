@@ -22,7 +22,9 @@ One design always becomes exactly one plan; large work is split into **phase doc
 
 It then asks one generation-mode question: **all-at-once** (the default — parallel generator sub-agents plus a consistency sweep) or **inline** (the main session writes every doc itself; no sub-agents, no sweep). A concrete `authoring.plan_mode` value skips the question.
 
-With `plan.style: ask` it also asks which style to write: **full-code** (the default; every code step shows the code) or **decisions** (each step records the exact signature, the test and its assertions, and the design's values, and the implementer writes the code). In the same exchange as the phase decomposition, it confirms the plan's **Global Constraints**: project-wide rules it extracted from the design, `CLAUDE.md`, and the repo's manifests.
+With `plan.style: ask` it also asks which style to write: **full-code** (the default; every code step shows the code) or **decisions** (each step records the exact signature, the test and its assertions, and the design's values, and the implementer writes the code).
+
+For every plan, in the same exchange as the phase decomposition, it confirms the plan's **Global Constraints**: project-wide rules it extracted from the design, `CLAUDE.md`, and the repo's manifests.
 
 ## Inputs & preconditions
 
@@ -40,7 +42,7 @@ A plan folder at `<paths.plans>/{yyyy-mm-dd-slug}/`: a `00-overview.md` (goal, a
 - Every task carries `Reads:`, `Touches:`, and `Depends:` fields and ends with a commit step; banned placeholder phrases (`TBD`, `TODO`, "handle edge cases", "similar to Task N") are blocked in self-review.
 - For a design with a `95` slot, every task whose `Touches:` intersects the Surface map gets the visual contract and a `mockup:NN` citation appended to its `Reads:` automatically, and self-review checks that the attachment is complete and hasn't leaked onto tasks outside the map. There is no new task field: `Reads:` already carries the read-before-writing contract.
 - Each plan states its style in its overview, and execution reads it from there, never from config, so changing `plan.style` never affects a plan already written. A plan with no style line runs as full-code.
-- Decision plans pass a proportion check (no longer than the design, code under half of any phase doc) and an interface-closure check (every name a task borrows has a source). Every plan's Global Constraints trace to a source, and every Review Focus entry has its pin in the task it names.
+- Decision plans pass a proportion check (no longer than the design, code no more than half of any phase doc) and an interface-closure check (every name a task borrows has a source). Every plan's Global Constraints trace to a source, and every Review Focus entry has its pin in the task it names.
 - It never writes code, never runs anything, and never auto-executes; `/c-execute` is invoked separately.
 
 ## Related commands

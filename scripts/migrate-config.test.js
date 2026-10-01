@@ -745,3 +745,26 @@ test('never-insert: the real shipped defaults carry plan.style and never report 
   assert.deepStrictEqual(missing.missingNested, []);
   assert.deepStrictEqual(missing.missingBlocks, []);
 });
+
+test('never-insert: main() bumps the version and adds other keys but never writes plan.style', () => {
+  const proj = 'config_version: 2\nplan:\n  tdd: true\n';
+  const { projectDir, pluginRoot } = setupTemp(proj);
+  fs.writeFileSync(path.join(pluginRoot, 'defaults', 'config.default.yaml'), [
+    'config_version: 3',
+    'plan:',
+    '  tdd: true',
+    '  style: full-code       # full-code | decisions | ask',
+    '  commit_cadence: per-task',
+    'execute:',
+    '  mode: ask',
+  ].join('\n') + '\n');
+  const { logs, warns } = runMain(projectDir, pluginRoot);
+  const after = fs.readFileSync(path.join(projectDir, '.cadence', 'config.yaml'), 'utf8');
+  assert.deepStrictEqual(warns, []);
+  assert.match(after, /^config_version: 3/m);
+  assert.match(after, /^  commit_cadence: per-task/m);
+  assert.match(after, /^execute:\n  mode: ask/m);
+  assert.doesNotMatch(after, /style:/);
+  assert.strictEqual(logs.length, 1);
+  assert.doesNotMatch(logs[0], /plan\.style/);
+});

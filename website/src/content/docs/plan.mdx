@@ -20,7 +20,7 @@ The plan is for the machine. You'll skim it to confirm it covers what the design
 
 ## Two plan styles: full code or decisions
 
-`plan.style` picks what a plan's steps contain. A **full-code** plan (the default) writes out the code for every step, and the implementing agent puts it in place. A **decision** plan writes down only what the agent can't work out alone (which file, each function's exact name, inputs, and return type, which tests prove it and what they check, and the exact values the design fixes) and lets the agent write the code. Decision plans are much shorter and cheaper to write, and they stop the planner from building the whole feature while it plans.
+`plan.style` picks what a plan's steps contain. A **full-code** plan (the default) writes out the code for every step, and the implementing agent puts it in place. A **decision** plan writes down only what the agent can't work out alone (which file, each function's exact name, inputs, and return type, which tests prove it and what they check, and the exact values the design fixes) and lets the agent write the code. Decision plans should be much shorter and cheaper to write, and they keep the planner from building the whole feature while it plans.
 
 A decision-plan task looks like this:
 

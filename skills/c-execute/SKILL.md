@@ -26,9 +26,10 @@ Before scheduling, detect the plan format per-plan:
 2. Path resolves to a plan folder with `00-overview.md`.
 3. Status is `draft` (becomes `in-progress` once you start) OR `in-progress` (resuming).
 4. Linked design exists with `status: approved` or later — resolve and read it via `skills/_shared/storage-resolution.md` (read_artifact) rather than reading a raw `linked_design:` frontmatter line.
-5. Working tree is clean (no unstaged or uncommitted changes).
-6. Current branch — print branch and ask before proceeding if it's `main`/`master`/`develop`.
-7. **Execution-mode gate (new-format plans only).** Resolve `execute.mode`:
+5. Plan style is valid: the plan overview's `**Plan style:**` line is absent (meaning `full-code`) or reads `full-code` or `decisions`. Any other value is a malformed plan: stop and surface it here, before the execution-mode gate and before any status or `base_sha` write.
+6. Working tree is clean (no unstaged or uncommitted changes).
+7. Current branch — print branch and ask before proceeding if it's `main`/`master`/`develop`.
+8. **Execution-mode gate (new-format plans only).** Resolve `execute.mode`:
    - **`parallel`** — run the lane engine. Keep today's worktree confirmation: unless `execute.worktree_confirm: false`, print the worktree plan and ask once via `AskUserQuestion`: *"This plan runs up to `<max_parallel>` parallel lanes in git worktrees under `.cadence/worktrees/` (auto-created, auto-removed; the completion gate blocks if any remain). Proceed?"* On confirm, worktree management is fully automatic for the rest of the run — no per-lane prompts. On decline, do not start.
    - **`inline`** — run the Inline mode path (below). No worktree question; nothing worktree-related happens all run.
    - **`ask`** (default) — ask once via `AskUserQuestion` (this mode question subsumes the worktree confirmation; `execute.worktree_confirm: false` does not suppress it):
@@ -45,7 +46,7 @@ SHA-based pinning is robust against rebases, merges, and unrelated commits that 
 
 ## PM responsibilities
 
-1. Read the plan once via `skills/_shared/storage-resolution.md` (read_artifact): a single pass materializes the overview + every phase doc + 96-validation + 97/98/99 into the in-memory task list. This is the only plan read, and only the PM issues it; do not read phase-file markdown by path. From the overview, take three things here, once: the **plan style** from the `**Plan style:**` line (no line means `full-code`; any value other than `full-code` or `decisions` is a malformed plan, so stop and surface it before dispatching anything), the `## Global Constraints` section, and the `## Review Focus` section (both absent on plans written before they existed; then pass nothing). Never read `plan.style` from config during execution.
+1. Read the plan once via `skills/_shared/storage-resolution.md` (read_artifact): a single pass materializes the overview + every phase doc + 96-validation + 97/98/99 into the in-memory task list. This is the only plan read, and only the PM issues it; do not read phase-file markdown by path. From the overview, take three things here, once: the **plan style** from the `**Plan style:**` line (no line means `full-code`; pre-flight check 5 already rejected any other value), the `## Global Constraints` section, and the `## Review Focus` section (both absent on plans written before they existed; then pass nothing). Never read `plan.style` from config during execution.
 2. Build an internal task list — every `### Task N.M` becomes a tracked item with its `Depends:` edges, `Reads:` block, `Touches:` list, and full step block extracted.
 3. Build the dependency DAG from each task's `Depends:` edges and form lanes per the scheduling loop in "Lane model and DAG scheduling".
 4. Dispatch lanes concurrently up to `execute.max_parallel`, respecting `Touches:` disjointness.
