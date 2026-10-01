@@ -40,6 +40,7 @@ frontmatter:
 
 plan:
   tdd: true
+  style: full-code         # full-code | decisions | ask; never written into project configs (migrate-config.js NEVER_INSERT)
   commit_cadence: per-task
   # No split_thresholds: split decisions are judgment-based in /c-plan,
   # not threshold-based.

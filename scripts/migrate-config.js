@@ -94,7 +94,7 @@ function detectMissingKeys(projectText, defaultsText) {
     }
     const projChildren = proj.children[block].childOrder;
     for (const key of def.children[block].childOrder) {
-      if (!projChildren.includes(key)) {
+      if (!projChildren.includes(key) && !NEVER_INSERT.has(`${block}.${key}`)) {
         missingNested.push({ block, key });
       }
     }
@@ -235,6 +235,42 @@ const RELOCATIONS = {
   'worktree.dir': ['execute', 'worktree_dir'],
   'worktree.integrate': ['execute', 'integrate'],
 };
+
+/**
+ * Keys that live only in the plugin defaults and are never written into a
+ * project config by a migration. A key whose default is expected to change
+ * belongs here: an inserted copy would pin every existing repo to today's
+ * value, so a later default flip would reach no one. The resolver merges
+ * defaults under project values, so an absent key still resolves to the
+ * shipped default.
+ */
+const NEVER_INSERT = new Set(['plan.style']);
+
+/**
+ * Drop NEVER_INSERT direct-child key lines from a defaults block before it is
+ * appended whole to a project config.
+ *
+ * @param {string} blockText
+ * @param {string} block
+ * @returns {string}
+ */
+function stripNeverInsert(blockText, block) {
+  const lines = blockText.split('\n');
+  const firstChild = lines.slice(1).find((l) => /^\s+[A-Za-z0-9_-]+:/.test(l));
+  if (!firstChild) {
+    return blockText;
+  }
+  const childIndent = firstChild.match(/^(\s+)/)[1];
+  return lines
+    .filter((line, i) => {
+      if (i === 0) {
+        return true;
+      }
+      const m = line.match(/^(\s+)([A-Za-z0-9_-]+):/);
+      return !(m && m[1] === childIndent && NEVER_INSERT.has(`${block}.${m[2]}`));
+    })
+    .join('\n');
+}
 
 /**
  * Read the project's VALUE for a child key under a block, with any trailing
@@ -409,7 +445,7 @@ function mergeMissing(projectText, defaultsText, missing) {
   let text = lines.join('\n');
   for (const block of missing.missingBlocks) {
     const blockText = applyRelocationsToBlock(
-      extractBlock(defaultsText, block),
+      stripNeverInsert(extractBlock(defaultsText, block), block),
       block,
       projectText
     );

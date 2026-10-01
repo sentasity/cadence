@@ -688,3 +688,60 @@ test('v6->v7: the real shipped defaults produce exactly the execute.mode append 
   assert.deepStrictEqual(missing.missingNested, [{ block: 'execute', key: 'mode' }]);
   assert.deepStrictEqual(missing.missingBlocks, []);
 });
+
+test('never-insert: detectMissingKeys skips plan.style under an existing plan block', () => {
+  const def = [
+    'config_version: 9',
+    'plan:',
+    '  tdd: true',
+    '  style: full-code       # full-code | decisions | ask',
+    'execute:',
+    '  mode: ask',
+  ].join('\n') + '\n';
+  const proj = [
+    'config_version: 8',
+    'plan:',
+    '  tdd: true',
+    'execute:',
+    '  parallel: true',
+  ].join('\n') + '\n';
+  const missing = detectMissingKeys(proj, def);
+  assert.deepStrictEqual(missing.missingNested, [{ block: 'execute', key: 'mode' }]);
+  assert.deepStrictEqual(missing.missingBlocks, []);
+});
+
+test('never-insert: a whole missing plan block is appended without plan.style', () => {
+  const def = [
+    'config_version: 9',
+    'plan:',
+    '  tdd: true',
+    '  style: full-code       # full-code | decisions | ask',
+    '  commit_cadence: per-task',
+  ].join('\n') + '\n';
+  const proj = 'config_version: 8\npaths:\n  designs: docs/designs\n';
+  const missing = detectMissingKeys(proj, def);
+  assert.deepStrictEqual(missing.missingBlocks, ['plan']);
+  const merged = mergeMissing(proj, def, missing);
+  assert.match(merged, /^plan:\n  tdd: true\n  commit_cadence: per-task$/m);
+  assert.doesNotMatch(merged, /style:/);
+});
+
+test('never-insert: an explicitly set plan.style is left untouched', () => {
+  const def = 'config_version: 9\nplan:\n  tdd: true\n  style: full-code\n';
+  const proj = 'config_version: 8\nplan:\n  tdd: true\n  style: decisions\n';
+  const missing = detectMissingKeys(proj, def);
+  assert.deepStrictEqual(missing, { missingBlocks: [], missingNested: [] });
+  assert.strictEqual(mergeMissing(proj, def, missing), proj);
+});
+
+test('never-insert: the real shipped defaults carry plan.style and never report it missing', () => {
+  const defText = fs.readFileSync(path.join(__dirname, '..', 'defaults', 'config.default.yaml'), 'utf8');
+  assert.match(defText, /^  style: full-code/m);
+  const projText = defText
+    .split('\n')
+    .filter((line) => !/^  style:/.test(line))
+    .join('\n');
+  const missing = detectMissingKeys(projText, defText);
+  assert.deepStrictEqual(missing.missingNested, []);
+  assert.deepStrictEqual(missing.missingBlocks, []);
+});
