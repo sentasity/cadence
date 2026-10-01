@@ -18,7 +18,17 @@ base_sha: null
 
 **Tech Stack:** <One line — key technologies.>
 
+**Plan style:** <full-code | decisions>
+
 **Design:** [[../../designs/<YYYY-MM-DD-SLUG>/00-overview]]
+
+## Global Constraints
+
+- <One rule that binds every task, with its exact value.> (<source: design NN | CLAUDE.md | manifest>)
+
+## Review Focus
+
+- <Input or condition> → <behavior a reasonable person would expect> (pinned in Task N.M)
 
 ## Plan Index
 

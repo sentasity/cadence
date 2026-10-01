@@ -15,7 +15,7 @@ You translate an approved design into an execution-ordered plan folder. Plans ar
 
 ## One design → one plan
 
-A design always becomes exactly **one** plan folder. Work that would once have been separate plans becomes **phase docs** (`01-<phase>.md`, `02-<phase>.md`, …) inside that one plan. There is no split question and no `linked_plans:` array. After reading the design, confirm the **phase decomposition** with the user (writing-flow step 3); do not ask about splitting into multiple plans.
+A design always becomes exactly **one** plan folder. Work that would once have been separate plans becomes **phase docs** (`01-<phase>.md`, `02-<phase>.md`, …) inside that one plan. There is no split question and no `linked_plans:` array. After reading the design, confirm the **phase decomposition** with the user (writing-flow step 2); do not ask about splitting into multiple plans.
 
 Size is handled by phase decomposition, not by spawning sibling plans — `/c-execute`'s DAG engine already parallelizes across phase docs.
 
@@ -25,7 +25,7 @@ Each phase file becomes the unit of worktree dispatch and the unit of per-lane r
 
 - **One substantive topic per file.** A topic is a coherent slice the reviewer can hold in their head — closely-related codebase slice (one skill, one service, one feature surface), shared `Reads:` core across tasks, a one-sentence reviewer headline with no "and also" clauses, and an internal DAG shape (chain, fan-out, fan-in — not fully disconnected).
 - **Target 5–10+ tasks per file.** Below 5 is too thin to amortize worktree spin-up + per-lane review. 10+ is fine as long as topical coherence holds. The 5–10+ figure is a **target, not a threshold** — a genuinely 3-task plan still ships as a 3-task phase file.
-- **Task size inside a phase file is unchanged.** The per-task contract (`Reads:`/`Touches:`/`Depends:`/`Steps`, every step one action, every code step shows the FULL code) is exactly today's rule. Consolidation is at the file level, not the task level.
+- **Task size inside a phase file is unchanged.** The per-task contract (`Reads:`/`Touches:`/`Depends:`/`Steps`, every step one action, step content per the plan's style) is unchanged. Consolidation is at the file level, not the task level.
 
 **Doc size is not a storage concern on any backend.** The notion backend writes a doc of any size in one script call (`skills/_shared/storage-resolution.md`, "Content write path"), so topical coherence and the 5–10+ task target alone decide the file boundaries; never split a coherent lane on size.
 
@@ -41,6 +41,18 @@ Each phase file becomes the unit of worktree dispatch and the unit of per-lane r
 
 - Establish the design↔plan link with a single call to `skills/_shared/storage-resolution.md` (link): it is bidirectional and idempotent, setting `linked_design` on the plan and `linked_plan` (singular) on the design in one step and bumping the design's `updated:`. Do not write the two `linked_*` frontmatter keys by hand.
 - The design flips to `completed` only when its `linked_plan` reaches status `completed`: `/c-validate` flips both in one step on a full validation pass.
+
+## Plan style
+
+`plan.style` (resolved config) picks what a plan's steps contain:
+
+- `full-code` (default): every code step shows the full code. "Task structure" and "Plan content rules" below describe this style.
+- `decisions`: steps record the decisions the implementer can't make alone and leave the code to them. See "Decision plans" below.
+- `ask`: ask once per plan via `AskUserQuestion`, in writing-flow step 3 alongside the generation-mode question, with `full-code` marked `(Recommended)` (the shipped default).
+
+Every new plan records its style in the overview as a `**Plan style:** full-code` or `**Plan style:** decisions` line directly after the Tech Stack line. That line, not config, is the plan's style for its whole life: `/c-execute` and its agents read it from the plan, so changing `plan.style` later never changes the rules under a plan already written. A plan with no style line (written before the line existed) is `full-code`.
+
+The companion sections, "Global Constraints" and "Review Focus" below, apply to every plan whatever its style; `plan.style` gates only step content and the per-task Interfaces block.
 
 ## Folder layout
 
@@ -62,7 +74,10 @@ Each phase file becomes the unit of worktree dispatch and the unit of per-lane r
 - **Goal** — one sentence.
 - **Architecture** — 2-3 sentences linking back to the design.
 - **Tech Stack** — one line.
+- **Plan style** — `**Plan style:** full-code` or `**Plan style:** decisions`, directly after Tech Stack (see "Plan style").
 - **Design link** — `[[../../designs/{slug}/00-overview]]`.
+- **Global Constraints** — a `## Global Constraints` section, every plan (see "Global Constraints").
+- **Review Focus** — a `## Review Focus` section, every plan (see "Review Focus").
 - **Plan Index** — one line per child: `[[01-foo]] — Tasks 1.1-1.M: <summary>`.
 - **File Map** — every file the plan creates or modifies, one line per file, with the change summary.
 - **Surface map** — only when the linked design has a `95-visual-contract` slot: one line per surface declared in 95's Surfaces section, `<surface name>: <file list>`, mapping the surface to the concrete files that implement it, ground-truthed per "Codebase verification". Recording the mapping is what makes the visual `Reads:` attachment below machine-checkable.
@@ -70,6 +85,8 @@ Each phase file becomes the unit of worktree dispatch and the unit of per-lane r
 No "Background," "Why," or plain-English. Those live in the design.
 
 ## Task structure (every task, every phase doc)
+
+This is the full-code shape. Decision plans keep the same fields and step sequence, add an `**Interfaces:**` field, and change what each step contains (see "Decision plans").
 
 ````````markdown
 ### Task N.M: <Name>
@@ -107,15 +124,100 @@ No "Background," "Why," or plain-English. Those live in the design.
 
 ## Plan content rules
 
-- Every step is one action (2-5 minutes of work).
-- Every code step shows the FULL code — no `// implement here` placeholders.
-- No cross-references like "similar to Task N" — repeat code inline.
+These rules apply to every plan, except the three marked *(full-code)*, which decision plans replace (see "Decision plans").
+
+- *(full-code)* Every step is one action (2-5 minutes of work).
+- *(full-code)* Every code step shows the FULL code — no `// implement here` placeholders.
+- *(full-code)* No cross-references like "similar to Task N" — repeat code inline.
 - Every run-command step shows the exact command and expected output/status.
 - Every task ends with a commit step (cadence: per task).
 - **Banned phrases:** `TBD`, `TODO`, `add error handling`, `fill in details`, `handle edge cases`, `write tests for the above`. Plan failures; block self-review.
 - **`Reads:`/`Touches:`/`Depends:` required** on every task. `Touches:` must name every file the task writes (the `/c-execute` co-scheduling guard depends on it). `Depends:` lists task ids that must merge first (`[]` = independent). The former per-task concurrency marker is superseded by these three fields.
 
 **TDD default; opt-out in config.** `config.plan.tdd: true` → test → fail → impl → pass → commit. `false` → impl → run → commit (test steps omitted).
+
+## Decision plans
+
+When the plan's style is `decisions`, the plan records the decisions the implementer cannot make alone and leaves the code to them. Write for an engineer who has not seen this codebase or this design, who writes idiomatic code in the project's language once they know the exact interface and the exact test, and who makes a reasonable choice wherever the plan leaves one open. What they cannot know is what was decided: which files, which names and signatures, which values from the design, which tests prove each task. Document those.
+
+**A step is done when the implementer can write exactly one reasonable thing from it.** Unambiguous, not complete. Each kind of step carries what makes it unambiguous and nothing more:
+
+| Step kind | Carries |
+|---|---|
+| Test step | The test's name and its assertions, as code, with the design's exact values in them. |
+| Code step | The exact signature (name, parameters, return type), the file it lives in, and the values the design pins. A body only for an algorithm the signature and tests don't determine, or for exact copy the design fixes. One line on the approach when the signature and tests leave a real choice. |
+| Verification step | The command and the output that means it passed (for the RED run, the expected failure). |
+| Reference to another task | Through that task's Interfaces block. Never repeat another task's code. |
+| Commit step | The files and the message. |
+
+A plan longer than the code it describes has written the code instead. Lines that decide nothing (the banned phrases above, a type or function no task defines) are the opposite failure; self-review catches both.
+
+**Step sizing:** one action with a checkable result (write the failing test; run it; implement the signature; run the tests; commit), not minutes.
+
+**Interfaces block (required in decision plans, omitted in full-code plans).** Every task carries `**Interfaces:**` directly after `**Depends:**`, with two lines:
+
+- `Consumes:` the exact signatures this task uses from other tasks, each tagged with the producing task id, or `none`.
+- `Produces:` the exact signatures later tasks rely on, or `none`.
+
+An implementer sees only its own task block and its `Reads:` files, so this block is the only place shared names travel. Every `Consumes:` entry must be produced by a task in the consumer's `Depends:` closure or already exist in the codebase (ground-truthed per "Codebase verification").
+
+Task shape:
+
+````markdown
+### Task 2.3: Parse retry budget from config
+
+**Reads:** [`src/config/loader.py`, `tests/config/test_loader.py`]
+**Touches:** [`src/config/retry.py`, `tests/config/test_retry.py`]
+**Depends:** [2.1]
+**Interfaces:**
+- Consumes: `load_section(name: str) -> dict` (Task 2.1)
+- Produces: `retry_budget(cfg: dict) -> RetryBudget` where `RetryBudget(max_attempts: int, backoff_s: float)`
+
+- [ ] **Step 1: Write failing tests** in `tests/config/test_retry.py`
+  `test_defaults_when_absent`: `retry_budget({})` == `RetryBudget(3, 0.5)`
+  `test_rejects_zero_attempts`: `retry_budget({"max_attempts": 0})` raises `ValueError("max_attempts must be >= 1")`
+
+- [ ] **Step 2: Run, expect FAIL**
+  `pytest tests/config/test_retry.py -v` → Expected: FAIL, `ImportError: cannot import name 'retry_budget'`
+
+- [ ] **Step 3: Implement `retry_budget(cfg: dict) -> RetryBudget` and the `RetryBudget` dataclass in `src/config/retry.py`**
+  Defaults 3 and 0.5 come from the design's retry section.
+
+- [ ] **Step 4: Run, expect PASS**
+  `pytest tests/config/test_retry.py -v` → Expected: 2 passed
+
+- [ ] **Step 5: Commit**
+  `git add src/config/retry.py tests/config/test_retry.py && git commit -m "feat(config): parse retry budget"`
+````
+
+## Global Constraints
+
+Every plan, whatever its style, carries a `## Global Constraints` section in the overview: the rules that bind every task, one per line, with exact values copied verbatim from their source.
+
+**What qualifies:** language and runtime version floors, platform requirements, dependency limits (no new dependencies, or an allowed set), naming and user-facing copy rules, exact values the design pins globally (limits, timeouts, units), and repo rules from `CLAUDE.md` that bind code. A rule that binds one task belongs in that task's steps, not here.
+
+**Sources:** while reading the design (writing-flow step 1), collect candidates from the approved design (every doc, including decisions-log entries that state a global rule), the repo's `CLAUDE.md`, and the repo's manifests where present (`package.json` `engines`, `.nvmrc`, `pyproject.toml` `requires-python`, `.python-version`, `go.mod` `go` directive, `Cargo.toml` `rust-version`, and the like), ground-truthed like any other cited path. Each line ends with a short source parenthetical: `(design 03)`, `(CLAUDE.md)`, `(package.json engines)`.
+
+**Confirmation:** show the list in writing-flow step 2, in the same exchange as the phase-decomposition confirmation, via `AskUserQuestion` with **Looks right** `(Recommended)` and **Edit the list**. An edit loops once through the list and back.
+
+**Placement:** `## Global Constraints` in the overview, after the header lines and before `## Review Focus`. An empty list is written as `None.` (checked, found nothing; never skipped). Constraints are not repeated inside tasks: `/c-execute` passes the section to every implementer and both reviewers.
+
+## Review Focus
+
+Every plan carries a `## Review Focus` section in the overview: up to five input classes or failure modes the design implies but no task's tests exercise, the ones most likely to bite a person using the software first. The design's silence on an input is not permission for that input to break the program.
+
+**Selection:** after the phase docs are drafted (writing-flow step 5a), walk the design's inputs, states, and boundaries with the design in front of you, list the ones no task's tests exercise, and keep the five most likely to hurt a user. Fewer is fine; an empty section is written as `None found.` (checked, found nothing).
+
+**Line format:** `- <input or condition> → <behavior a reasonable person would expect> (pinned in Task N.M)`.
+
+**Pinning:** add a check for each entry to the task that owns the code, in that task's own step style:
+
+| `plan.tdd` | The pin |
+|---|---|
+| `true` | A test in the owning task's test step (a new test function, or new assertions in its existing test), with the expected behavior as its assertion, run by the task's RED and GREEN steps. |
+| `false` | A run step in the owning task with the exact command that exercises the input and the output that means it behaved. |
+
+`/c-execute` passes the section to the spec reviewer, which checks that each owning task's diff carries its pin.
 
 ## Codebase verification (mandatory)
 
@@ -159,11 +261,12 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 
 ## Writing flow
 
-1. Resolve config by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (`plan.tdd`, `authoring.*`; contract in `skills/_shared/config-resolution.md`; never read config files directly). Read approved design end-to-end (overview + every child + 99-OOS).
-2. Confirm phase decomposition (no split question — one plan always). Decompose into the **minimal coherent grouping** that covers the design — prefer one substantive topic per phase file (5–10+ tasks per file), not one phase file per design child-doc. A phase file is the unit of worktree dispatch and per-lane review under `/c-execute`'s lane = phase file rule; fragmented files create cold-start churn without parallelism gain. Confirm with the user: *"Plan files will be `01-<topic>`, `02-<topic>`, …. Sound right?"*
-3. Resolve `authoring.plan_mode`; when it names a concrete mode (`all-at-once`, `inline`) use it without asking. When it is `ask`, ask via `AskUserQuestion` (default `(Recommended)` = all-at-once): **All-at-once** — one generator agent per remaining doc in parallel plus the `cadence-doc-consistency` sweep (today's behavior); **Inline** (label: "Inline, no sub-agents") — the main session writes every doc itself, sequentially, running the codebase verification pass on each doc before moving on; no generators, no sweep.
-4. Create the plan artifact first via `skills/_shared/storage-resolution.md` (create_artifact), writing the `00-overview` (frontmatter + phase index + File Map — generators need it) with `base_sha` initialized empty; do not path-compute `<paths.plans>/…/00-overview.md`.
+1. Resolve config by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (`plan.tdd`, `plan.style`, `authoring.*`; contract in `skills/_shared/config-resolution.md`; never read config files directly). Read approved design end-to-end (overview + every child + 99-OOS), collecting Global Constraints candidates as you read (see "Global Constraints").
+2. Confirm phase decomposition (no split question — one plan always). Decompose into the **minimal coherent grouping** that covers the design — prefer one substantive topic per phase file (5–10+ tasks per file), not one phase file per design child-doc. A phase file is the unit of worktree dispatch and per-lane review under `/c-execute`'s lane = phase file rule; fragmented files create cold-start churn without parallelism gain. Confirm with the user: *"Plan files will be `01-<topic>`, `02-<topic>`, …. Sound right?"* In the same exchange, confirm the Global Constraints list (see "Global Constraints").
+3. Resolve `authoring.plan_mode`; when it names a concrete mode (`all-at-once`, `inline`) use it without asking. When it is `ask`, ask via `AskUserQuestion` (default `(Recommended)` = all-at-once): **All-at-once** — one generator agent per remaining doc in parallel plus the `cadence-doc-consistency` sweep (today's behavior); **Inline** (label: "Inline, no sub-agents") — the main session writes every doc itself, sequentially, running the codebase verification pass on each doc before moving on; no generators, no sweep. When `plan.style` is `ask`, ask the style question in the same exchange (see "Plan style").
+4. Create the plan artifact first via `skills/_shared/storage-resolution.md` (create_artifact), writing the `00-overview` (frontmatter + Plan style line + Global Constraints + phase index + File Map — generators need them; Review Focus is written in step 5a) with `base_sha` initialized empty; do not path-compute `<paths.plans>/…/00-overview.md`.
 5. (all-at-once mode) Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`; each generated doc is written to its slot per `skills/_shared/storage-resolution.md` (write_doc), never to a hand-computed `<paths.plans>/…` file. Before each generator finalizes its doc, run the codebase verification pass (above) on every path, symbol, and import it cites. Fix inline. (inline mode) The main session writes each remaining doc itself, in order, applying the same codebase verification pass per doc.
+5a. **Review Focus.** Once the phase docs are drafted, select the Review Focus entries, add each entry's pin to its owning task, and write the `## Review Focus` section into the overview via write_doc (see "Review Focus").
 6. **Invariant 2 in reverse.** If a phase reveals a gap or inconsistency in the design, surface it. Apply drift policy (default: update plan only; user-elective: update plan + design).
 7. (all-at-once mode; inline skips the sweep — single author) Dispatch `cadence-doc-consistency` once over the full set. Reconcile trivial wording; surface substantive contradictions to the user via `AskUserQuestion`. Re-dispatch only affected generators on resolution. The plan is not finalized until the sweep is clean.
 8. **Bidirectional linkage write.** Establish the design↔plan link via `skills/_shared/storage-resolution.md` (link) — one idempotent call sets `linked_plan` on the design and `linked_design` on the plan and bumps the design's `updated:`.
@@ -174,8 +277,8 @@ Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.
 ## Generation modes
 
 Plan docs are mechanical, so `/c-plan` offers `all-at-once` (default) and `inline` — never the paused one-by-one mode (review happens on the assembled plan, so a per-doc pause buys nothing). All-at-once:
-1. Write `00-overview.md` first (frontmatter + phase index + File Map — generators need it).
-2. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`. Each generator gets the approved design (or relevant slice), the plan overview, its doc's scope, the resolved storage backend, and the format conventions (`skills/_shared/obsidian-format.md`; **plus `skills/_shared/notion-translation.md` when the backend is notion**, so callouts are authored as native `<callout>` blocks, never obsidian `> [!type]` syntax).
+1. Write `00-overview.md` first (frontmatter + Plan style line + Global Constraints + phase index + File Map — generators need them).
+2. Dispatch one fresh generator agent per remaining doc (phase docs, `96-validation`, `97`/`98` shells, `99-out-of-scope`) **in parallel**, up to `authoring.max_parallel`. Each generator gets the approved design (or relevant slice), the plan overview (whose Plan style line tells the generator which step rules apply), its doc's scope, the resolved storage backend, and the format conventions (`skills/_shared/obsidian-format.md`; **plus `skills/_shared/notion-translation.md` when the backend is notion**, so callouts are authored as native `<callout>` blocks, never obsidian `> [!type]` syntax).
 3. Dispatch `cadence-doc-consistency` once over the full set. Reconcile trivial wording; surface substantive contradictions to the user via `AskUserQuestion`. Re-dispatch only affected generators on resolution.
 4. The plan is not finalized until the sweep is clean.
 
@@ -183,9 +286,9 @@ Inline mode replaces items 2-3: the main session writes each remaining doc itsel
 
 ## Self-review pass
 
-1. **Placeholder scan** — no banned phrases (`TBD`, `TODO`, `implement here`, `similar to Task N`, `add validation`).
+1. **Placeholder scan** — no banned phrases (`TBD`, `TODO`, `implement here`, `similar to Task N`, `add validation`). In decision plans it also flags a code step with no signature ("Implement the parser" decides nothing).
 2. **Task shape** — every task has `Reads:`, `Touches:`, and `Depends:` fields, ≥3 steps, and a final commit step; every `Touches:` entry is a real path; every `Depends:` id references a real task.
-3. **Code completeness** — every code step has actual code, not a stub.
+3. **Code completeness (full-code plans)** — every code step has actual code, not a stub. **Step sufficiency (decision plans)** — every step lets the implementer write exactly one reasonable thing, and no step carries more: a line that decides nothing is a gap, and a function body the signature and tests already determine is a transcript.
 4. **Command completeness** — every run-command step has exact command + expected output.
 5. **Symbol/path/import verification** — every cited file path, line range, symbol, and import was ground-truthed against the current code per "Codebase verification" rules. Intra-plan consistency also holds: names referenced across later tasks match earlier ones. (`/c-audit`'s `code-behind-checkbox` audit remains a backstop at completion.)
 6. **File Map honesty** — every file in tasks appears in File Map; nothing in File Map is missing from tasks.
@@ -194,8 +297,12 @@ Inline mode replaces items 2-3: the main session writes each remaining doc itsel
 9. **Fragmented-file detector** — flag any phase file with 1–2 tasks whose `Reads:` core overlaps a sibling phase file's by >50% (candidate for consolidation). Surface to the user via `AskUserQuestion`; never auto-merge.
 10. **Mixed-topic detector** — flag any phase file whose tasks pairwise share zero `Reads:` (candidate-multi-topic). Surface to the user via `AskUserQuestion`; never auto-split.
 11. **Visual-citation check (95 designs only)** — every task whose `Touches:` intersects the Surface map carries both visual citations in `Reads:`; no task outside the intersection carries a `mockup:NN` citation (the contract doc may be cited freely where useful).
+12. **Proportion (decision plans)** — flag the plan when its total word count exceeds the design's (overview plus every child doc), or when code blocks make up more than half of any phase doc's lines. Test code counts as code here, which is why the threshold is a half and not lower. Replace bodies with signatures, test names, and assertions, then re-check step sufficiency.
+13. **Interface closure (decision plans)** — every task has an Interfaces block; every `Consumes:` entry is produced by a task in the consumer's `Depends:` closure or verified to exist in the codebase; every `Produces:` name a later task uses matches exactly.
+14. **Global Constraints sourced (every plan)** — the section exists; every line has a source parenthetical that resolves (a design doc, `CLAUDE.md`, or a manifest the plan cites); no line binds only one task.
+15. **Review Focus closure (every plan)** — the section exists with at most five entries; every entry names a real task id; that task carries the pin (a test assertion when `plan.tdd` is true, a run step with expected output when false).
 
-Fix items 1–8 and 11 inline. For items 9 and 10, surface candidates to the user — consolidate / split / leave-as-is is the user's call, not `/c-plan`'s. No re-review needed.
+Fix items 1–8 and 11–15 inline. For items 9 and 10, surface candidates to the user — consolidate / split / leave-as-is is the user's call, not `/c-plan`'s. No re-review needed.
 
 ## What `/c-plan` doesn't do
 

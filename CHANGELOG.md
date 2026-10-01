@@ -2,13 +2,37 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
-## v0.21.1 (2026-10-01)
+## v0.22.1 (2026-10-01)
 
 `notion-write.js` no longer fails post-write verification on a small page whose only "loss" is a mention's display text.
 
 ### Fixed
 
 - **Mentions no longer trip the read-back length check.** Notion stores a mention as a bare reference and reads it back self-closing, so `<mention-page url="X">Title</mention-page>` returns as `<mention-page url="X"/>`. On a short page that dropped text alone pushed the read-back under the 0.85 ratio and the script exited 5 even though the content landed whole (a 235-char plan `99-out-of-scope` shell with one page mention read back at 196). The check now collapses paired `mention-user`, `mention-page`, `mention-database`, `mention-data-source`, and `mention-agent` tags in the sent markdown to the same self-closing form before comparing, so it measures like with like. A genuinely sheared write still fails.
+
+## v0.22.0 (2026-10-01)
+
+Plans can now record decisions instead of full code. A new `plan.style` setting (`full-code`, the default; `decisions`; or `ask`) picks what `/c-plan` writes, and every plan, of either style, gains Global Constraints and Review Focus sections, real test output in implementer reports, and a root-cause-first rule for implementers. Decision plans stay opt-in until a head-to-head pilot shows they are at least a third cheaper to write and no worse in the results.
+
+### Added
+
+- **Decision plans (`plan.style: decisions`).** Steps record what the implementer can't decide alone: a test step names the test and its assertions with the design's values; a code step gives the exact signature, file, and pinned values, with a body only for an algorithm those don't determine; a verification step gives the command and its passing output. Every task carries an Interfaces block (`Consumes:` / `Produces:`) so shared names travel between tasks. Self-review swaps the code-completeness check for step sufficiency, a proportion check (no longer than the design; code no more than half of any phase doc), and interface closure. Modeled on superpowers v6.4.2, which reported planning in a quarter of the time and about a third of the tokens with no quality loss.
+- **The Plan style line.** Every new plan records `**Plan style:** full-code` or `**Plan style:** decisions` after its Tech Stack line. `/c-execute` and its agents read the style from the plan, never from config, so changing `plan.style` never affects a plan already written. A plan with no line is full-code. An unrecognized value stops `/c-execute` at pre-flight, before anything is marked started.
+- **Global Constraints, in every plan.** `/c-plan` extracts project-wide rules from the design, `CLAUDE.md`, and the repo's manifests and confirms them alongside the phase split; `/c-execute` passes them to every implementer and both reviewers, and the spec reviewer treats each line as binding.
+- **Review Focus, in every plan.** Up to five inputs the design implies but no test covers, each pinned by a test (or, with `plan.tdd: false`, a run step) in the task that owns the code. The spec reviewer checks every pin landed.
+- **Test evidence.** Implementer reports that ran a step command carry a `Tests:` block quoting the real RED and GREEN output, and the spec reviewer checks it against each step's Expected line instead of inferring from notes.
+- **Root cause first.** When a run doesn't match its Expected line, the implementer tests one hypothesis at a time and returns BLOCKED after three failed attempts, or immediately as plan ambiguity when the plan itself is wrong; `/c-execute` routes that to the Plan ambiguity drift row.
+
+### Changed
+
+- **Spec review is style-aware.** Full-code plans keep exact-match review. For decision plans the decisions are binding (signatures, file placement, tests and their assertions, pinned values, algorithm bodies the plan spells out, Global Constraints), and private helpers and internal structure are the implementer's call.
+- **The code reviewer receives Global Constraints**, so it doesn't flag a constraint-mandated choice as a style issue.
+- **Inline execution** applies the same style-aware review, records test evidence, and follows the root-cause rule.
+- **`/c-brainstorm`'s first-run scaffold** leaves never-insert keys (today `plan.style`) out of the new `.cadence/config.yaml`.
+
+### Why
+
+- **`plan.style` is never written into your config.** There is no `config_version` bump for it, and `scripts/migrate-config.js` gains a never-insert list so no migration writes it; `/c-brainstorm`'s first-run scaffold leaves it out too. An inserted `plan.style: full-code` would read as a deliberate choice and keep every existing repo on full-code when the default later flips.
 
 ## v0.21.0 (2026-09-30)
 
