@@ -304,6 +304,8 @@ Inline mode replaces items 2-3: the main session writes each remaining doc itsel
 
 Fix items 1–8 and 11–15 inline. For items 9 and 10, surface candidates to the user — consolidate / split / leave-as-is is the user's call, not `/c-plan`'s. No re-review needed.
 
+Report the pass in the closing summary as one line per item that applies to this plan's style and backend, by number and name, each with its result: clean, fixed (and what changed), or flagged. An item missing from that list counts as not run, so the user can see that the style-specific checks (3, 12, 13) and the companion checks (14, 15) actually ran.
+
 ## What `/c-plan` doesn't do
 
 - Doesn't write code.

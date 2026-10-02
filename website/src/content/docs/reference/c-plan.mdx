@@ -43,6 +43,7 @@ A plan folder at `<paths.plans>/{yyyy-mm-dd-slug}/`: a `00-overview.md` (goal, a
 - For a design with a `95` slot, every task whose `Touches:` intersects the Surface map gets the visual contract and a `mockup:NN` citation appended to its `Reads:` automatically, and self-review checks that the attachment is complete and hasn't leaked onto tasks outside the map. There is no new task field: `Reads:` already carries the read-before-writing contract.
 - Each plan states its style in its overview, and execution reads it from there, never from config, so changing `plan.style` never affects a plan already written. A plan with no style line runs as full-code.
 - Decision plans pass a proportion check (no longer than the design, code no more than half of any phase doc) and an interface-closure check (every name a task borrows has a source). Every plan's Global Constraints trace to a source, and every Review Focus entry has its pin in the task it names.
+- The closing summary lists every self-review check that applies, by number, with its result (clean, fixed, or flagged). A check missing from the list didn't run.
 - It never writes code, never runs anything, and never auto-executes; `/c-execute` is invoked separately.
 
 ## Related commands
