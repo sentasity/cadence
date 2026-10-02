@@ -4,7 +4,12 @@ All notable changes to Cadence are documented here. Format loosely follows [Keep
 
 ## v0.22.2 (2026-10-02)
 
-`/c-plan`'s closing summary now lists every self-review check it ran, so a skipped check is visible.
+`/c-plan`'s closing summary now lists every self-review check it ran, so a skipped check is visible, and two self-review checks that blocked sound plans are loosened.
+
+### Changed
+
+- **Proportion is advisory.** The decision-plan proportion check no longer fails a plan for being longer than its design. In the v0.22.0 pilot, a decision plan with 16 tasks came out at 5,888 words against a 4,750-word design while holding under 1% code, and the run could not fix the flag because there was nothing to cut. Self-review now reports the word ratio and code share as signals and rewrites only steps that spell out a body the signature and tests already determine.
+- **Global Constraints may bind one task.** The self-review check no longer rejects a constraint line that binds only one task. Every line still needs a source. The authoring guidance to keep single-task rules in that task's steps stays.
 
 ### Fixed
 
