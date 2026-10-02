@@ -2,6 +2,19 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.22.2 (2026-10-02)
+
+`/c-plan`'s closing summary now lists every self-review check it ran, so a skipped check is visible, and two self-review checks that blocked sound plans are loosened.
+
+### Changed
+
+- **Proportion is advisory.** The decision-plan proportion check no longer fails a plan for being longer than its design. In the v0.22.0 pilot, a decision plan with 16 tasks came out at 5,888 words against a 4,750-word design while holding under 1% code, and the run could not fix the flag because there was nothing to cut. Self-review now reports the word ratio and code share as signals and rewrites only steps that spell out a body the signature and tests already determine.
+- **Global Constraints may bind one task.** The self-review check no longer rejects a constraint line that binds only one task. Every line still needs a source. The authoring guidance to keep single-task rules in that task's steps stays.
+
+### Fixed
+
+- **Self-review reports each check.** The self-review pass said to fix items inline but never said to report them, so a run could mention the proportion check and stay silent on interface closure, leaving no way to tell whether check 13 ran. The closing summary now carries one line per check that applies to the plan's style and backend, by number, with its result (clean, fixed, or flagged), and a missing check counts as not run. Found by the v0.22.0 validation's decision-plan smoke test.
+
 ## v0.22.1 (2026-10-01)
 
 `notion-write.js` no longer fails post-write verification on a small page whose only "loss" is a mention's display text.
