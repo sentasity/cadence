@@ -75,7 +75,7 @@ audits:
     - oos-justification
     - deferred-comment-scan
     - code-behind-checkbox
-    - design-intent-alignment
+    - branch-review
     - build-validator
     - merge-integrity
   warnings:
