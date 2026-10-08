@@ -35,6 +35,7 @@ This means: if you ever change audit behavior, change the agent. Changing this s
 Dispatch the `cadence-completion-auditor` agent (via `Task` tool) with:
 - The resolved plan handle per `skills/_shared/storage-resolution.md` (resolve); the agent reads the plan, its to-do state, and Base SHA via read_artifact. The `git diff <base_sha>..HEAD` range stays git-side and unchanged.
 - The resolved linked-design handle (resolve).
+- The plan slug: on the notion backend the agent exports the plan and design with `scripts/notion-read.js` (it has no Notion MCP).
 - Resolved config content — the JSON printed by `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (specifically `audits.*` keys; `audits.*` is team policy, so a local override is honored but surfaced; never read config files directly).
 - Mode: `standalone` (this skill ALWAYS passes `standalone`; the `gating` mode is for `/c-execute`'s direct-dispatch path).
 - Diff range (`base_sha`..HEAD).
@@ -49,7 +50,7 @@ Built-in (ships with Cadence — blocking unless noted):
 - **oos-justification** — every plan-side 99-OOS entry has rationale + wikilink
 - **deferred-comment-scan** — no new TODO/FIXME/XXX/// will/// later/# stub in diff unjustified by 99-OOS
 - **code-behind-checkbox** — every `- [x]` step claiming to add a function/symbol has that symbol in the diff
-- **design-intent-alignment** — sub-agent reads design + diff; verifies implementation honors design intent (not just task literal)
+- **branch-review**: one opus sub-agent reads the design, the plan, and the whole branch diff, and judges design intent, spec-silent behavior (what a reasonable user would expect), and cross-task problems. Only a Critical finding blocks; Important and Minor findings go to the report's For your decision section. `design-intent-alignment` in a roster is an alias for it.
 - **build-validator** — runs `audits.build_validator.command` (e.g. `make ci`); zero exit required. **Refuses (blocking error) if `command: null`** — fresh-install default forces explicit configuration.
 
 Warning-only (surfaced but don't block):
@@ -96,7 +97,7 @@ Repo-configurable add-ons (declared in `.cadence/config.yaml` → `audits.option
 
 ## Output format
 
-Returned by `cadence-completion-auditor`; surface unchanged to the caller. Leads with a plain-English paragraph; then Verdict (PASS / BLOCKED / WARNINGS-ONLY); then Blocking failures, Warnings, What's working, Recommended next action.
+Returned by `cadence-completion-auditor`; surface unchanged to the caller. Leads with a plain-English paragraph; then Verdict (PASS / BLOCKED / WARNINGS-ONLY); then Blocking failures, Warnings, For your decision, What's working, Recommended next action.
 
 ## What `/c-audit` doesn't do
 
@@ -105,6 +106,7 @@ Returned by `cadence-completion-auditor`; surface unchanged to the caller. Leads
 - Doesn't find code bugs unrelated to the plan (that's `/c-find-bugs`).
 - Doesn't write code, modify the plan, or flip status when called standalone.
 - Doesn't dispatch implementer fixes — reports; user (or /c-execute) decides on fixes.
+- Doesn't walk For your decision items or write Review decisions rows; re-run `/c-execute` on the plan to decide them.
 
 ## References
 
