@@ -2,6 +2,26 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.23.0 (2026-10-08)
+
+Reviews judge what the plan didn't cover, nothing a reviewer declines is dropped, and the completion audit gains a whole-branch review on the most capable model that can read plans stored in Notion.
+
+### Added
+
+- **Reasonable-user check.** The spec reviewer judges inputs, states, and failure paths the plan never mentions by what a reasonable user of the feature would expect. A clear violation (lost data, a crash on ordinary input, silently wrong output, an exposure) is a gap; an unclear case goes on a "Declined to judge" list. Inline self-review applies the same check.
+- **The end-of-run list.** Declined items, code findings that contradict the spec, and the branch review's Important and Minor findings collect in a Review decisions table in the plan overview. After the audit passes, `/c-execute` walks you through them once (accept, fix, out of scope, or stop), applies the fixes, re-audits once, and flips the plan to `implemented` only when nothing is pending.
+- **Branch review.** The completion audit's design check becomes `branch-review`: one opus reviewer reads the design, the plan, and the whole branch, and judges design intent, spec-silent behavior, and problems that span tasks. Only a Critical finding blocks; the rest appear in a new "For your decision" report section. `design-intent-alignment` keeps working as an alias.
+- **`scripts/notion-read.js`.** Exports a plan and its linked design from Notion to local markdown, so the completion auditor (which has no Notion MCP) reads Notion-stored plans through a script instead of improvising.
+
+### Changed
+
+- **No more "spec wins" drops.** A code finding that contradicts the spec goes on the end-of-run list instead of being discarded. The spec still decides what gets built during the run.
+- **No coaching.** Reviewers report location, the concrete problem, and a fix direction, nothing more.
+
+### Fixed
+
+- **Rewriting a Notion page with sub-pages.** `notion-write.js replace` failed with only "async task failed" on any page that had sub-pages unless the new body repeated their `<page>` tags, which broke every overview rewrite on the notion backend. A refused replace now re-reads the page, appends the missing tags, and retries once, and a refusal it can't fix names the cause.
+
 ## v0.22.2 (2026-10-02)
 
 `/c-plan`'s closing summary now lists every self-review check it ran, so a skipped check is visible, and two self-review checks that blocked sound plans are loosened.
