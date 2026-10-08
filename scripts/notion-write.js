@@ -21,7 +21,8 @@
 //   0  success (single-line JSON result on stdout)
 //   2  usage error: bad arguments, missing NOTION_TOKEN, missing/empty file
 //   3  pre-send guard: untranslated obsidian callout ("> [!") outside a code fence
-//   4  API error: auth/permission/validation failure, rate-limit retries
+//   4  API error: auth/permission/validation failure (a refused replace is
+//      first retried once with the page's missing sub-page tags), rate-limit retries
 //      exhausted, or async task failure/timeout
 //   5  post-write verification failure (read-back sheared short)
 
@@ -98,6 +99,26 @@ function verifyLengths(sent, got) {
   return { ok: ratio >= VERIFY_MIN_RATIO, ratio, expectedChars };
 }
 
+// Child-page and child-database tags as Notion's markdown endpoint renders
+// them on a parent page: <page url="...">Title</page> (or self-closing).
+const CHILD_TAG_RE = /^<(page|database)\s+url="([^"]+)"[^>]*?(?:\/>|>.*<\/\1>)\s*$/;
+
+function childTags(markdown) {
+  return markdown.split('\n').map((l) => l.trim()).filter((l) => CHILD_TAG_RE.test(l));
+}
+
+// Append every child tag from the page's current markdown that the new body
+// lacks (matched by url), in original order, so a replace never deletes a
+// sub-page by omission. Returns { body, added }.
+function mergeChildTags(body, currentMarkdown) {
+  const urlOf = (tag) => tag.match(CHILD_TAG_RE)[2];
+  const present = new Set(childTags(body).map(urlOf));
+  const missing = childTags(currentMarkdown).filter((t) => !present.has(urlOf(t)));
+  if (missing.length === 0) return { body, added: 0 };
+  const sep = body.endsWith('\n') ? '\n' : '\n\n';
+  return { body: `${body}${sep}${missing.join('\n')}\n`, added: missing.length };
+}
+
 async function pollAsyncTask(base, token, task) {
   const budget = Number(process.env.NOTION_WRITE_POLL_BUDGET_MS) || 180000;
   const deadline = Date.now() + budget;
@@ -108,6 +129,7 @@ async function pollAsyncTask(base, token, task) {
     if (['failure', 'failed', 'error'].includes(status)) {
       const err = new Error(`Notion async task ${current.id} ended in status ${status}.`);
       err.apiError = true;
+      err.asyncFailed = true;
       throw err;
     }
     if (Date.now() >= deadline) {
@@ -139,6 +161,34 @@ async function replaceContent(base, token, pageId, markdown) {
     return read.json;
   }
   return json;
+}
+
+const CHILD_HINT = ' A replace that would delete sub-pages or child databases is refused; '
+  + 'keep their <page>/<database> tags in the new body.';
+
+// replace_content runs with allow_deleting_content: false, so Notion refuses a
+// body that omits the page's existing sub-page tags. On a refusal (a 400, or
+// an async task that ends failed), re-read the page, append the missing tags,
+// and retry once. Returns the read-back and the body actually sent.
+async function replaceKeepingChildren(base, token, pageId, markdown) {
+  try {
+    return { readback: await replaceContent(base, token, pageId, markdown), sent: markdown };
+  } catch (e) {
+    if (!e.apiError || !(e.status === 400 || e.asyncFailed)) throw e;
+    let current;
+    try {
+      current = (await apiRequest(base, token, 'GET', `/v1/pages/${pageId}/markdown`)).json.markdown || '';
+    } catch {
+      e.message += CHILD_HINT;
+      throw e;
+    }
+    const { body, added } = mergeChildTags(markdown, current);
+    if (added === 0) {
+      e.message += CHILD_HINT;
+      throw e;
+    }
+    return { readback: await replaceContent(base, token, pageId, body), sent: body };
+  }
 }
 
 async function main() {
@@ -187,12 +237,12 @@ async function main() {
     // never URL-less. notion.so/<id-without-dashes> is canonical and redirects.
     if (!url) url = `https://www.notion.so/${pageId.replace(/-/g, '')}`;
 
-    const readback = await replaceContent(base, token, pageId, markdown);
+    const { readback, sent } = await replaceKeepingChildren(base, token, pageId, markdown);
     const got = readback.markdown || '';
-    const { ok, ratio, expectedChars } = verifyLengths(markdown, got);
+    const { ok, ratio, expectedChars } = verifyLengths(sent, got);
     if (!ok && !readback.truncated) {
       fail(5, `Post-write verification failed for page ${pageId}: read-back is `
-        + `${got.length} chars vs ${expectedChars} expected (${markdown.length} sent, mentions `
+        + `${got.length} chars vs ${expectedChars} expected (${sent.length} sent, mentions `
         + `self-closed; ratio ${ratio.toFixed(2)}, `
         + `minimum ${VERIFY_MIN_RATIO}). The page content did not land whole; re-author and rewrite.`);
     }
@@ -202,7 +252,7 @@ async function main() {
       mode: args.mode,
       page_id: pageId,
       url,
-      sent_chars: markdown.length,
+      sent_chars: sent.length,
       readback_chars: got.length,
       readback_truncated: Boolean(readback.truncated),
     }) + '\n');
@@ -212,7 +262,7 @@ async function main() {
   }
 }
 
-module.exports = { parseArgs, calloutGuardViolations, verifyLengths, normalizeMentions };
+module.exports = { parseArgs, calloutGuardViolations, verifyLengths, normalizeMentions, mergeChildTags };
 
 if (require.main === module) {
   main().catch((e) => fail(4, e.message));

@@ -7,6 +7,7 @@ const {
   calloutGuardViolations,
   verifyLengths,
   normalizeMentions,
+  mergeChildTags,
 } = require('./notion-write.js');
 
 // ---------------------------------------------------------------------------
@@ -446,4 +447,106 @@ test('cli: missing-token message mentions both NOTION_TOKEN and NOTION_TOKEN_CMD
   assert.strictEqual(r.status, 2);
   assert.match(r.stderr, /NOTION_TOKEN/);
   assert.match(r.stderr, /NOTION_TOKEN_CMD/);
+});
+
+// ---------------------------------------------------------------------------
+// Sub-pages survive a replace
+// ---------------------------------------------------------------------------
+
+test('mergeChildTags: appends missing child tags in their original order', () => {
+  const current = 'old body\n\n<page url="https://x/a">A</page>\n<database url="https://x/db">DB</database>\n<page url="https://x/b">B</page>\n';
+  const { body, added } = mergeChildTags('new body\n', current);
+  assert.strictEqual(added, 3);
+  assert.strictEqual(body, 'new body\n\n<page url="https://x/a">A</page>\n<database url="https://x/db">DB</database>\n<page url="https://x/b">B</page>\n');
+});
+
+test('mergeChildTags: leaves a body that already carries every tag unchanged', () => {
+  const current = 'old\n\n<page url="https://x/a">A</page>\n';
+  const fresh = 'new\n\n<page url="https://x/a">Renamed A</page>\n';
+  assert.deepStrictEqual(mergeChildTags(fresh, current), { body: fresh, added: 0 });
+});
+
+test('mergeChildTags: a body without a trailing newline gets a blank line before the tags', () => {
+  const { body } = mergeChildTags('new', '<page url="https://x/a">A</page>');
+  assert.strictEqual(body, 'new\n\n<page url="https://x/a">A</page>\n');
+});
+
+const CHILD_TAGS = '<page url="https://x/c1">01 Child</page>\n<page url="https://x/c2">02 Child</page>\n';
+
+test('cli: a replace refused for dropping sub-pages retries once with their tags appended', async () => {
+  const body = '# Overview\n\nNew overview body without the child tags.\n';
+  const merged = `${body}\n${CHILD_TAGS}`;
+  const srv = await mockServer([
+    { method: 'PATCH', path: '/v1/pages/p1/markdown', status: 400, body: { object: 'error', code: 'validation_error', message: 'Replacing content would delete child pages.' } },
+    { method: 'GET', path: '/v1/pages/p1/markdown', status: 200, body: { object: 'page_markdown', id: 'p1', markdown: `# Old\n\n${CHILD_TAGS}`, truncated: false } },
+    { method: 'PATCH', path: '/v1/pages/p1/markdown', status: 200, body: { object: 'page_markdown', id: 'p1', markdown: merged, truncated: false } },
+  ]);
+  try {
+    const r = await runCli(['replace', '--page', 'p1', '--file', writeTmp(body)], { base: srv.base });
+    assert.strictEqual(r.status, 0, r.stderr);
+    const patches = srv.seen.filter((s) => s.method === 'PATCH');
+    assert.strictEqual(patches.length, 2);
+    assert.strictEqual(patches[1].body.replace_content.new_str, merged);
+    assert.strictEqual(JSON.parse(r.stdout).sent_chars, merged.length);
+  } finally {
+    srv.close();
+  }
+});
+
+test('cli: an async replace that ends failed is retried with the sub-page tags appended', async () => {
+  const body = '# Overview\n\nRewritten after children exist.\n';
+  const merged = `${body}\n${CHILD_TAGS}`;
+  const routes = [
+    { method: 'PATCH', path: '/v1/pages/p1/markdown', status: 202, body: {} },
+    { method: 'GET', path: '/v1/async-tasks/t1', status: 200, body: { object: 'async_task', id: 't1', status: 'failed' } },
+    { method: 'GET', path: '/v1/pages/p1/markdown', status: 200, body: { object: 'page_markdown', id: 'p1', markdown: `# Old\n\n${CHILD_TAGS}`, truncated: false } },
+    { method: 'PATCH', path: '/v1/pages/p1/markdown', status: 200, body: { object: 'page_markdown', id: 'p1', markdown: merged, truncated: false } },
+  ];
+  const srv = await mockServer(routes);
+  routes[0].body = {
+    object: 'async_task', id: 't1', status: 'queued',
+    status_url: `${srv.base}/v1/async-tasks/t1`, poll_after_seconds: 0,
+  };
+  try {
+    const r = await runCli(['replace', '--page', 'p1', '--file', writeTmp(body)], { base: srv.base });
+    assert.strictEqual(r.status, 0, r.stderr);
+    const patches = srv.seen.filter((s) => s.method === 'PATCH');
+    assert.strictEqual(patches.length, 2);
+    assert.strictEqual(patches[1].body.replace_content.new_str, merged);
+  } finally {
+    srv.close();
+  }
+});
+
+test('cli: a refused replace with no missing sub-pages exits 4 naming child content', async () => {
+  const body = `# Overview\n\nAlready carries its tags.\n\n${CHILD_TAGS}`;
+  const srv = await mockServer([
+    { method: 'PATCH', path: '/v1/pages/p1/markdown', status: 400, body: { object: 'error', code: 'validation_error', message: 'Invalid markdown.' } },
+    { method: 'GET', path: '/v1/pages/p1/markdown', status: 200, body: { object: 'page_markdown', id: 'p1', markdown: `# Old\n\n${CHILD_TAGS}`, truncated: false } },
+  ]);
+  try {
+    const r = await runCli(['replace', '--page', 'p1', '--file', writeTmp(body)], { base: srv.base });
+    assert.strictEqual(r.status, 4);
+    assert.match(r.stderr, /Invalid markdown/);
+    assert.match(r.stderr, /sub-pages or child databases/);
+    assert.strictEqual(srv.seen.filter((s) => s.method === 'PATCH').length, 1);
+  } finally {
+    srv.close();
+  }
+});
+
+test('cli: when the sub-page re-read fails, the original refusal is reported', async () => {
+  const srv = await mockServer([
+    { method: 'PATCH', path: '/v1/pages/p1/markdown', status: 400, body: { object: 'error', code: 'validation_error', message: 'Would delete child pages.' } },
+    { method: 'GET', path: '/v1/pages/p1/markdown', status: 403, body: { object: 'error', code: 'restricted_resource', message: 'No access.' } },
+  ]);
+  try {
+    const r = await runCli(['replace', '--page', 'p1', '--file', writeTmp('# New\n\nBody.\n')], { base: srv.base });
+    assert.strictEqual(r.status, 4);
+    assert.match(r.stderr, /Would delete child pages/);
+    assert.match(r.stderr, /sub-pages or child databases/);
+    assert.strictEqual(srv.seen.filter((s) => s.method === 'PATCH').length, 1);
+  } finally {
+    srv.close();
+  }
 });
