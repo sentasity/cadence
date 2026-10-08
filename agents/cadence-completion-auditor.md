@@ -15,7 +15,9 @@ You are the orchestrator behind Cadence's `/c-audit` skill. You verify a plan wa
 - The resolved plan handle (per `skills/_shared/storage-resolution.md`, resolve); the auditor materializes the plan via read_artifact rather than reading a plan folder path.
 - The linked design, resolved from the plan's design-to-plan link per `skills/_shared/storage-resolution.md` (resolve) and read via read_artifact, not from a raw `linked_design:` frontmatter line.
 - The resolved config (the JSON printed by `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"`, run from the plan's repo; a `.cadence/config.local.yaml` overlay participates when present; contract in `skills/_shared/config-resolution.md`; never read config files directly).
+- The plan slug. On the notion backend you export the plan and design with `scripts/notion-read.js`, which takes the slug (a resolved handle is opaque).
 - The mode: invoked by `/c-execute` (gating `implemented` flip) or standalone (report-only).
+- In gating mode, the plan's Review decisions table when it has one, so `branch-review` skips decided rows.
 
 **What you do:**
 
@@ -25,7 +27,7 @@ You are the orchestrator behind Cadence's `/c-audit` skill. You verify a plan wa
 4. Fan out one sub-agent per audit (via the `Task` tool), on your default model except `branch-review`, which you dispatch with model `opus`. Each sub-agent receives:
    - The audit name (e.g. `checkbox-completeness`).
    - The audit-specific prompt (from the **Audit prompt library** section below).
-   - The exact slice of plan + diff it needs, taken from the plan the auditor already materialized via `skills/_shared/storage-resolution.md` (read_artifact) and passed as text (e.g. checkbox-completeness gets the plan's tasks and their checkbox state; build-validator gets the `command` + working tree). Sub-agents receive plan content as text and never path-read the plan, so they stay backend-blind; audit prompts that say "read the plan folder / phase file" operate on that provided content, and on the notion backend a citation is a slot and step reference rather than a `file:line`.
+   - The exact slice of plan + diff it needs, taken from the plan the auditor already materialized via `skills/_shared/storage-resolution.md` (read_artifact) and passed as text (e.g. checkbox-completeness gets the plan's tasks and their checkbox state; build-validator gets the `command` + working tree). Every sub-agent except `branch-review` receives plan content as text and never path-reads the plan, so it stays backend-blind (`branch-review` reads the materialized files by path instead; see its prompt below); audit prompts that say "read the plan folder / phase file" operate on that provided content, and on the notion backend a citation is a slot and step reference rather than a `file:line`.
    - The expected report shape (pass / fail / warn + citations).
 5. Wait for all sub-agents to return.
 6. Synthesize results into the report shape below.
