@@ -103,7 +103,7 @@ Selected by `execute.mode: inline` or the `ask` gate. The PM session implements 
 
 - **Order:** topological over `Depends:` edges (the same DAG; acyclicity check unchanged), walking phase files in numeric order and task order within a file as the tie-break. `Touches:` overlaps are irrelevant — nothing runs concurrently.
 - **Per task, unchanged from the lane engine's per-task contract:** follow the task's steps exactly (TDD shape included), commit per task with the task's commit step, run the Invariant 3 grep on the task's diff, and tick the task's checkboxes per `skills/_shared/storage-resolution.md` (tick) the moment it lands. The progress-checkpoint rule holds: never carry landed-but-unmarked work through a pause.
-- **Review:** the PM self-reviews each task's diff against the task spec and repo conventions before ticking, applying the spec reviewer's style-aware rules (`agents/cadence-spec-reviewer.md`: exact match for full-code plans, the decisions for decision plans), the plan's Global Constraints, and any Review Focus pins the task owns. It records the task's `Tests:` evidence before ticking, and when a run doesn't match its Expected line it follows the implementer's root-cause-first rule (`agents/cadence-implementer.md`). This is a real trade-off — the author is the reviewer — and is exactly what the user opts into by picking inline; do not silently dispatch reviewer sub-agents anyway.
+- **Review:** the PM self-reviews each task's diff against the task spec and repo conventions before ticking, applying the spec reviewer's style-aware rules (`agents/cadence-spec-reviewer.md`: exact match for full-code plans, the decisions for decision plans), the plan's Global Constraints, and any Review Focus pins the task owns. It records the task's `Tests:` evidence before ticking, and when a run doesn't match its Expected line it follows the implementer's root-cause-first rule (`agents/cadence-implementer.md`). This is a real trade-off — the author is the reviewer — and is exactly what the user opts into by picking inline; do not silently dispatch reviewer sub-agents anyway. The self-review also applies the spec reviewer's check 9 (spec-silent behavior): a clear violation is fixed before ticking, and a case it would decline, or a repo convention that conflicts with what the task prescribes, is recorded as a `pending` Review decisions row with source `inline self-review` when the task is ticked.
 - **No worktree machinery:** no lane branches, no `git worktree add`, no merge-on-land, and no merge-lock acquisition (commits land directly on the working branch; there is nothing to integrate). The completion-time worktree-cleanup sweep still runs and should trivially find nothing.
 - **Drift and blockers:** the drift `AskUserQuestion` table applies unchanged; quiesce is trivial (nothing else is in flight). Implementer status handling and NEEDS_CONTEXT routing don't apply — there is no implementer to route.
 - **Completion gate: unchanged in every mode.** The `cadence-completion-auditor` dispatch stays a real sub-agent — its value is independence from the author, which matters MORE when the author also reviewed. Never run the audit inline.
@@ -161,6 +161,8 @@ Evidence:
 
 A return without a plain-English lead is malformed — re-dispatch the sub-agent with a reminder.
 
+Reviewer returns may end with a `Declined to judge:` section (`agents/cadence-spec-reviewer.md`, `agents/cadence-code-reviewer.md`); an Approve that carries one is still an Approve. Collect its entries for the Review decisions table.
+
 Implementer returns that ran any step command also carry a `Tests:` block right after the plain-English lead: for each run step in the task, the command and the decisive output lines quoted from the real run (the RED failure and the GREEN pass; for a `plan.tdd: false` task, each run step's output). A missing or paraphrased `Tests:` block is malformed the same way: re-dispatch with a reminder. Pass the block to the spec reviewer, which checks it against each step's Expected line instead of re-running the suite.
 
 ## Implementer status handling
@@ -192,7 +194,8 @@ They run at the same time (no ordering barrier). Resolve the two reports:
 - Both approve → lane lands.
 - Spec finds gaps → implementer fixes in the same worktree → **both** re-run.
 - Code finds issues (spec approved) → implementer fixes → both re-run.
-- **Conflict: spec wins.** If a code finding contradicts a spec approval, DROP the code finding. Code review never overturns spec.
+- **Conflict: the spec decides the run, the user decides the conflict.** A code finding that contradicts a spec approval is not a gap: move it to the run's Declined list (see Review decisions below), never drop it. Code review never overturns spec during the run.
+- **Declined items** from either reviewer's `Declined to judge:` section are recorded as `pending` rows in the plan's Review decisions table when the lane lands. They never block a lane from landing and never trigger a fix round.
 
 ## Marking task complete (mandatory — required for resume)
 
