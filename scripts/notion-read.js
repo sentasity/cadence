@@ -54,8 +54,11 @@ function parseArgs(argv) {
 }
 
 // "01 Plan Authoring" -> "01-plan-authoring.md"; an NN-kebab title is kept.
+// Accents fold to their base letter ("Café" -> "cafe") and letters from other
+// scripts are kept, so no title loses its letters.
 function fileNameFromTitle(title) {
-  const base = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const base = title.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '');
   return `${base || 'untitled'}.md`;
 }
 
@@ -163,6 +166,9 @@ async function main() {
   } catch (e) {
     if (e instanceof UsageError) fail(2, e.message);
     throw e;
+  }
+  if (fs.existsSync(args.out) && !fs.statSync(args.out).isDirectory()) {
+    fail(2, `--out ${args.out} is a file; export into a new or empty directory.`);
   }
   if (fs.existsSync(args.out) && fs.readdirSync(args.out).length > 0) {
     fail(2, `--out ${args.out} is not empty; export into a new or empty directory.`);

@@ -27,6 +27,12 @@ test('fileNameFromTitle: normalizes page titles to NN-kebab file names', () => {
   assert.strictEqual(fileNameFromTitle('  '), 'untitled.md');
 });
 
+test('fileNameFromTitle: folds accents and keeps non-Latin letters instead of dropping them', () => {
+  assert.strictEqual(fileNameFromTitle('Überblick'), 'uberblick.md');
+  assert.strictEqual(fileNameFromTitle('03 Café Notes'), '03-cafe-notes.md');
+  assert.strictEqual(fileNameFromTitle('02 概要'), '02-概要.md');
+});
+
 test('plainText: joins rich text runs', () => {
   assert.strictEqual(plainText([{ plain_text: 'a' }, { plain_text: 'b' }]), 'ab');
   assert.strictEqual(plainText(undefined), '');
@@ -347,4 +353,19 @@ test('cli: a filesystem backend exits 2', async () => {
   const r = await runCli(['export', '--slug', 'demo-plan', '--out', outDir()], { cwd: projectDir('filesystem') });
   assert.strictEqual(r.status, 2);
   assert.match(r.stderr, /not notion/);
+});
+
+test('cli: an --out that is an existing file is refused with exit 2 before any API call', async () => {
+  const srv = await mockServer(lookup([PLAN]));
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'notion-read-out-')), 'not-a-dir.txt');
+  fs.writeFileSync(file, 'mine');
+  try {
+    const r = await runCli(['export', '--slug', 'demo-plan', '--out', file], { base: srv.base, cwd: projectDir() });
+    assert.strictEqual(r.status, 2);
+    assert.match(r.stderr, /is a file/);
+    assert.strictEqual(srv.seen.length, 0);
+    assert.strictEqual(fs.readFileSync(file, 'utf8'), 'mine');
+  } finally {
+    srv.close();
+  }
 });

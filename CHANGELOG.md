@@ -2,6 +2,15 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.23.1 (2026-10-12)
+
+Two small `notion-read.js` fixes found while building it.
+
+### Fixed
+
+- **Titles with accents or other scripts.** File names dropped every non-ASCII letter, so a sub-page titled "Überblick" exported as `berblick.md`. Accents now fold to their base letter (`uberblick.md`) and letters from other scripts are kept.
+- **`--out` pointing at a file.** Exporting into an existing file failed with a raw `ENOTDIR` and exit 4. It is now refused up front as a usage error (exit 2) before any Notion call, and the file is left untouched.
+
 ## v0.23.0 (2026-10-12)
 
 Reviews judge what the plan didn't cover, nothing a reviewer declines is dropped, and the completion audit gains a whole-branch review on the most capable model that can read plans stored in Notion.
