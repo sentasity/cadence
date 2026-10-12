@@ -102,6 +102,8 @@ In `notion` mode, the storage layer binds each abstract operation to a tool on t
 2. **Confirm the required tools are present.** Verify the located MCP exposes the primitives the storage layer needs (create page, create database, query or search, fetch, update page properties and make small content edits). A missing primitive is treated as "no usable Notion MCP" (see below), not worked around. Doc-body writes are not on this list: they go through `scripts/notion-write.js`, not the MCP (see [[#Content write path]]). Neither are mockups: `write_mockup` and `read_mockup` touch the filesystem only and need no MCP tool at all.
 3. **Bind operations to tools.** Map each abstract operation in [[#The abstract operation set]] onto the official MCP's documented tool: `create_artifact` (the database row and its properties) via `notion-create-pages`; `resolve_links` and `tick` via `notion-update-page`; `read_artifact` via `notion-fetch`; `query` and `resolve` via `notion-query-data-sources`; database creation via `notion-create-database`. Content-bearing `write_doc` deliberately binds to no MCP tool: doc bodies go through `scripts/notion-write.js` instead (see [[#Content write path]]), and only small-argument calls remain on the MCP. `write_mockup` and `read_mockup` bind to no MCP tool either: they are local file operations on every backend.
 
+**Agents without the MCP.** An agent that has no Notion MCP (`cadence-completion-auditor`) performs read_artifact for a plan and its linked design by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/notion-read.js" export --slug <plan-slug> --out <empty-dir>` and reading the exported files: each doc's Notion-flavored markdown body, overview frontmatter rebuilt from the row's properties, and a `manifest.json` mapping files to page URLs. It uses the content write path's credential (see [[#The authentication boundary]]). Skills that hold the MCP keep reading through it.
+
 Only the per-install server-id prefix is resolved at runtime; the tool identities are fixed because the MCP is fixed. No Notion server id is stored in config or frontmatter.
 
 ### Never fall back to the filesystem
@@ -124,6 +126,8 @@ Obsidian-to-Notion-flavored-Markdown translation on the way in, the read-back in
 
 - New sub-page: `node "${CLAUDE_PLUGIN_ROOT}/scripts/notion-write.js" create --parent <parent-page-id> --title <title> --file <path> [--icon <emoji>]`
 - Replace a slot's content wholesale: `node "${CLAUDE_PLUGIN_ROOT}/scripts/notion-write.js" replace --page <page-id> --file <path>`
+
+`replace` keeps a page's sub-pages. Notion refuses a body that would delete a page's child pages or databases, which an overview rewrite omitting their `<page>` tags would do; on that refusal the script re-reads the page, appends the missing tags, and retries once, and if nothing was missing it exits 4 with a message naming the cause.
 
 **Contract (enforced by the script, not by prose).** On success the script prints a single-line JSON result (`ok`, `page_id`, `url`, `sent_chars`, `readback_chars`) and exits 0; a clean exit 0 IS evidence of a clean write, unlike the MCP path it replaces. `url` is always present (both modes) and is the page's user-facing link: when reporting a write to the user, include it as a clickable link, exactly as an MCP result's URL used to surface in chat. Non-zero exits are hard stops the caller surfaces, never retries blindly:
 

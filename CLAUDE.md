@@ -6,7 +6,7 @@ Skill and agent text in this repo must route every Cadence config read through `
 
 ## Tests
 
-`node --test 'scripts/*.test.js'` runs the Node script suites (`migrate-config.test.js`, `resolve-config.test.js`, `notion-write.test.js`, and `skill-structure.test.js`, which checks the shipped skill and agent text), and `bash scripts/test-merge-lock.sh` smoke-tests `merge-lock.sh`. Run both before any PR that touches `scripts/`, `skills/`, `agents/`, or `templates/`.
+`node --test 'scripts/*.test.js'` runs the Node script suites (`migrate-config.test.js`, `resolve-config.test.js`, `notion-rest.test.js`, `notion-write.test.js`, `notion-read.test.js`, and `skill-structure.test.js`, which checks the shipped skill and agent text), and `bash scripts/test-merge-lock.sh` smoke-tests `merge-lock.sh`. Run both before any PR that touches `scripts/`, `skills/`, `agents/`, or `templates/`.
 
 ## Skill descriptions
 

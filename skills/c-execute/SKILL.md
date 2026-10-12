@@ -52,7 +52,7 @@ SHA-based pinning is robust against rebases, merges, and unrelated commits that 
 4. Dispatch lanes concurrently up to `execute.max_parallel`, respecting `Touches:` disjointness.
 5. **After each task lands** (spec ✓ + code ✓ + Invariant 3 clean), record the lane's progress by ticking every `- [ ]` step under `### Task N.M` per `skills/_shared/storage-resolution.md` (tick). See [Marking task complete](#marking-task-complete-mandatory--required-for-resume).
 6. Surface blockers to user — never work around silently.
-7. Run audit gate at the end; on pass, set status to `implemented` per `skills/_shared/storage-resolution.md` (set_status). Committing accumulated plan-file changes in one commit is the filesystem backend's mechanism only; in Notion mode every tick and status write already landed live, so there is no plan file to commit.
+7. Run audit gate at the end, then the end-of-run walk over the Review decisions table; set status to `implemented` per `skills/_shared/storage-resolution.md` (set_status) only when the audit passes and no row is `pending`. Committing accumulated plan-file changes in one commit is the filesystem backend's mechanism only; in Notion mode every tick and status write already landed live, so there is no plan file to commit.
 
 **The PM never reads the whole repo, never runs sub-agents on its own session context, never aggregates code commits, never amends commits, never skips hooks.** The PM is also the sole caller of `skills/_shared/storage-resolution.md`: it issues the one `read_artifact` and every `tick`/`set_status`/`set_property` write. Implementers and reviewers receive their task spec as plain text and touch git only; they stay storage-backend-blind.
 
@@ -103,7 +103,7 @@ Selected by `execute.mode: inline` or the `ask` gate. The PM session implements 
 
 - **Order:** topological over `Depends:` edges (the same DAG; acyclicity check unchanged), walking phase files in numeric order and task order within a file as the tie-break. `Touches:` overlaps are irrelevant — nothing runs concurrently.
 - **Per task, unchanged from the lane engine's per-task contract:** follow the task's steps exactly (TDD shape included), commit per task with the task's commit step, run the Invariant 3 grep on the task's diff, and tick the task's checkboxes per `skills/_shared/storage-resolution.md` (tick) the moment it lands. The progress-checkpoint rule holds: never carry landed-but-unmarked work through a pause.
-- **Review:** the PM self-reviews each task's diff against the task spec and repo conventions before ticking, applying the spec reviewer's style-aware rules (`agents/cadence-spec-reviewer.md`: exact match for full-code plans, the decisions for decision plans), the plan's Global Constraints, and any Review Focus pins the task owns. It records the task's `Tests:` evidence before ticking, and when a run doesn't match its Expected line it follows the implementer's root-cause-first rule (`agents/cadence-implementer.md`). This is a real trade-off — the author is the reviewer — and is exactly what the user opts into by picking inline; do not silently dispatch reviewer sub-agents anyway.
+- **Review:** the PM self-reviews each task's diff against the task spec and repo conventions before ticking, applying the spec reviewer's style-aware rules (`agents/cadence-spec-reviewer.md`: exact match for full-code plans, the decisions for decision plans), the plan's Global Constraints, and any Review Focus pins the task owns. It records the task's `Tests:` evidence before ticking, and when a run doesn't match its Expected line it follows the implementer's root-cause-first rule (`agents/cadence-implementer.md`). This is a real trade-off — the author is the reviewer — and is exactly what the user opts into by picking inline; do not silently dispatch reviewer sub-agents anyway. The self-review also applies the spec reviewer's check 9 (spec-silent behavior): a clear violation is fixed before ticking, and a case it would decline, or a repo convention that conflicts with what the task prescribes, is recorded as a `pending` Review decisions row with source `inline self-review` when the task is ticked.
 - **No worktree machinery:** no lane branches, no `git worktree add`, no merge-on-land, and no merge-lock acquisition (commits land directly on the working branch; there is nothing to integrate). The completion-time worktree-cleanup sweep still runs and should trivially find nothing.
 - **Drift and blockers:** the drift `AskUserQuestion` table applies unchanged; quiesce is trivial (nothing else is in flight). Implementer status handling and NEEDS_CONTEXT routing don't apply — there is no implementer to route.
 - **Completion gate: unchanged in every mode.** The `cadence-completion-auditor` dispatch stays a real sub-agent — its value is independence from the author, which matters MORE when the author also reviewed. Never run the audit inline.
@@ -125,6 +125,7 @@ Lane isolation and integration follow `skills/_shared/worktree-lifecycle.md`.
 ## Resume protocol
 
 - Status `in-progress` = resumable. `/c-execute <plan-path>` on an `in-progress` plan resumes; does not restart.
+- **All tasks ticked:** go straight to the completion gate (audit, then the end-of-run walk), so `pending` Review decisions rows left by **Stop here** or a lost session are picked up where they were.
 - On resume, rebuild the DAG from `Depends:` edges, run `git worktree prune` and remove any leftover `cadence/lane-*` worktrees and branches (per `skills/_shared/worktree-lifecycle.md`), compute the ready set from unchecked tasks, and continue scheduling.
 - **The lane is the resume unit.** A lane whose checkboxes were not all flipped to `- [x]` is considered incomplete and re-runs from scratch; any orphaned worktree work is discarded by the prune step.
 - The PM does NOT trust in-memory state across sessions. The plan's checkbox state is the only source of truth — read it on resume via `skills/_shared/storage-resolution.md` (read_artifact) (the on-disk phase file on the filesystem backend, the to-do block state on the notion backend), cross-check unticked lanes against git history, and re-tick any whose commits already landed.
@@ -161,6 +162,8 @@ Evidence:
 
 A return without a plain-English lead is malformed — re-dispatch the sub-agent with a reminder.
 
+Reviewer returns may end with a `Declined to judge:` section (`agents/cadence-spec-reviewer.md`, `agents/cadence-code-reviewer.md`); an Approve that carries one is still an Approve. Collect its entries for the Review decisions table.
+
 Implementer returns that ran any step command also carry a `Tests:` block right after the plain-English lead: for each run step in the task, the command and the decisive output lines quoted from the real run (the RED failure and the GREEN pass; for a `plan.tdd: false` task, each run step's output). A missing or paraphrased `Tests:` block is malformed the same way: re-dispatch with a reminder. Pass the block to the spec reviewer, which checks it against each step's Expected line instead of re-running the suite.
 
 ## Implementer status handling
@@ -192,7 +195,8 @@ They run at the same time (no ordering barrier). Resolve the two reports:
 - Both approve → lane lands.
 - Spec finds gaps → implementer fixes in the same worktree → **both** re-run.
 - Code finds issues (spec approved) → implementer fixes → both re-run.
-- **Conflict: spec wins.** If a code finding contradicts a spec approval, DROP the code finding. Code review never overturns spec.
+- **Conflict: the spec decides the run, the user decides the conflict.** A code finding that contradicts a spec approval is not a gap: move it to the run's Declined list (see Review decisions below), never drop it. Code review never overturns spec during the run.
+- **Declined items** from either reviewer's `Declined to judge:` section are recorded as `pending` rows in the plan's Review decisions table when the lane lands. They never block a lane from landing and never trigger a fix round.
 
 ## Marking task complete (mandatory — required for resume)
 
@@ -265,19 +269,48 @@ Each option's `description` is the corresponding "What happens next" cell (one s
 | | Steal | PM runs `${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh steal --target <working-branch>`, then integrates and releases. Safe only when the holder is verified dead. |
 | | Abort | Plan stays `in-progress`; landed lanes' checkboxes are already flushed to disk; resume later. |
 
+## Review decisions (the end-of-run list)
+
+Items the user decides at the end of the run, never mid-way: reviewer `Declined to judge:` entries, code findings that contradict a spec approval, inline self-review's declined cases and convention conflicts, and the completion audit's For your decision items (the branch review's Important and Minor findings and its own declined items). Lane gaps are not list items (they are fixed in the lane loop), and neither is a Critical branch-review finding (it fails the audit).
+
+**The table.** The plan overview carries a `## Review decisions` section, created the first time an item arrives (a plan with no items has none), holding one table:
+
+| ID | Source | Where | Item | Decision |
+|---|---|---|---|---|
+| R1 | spec reviewer | Task 1.3, `app/auth.py:42` | An API key sent with trailing whitespace is rejected as unknown. Unclear whether keys should be trimmed. | pending |
+
+IDs run R1, R2, and so on in arrival order and never change. Source is `spec reviewer`, `code reviewer`, `inline self-review`, `branch review (Important)`, `branch review (Minor)`, or `branch review (Declined)`. Decision starts `pending` and ends `accepted`, `fixed (<short sha>)`, or `out of scope`. Rows are table cells, not to-do blocks, so the checkbox audit never reads them.
+
+**Recording.** Write new rows when the lane they came from lands (parallel) or when their task is ticked (inline), and always before yielding control, per `skills/_shared/progress-checkpoint.md`. Write them by rewriting the overview with write_doc per `skills/_shared/storage-resolution.md`: on the notion backend `scripts/notion-write.js` keeps the overview's sub-pages through the rewrite; on the filesystem backend the edit to `00-overview.md` stays uncommitted and rides the end-of-execution plan-file commit.
+
+**The walk.** After the completion audit passes (or passes with warnings only), append its For your decision items as `pending` rows and flush them. Then, if any row is `pending`, walk the pending rows with one `AskUserQuestion` per row, per `skills/_shared/ask-user-question.md` (lead with what the item is and why it matters; position context such as "Item 3/7, 1 fixed and 1 accepted so far"):
+
+- **Accept**: the behavior stands; the row becomes `accepted`.
+- **Fix**: the row stays `pending` until its fix commits.
+- **Out of scope**: write a plan-side `99-out-of-scope` entry (rationale plus a wikilink to the task); the row becomes `out of scope`.
+- **Stop here**: the walk pauses with the remaining rows `pending`; the plan stays `in-progress`.
+
+Mark exactly one option `(Recommended)` per row, from the item itself: Fix for wrong behavior on a plausible path, Accept for a defensible judgment call, Out of scope when the right fix is real work beyond the plan. Offer Minor branch-review rows first as one grouped question ("Accept all N Minor items, or walk them one by one?"). Write each decision to the table the moment it is made.
+
+**Fixing.** After the walk, apply every Fix row yourself in the main checkout, in both modes, following the implementer's rules (root cause first and `Tests:` evidence, per `agents/cadence-implementer.md`): one commit per row with message `fix(review): R<n> <summary>`, then mark the row `fixed (<short sha>)`. List fixes get no lane reviewers; the re-audit's branch review reads them. A fix that turns out to be real work stops and is offered again as Out of scope.
+
+**Re-audit.** When any row was fixed, re-run the completion audit once, passing the Review decisions table so the branch review skips decided rows; walk only the new items it raises.
+
+**The gate.** Set `implemented` only when the audit passes (or passes with warnings only) and no row is `pending`.
+
 ## Completion-time gate: dispatch `cadence-completion-auditor` directly
 
 Once every task in every phase file is complete:
 
 1. Verify: every step `- [x]` + both reviews ✓ + commit visible in `git log`.
 2. **Worktree-cleanup sweep (pre-dispatch):** run `git worktree list` and confirm no `cadence/lane-*` worktrees remain; run `git branch --list 'cadence/lane-*'` and confirm no lane branches remain. If any do, remove them (`git worktree remove <path>`, then `git branch -d <branch>`) before dispatching the auditor. Never pass `--force` or `-D` here: a leftover lane that still holds work is a plan-execution defect, and deleting that work silently hides it. If `git worktree remove` refuses, show the user `git -C <path> status --porcelain -uall`; if `git branch -d` refuses, show `git log --oneline HEAD..<branch>`. Ask whether to keep, commit, or discard that work before retrying.
-3. Dispatch the `cadence-completion-auditor` agent **directly** (via the `Task` tool) — same agent the standalone `/c-audit` skill dispatches, same parameters: plan path, linked design folder (from `linked_design:` frontmatter), resolved config content (the resolver's JSON output; see `skills/_shared/config-resolution.md`), diff range (`git diff <base_sha>..HEAD`), mode: `gating`. The default audit roster includes `merge-integrity` (verifies each task's commit landed cleanly and the lane history is linear). Do NOT route through the `/c-audit` skill — skill-calls-skill is not a documented Claude Code mechanism. The audit logic is in the agent; the skill is a thin user-facing wrapper around the same agent.
+3. Dispatch the `cadence-completion-auditor` agent **directly** (via the `Task` tool) — same agent the standalone `/c-audit` skill dispatches, same parameters: plan path, linked design folder (from `linked_design:` frontmatter), resolved config content (the resolver's JSON output; see `skills/_shared/config-resolution.md`), diff range (`git diff <base_sha>..HEAD`), mode: `gating`, the plan slug (on the notion backend the auditor exports the plan and design with `scripts/notion-read.js`), and the plan's Review decisions table when it has one (the branch review skips decided rows). The default audit roster includes `merge-integrity` (verifies each task's commit landed cleanly and the lane history is linear). Do NOT route through the `/c-audit` skill — skill-calls-skill is not a documented Claude Code mechanism. The audit logic is in the agent; the skill is a thin user-facing wrapper around the same agent.
 4. Read the agent's report.
 
 | Auditor result | `/c-execute` response |
 |---|---|
-| All pass (or warnings only) | Set overview status to `implemented` per `skills/_shared/storage-resolution.md` (set_status), which bumps `updated:`, print: *"Plan implemented. Deploy your changes, then run `/c-validate <path>`. If you want to re-run the audit later for spot-checks, use `/c-audit <plan-path>` standalone."* Then, per `skills/_shared/browser-validation.md`, append one informational line **only if** the just-implemented plan's `96-validation.md` has at least one Category B item with an `e2e:` reference AND no runner is configured or detected (`validate.browser_command` at default `npx playwright test` and `auto` detection finds no suite): recommend installing/configuring a runner (Playwright by default), else those steps fall back to manual. Once per run; a repo with a runner configured/detected prints nothing. |
-| Any blocking failure | Leave status at `in-progress`. Surface failing audits. User picks fix / mark out of scope / abort. |
+| All pass (or warnings only) | Add the report's For your decision items as `pending` Review decisions rows and run the end-of-run walk (see Review decisions above); once no row is `pending`, set overview status to `implemented` per `skills/_shared/storage-resolution.md` (set_status), which bumps `updated:`, print: *"Plan implemented. Deploy your changes, then run `/c-validate <path>`. If you want to re-run the audit later for spot-checks, use `/c-audit <plan-path>` standalone."* Then, per `skills/_shared/browser-validation.md`, append one informational line **only if** the just-implemented plan's `96-validation.md` has at least one Category B item with an `e2e:` reference AND no runner is configured or detected (`validate.browser_command` at default `npx playwright test` and `auto` detection finds no suite): recommend installing/configuring a runner (Playwright by default), else those steps fall back to manual. Once per run; a repo with a runner configured/detected prints nothing. |
+| Any blocking failure | Leave status at `in-progress`. Surface failing audits (a Critical branch-review finding is a blocking failure like any other). User picks fix / mark out of scope / abort. |
 
 ## What `/c-execute` doesn't do
 

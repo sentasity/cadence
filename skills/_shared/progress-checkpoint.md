@@ -13,6 +13,8 @@ How Cadence keeps on-disk checkbox state honest across context loss. The doc on 
 
 Never batch the writes until "the end." Never carry a passed-but-unmarked check through a pause. The rule is checkpoint-then-yield, in that order.
 
+The same rule covers `/c-execute`'s Review decisions table (the end-of-run list in the plan overview): write each new `pending` row, and each decision made on a row, before yielding control.
+
 ## Why
 
 A paused session can lose its in-memory state for reasons outside its control (the user walks away and the context compacts, the session is killed, a manual step takes hours). When that happens, the next session rebuilds progress **only** from the checkboxes on disk. A check that passed but was never written is indistinguishable from one that never ran — it gets redone at best, silently skipped at worst.

@@ -207,11 +207,11 @@ Frontmatter requirements Cadence enforces on documents it writes.
 
 ## `audits`
 
-Which checks `/c-audit` (and the completion auditor) run, split into blocking checks, non-blocking warnings, and an optional set. The `build_validator` sub-block configures the build check.
+Which checks `/c-audit` (and the completion auditor) run, split into blocking checks, non-blocking warnings, and an optional set. The `build_validator` sub-block configures the build check. `design-intent-alignment`, the audit's name before v0.23.0, still works in a roster as an alias for `branch-review`.
 
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
-| `audits.default` | Audit checks that run and block on failure. | `checkbox-completeness`, `oos-justification`, `deferred-comment-scan`, `code-behind-checkbox`, `design-intent-alignment`, `build-validator`, `merge-integrity` | List of audit names |
+| `audits.default` | Audit checks that run and block on failure. | `checkbox-completeness`, `oos-justification`, `deferred-comment-scan`, `code-behind-checkbox`, `branch-review`, `build-validator`, `merge-integrity` | List of audit names |
 | `audits.warnings` | Checks that run but only warn (non-blocking). | `file-map-honesty`, `design-plan-consistency`, `validation-doc-presence` | List of audit names |
 | `audits.optional` | Checks available but off by default. | `[]` (empty) | List of audit names |
 | `audits.build_validator.command` | Shell command the `build-validator` audit runs. `null` means no build command is run. | `null` | Shell command string or `null` |

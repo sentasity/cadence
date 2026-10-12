@@ -24,11 +24,12 @@ A plan folder with `00-overview.md`, a linked design that exists at `status: app
 
 ## What it produces
 
-A citation-first report in chat: a plain-English summary, a verdict (PASS / BLOCKED / WARNINGS-ONLY), then blocking failures, warnings, what's working, and a recommended next action. Standalone, it produces no file and changes no status.
+A citation-first report in chat: a plain-English summary, a verdict (PASS / BLOCKED / WARNINGS-ONLY), then blocking failures, warnings, items for your decision, what's working, and a recommended next action. Standalone, it produces no file and changes no status.
 
 ## Gates & guarantees
 
-- Runs a roster of audits: checkbox completeness, out-of-scope justification, deferred-comment scan, code-behind-each-checkbox, design-intent alignment, and a build validator (which refuses to pass if no build command is configured).
+- Runs a roster of audits: checkbox completeness, out-of-scope justification, deferred-comment scan, code-behind-each-checkbox, a branch review, and a build validator (which refuses to pass if no build command is configured).
+- The branch review is one reviewer on the most capable model reading the design, the plan, and the whole branch. Only a Critical finding blocks; Important and Minor findings, and anything it declines to judge, appear under For your decision and never change the verdict. `/c-execute` walks those items with you before marking the plan implemented.
 - On failure it offers three paths via multiple-choice (fix, mark out of scope, or abort), with "fix" recommended in most cases.
 - It never validates a deployed system (that's `/c-validate`), never reviews code quality (that's `/c-find-bugs`), and never writes code, modifies the plan, or flips status when run standalone.
 
