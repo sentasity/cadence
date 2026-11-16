@@ -28,7 +28,7 @@ A real `/c-brainstorm` session, recorded live (not a mockup): Cadence scans the 
 
 ![A recorded /c-brainstorm session: context scan, two questions, approach pick, design stub written](demos/c-brainstorm.gif)
 
-You then run `/c-design` (writes the child docs, all at once by default or one at a time with review pauses), `/c-plan` (translates the approved design into an execution-ordered plan), `/c-execute` (PM-and-sub-agents drives the plan to completion with two-stage review of every change), and `/c-validate` (walks the post-deploy validation doc).
+You then run `/c-design` (writes the child docs, all at once by default or one at a time with review pauses), `/c-plan` (translates the approved design into an execution-ordered plan), `/c-execute` (PM-and-sub-agents drives the plan to completion, with one reviewer giving a spec verdict and a quality verdict on every lane), and `/c-validate` (walks the post-deploy validation doc).
 
 ## The ten skills
 
@@ -73,7 +73,7 @@ See [`examples/hello-cadence/`](examples/hello-cadence/) for a complete design +
 
 ## Relationship to `superpowers`
 
-Cadence was inspired by [`superpowers`](https://github.com/obra/superpowers) by Jesse Vincent, and v0.1.0 was built using it. Cadence's execution model (fresh implementer sub-agents, the DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED statuses, and separate spec and code review) comes from superpowers' subagent-driven development.
+Cadence was inspired by [`superpowers`](https://github.com/obra/superpowers) by Jesse Vincent, and v0.1.0 was built using it. Cadence's execution model (fresh implementer sub-agents, the DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED statuses, and spec-then-quality review) comes from superpowers' subagent-driven development.
 
 Where the two differ: superpowers atomically chains brainstorm → write-plan → execute and produces one AI-generated artifact (the spec) that serves as both brainstorm output and plan input. When nobody is reviewing line by line, that artifact often looks "complete" enough to approve without real review; bugs only surface during execution.
 

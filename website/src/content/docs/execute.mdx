@@ -22,17 +22,17 @@ Each worker starts clean, with just its task and the files named in that task. I
 
 The PM reads the plan's dependency information and runs independent work in parallel **lanes**: each phase file becomes a lane running in its own isolated workspace. To keep two parallel lanes from colliding, Cadence uses a **touches-conflict guard**: every task declares exactly which files it writes, and two lanes are allowed to run at the same time only if they touch entirely different files. If they'd overlap, the later one simply waits its turn. It never tries to merge two simultaneous edits to the same file.
 
-## Two-stage review: spec, then code
+## One reviewer, two verdicts
 
-No change lands until it passes **two reviewers**, run at the same time:
+No change lands until **one reviewer** has judged it twice, in order:
 
-1. A **spec reviewer** asks: does this change do exactly what the plan's task asked for, with nothing missing and nothing extra?
-2. A **code reviewer** asks: does this change follow the repository's existing conventions?
+1. **Spec**: does this change do exactly what the plan's tasks asked for, with nothing missing and nothing extra?
+2. **Quality**: does it follow the repository's existing conventions?
 
-If the two disagree, **the spec reviewer wins**: matching the plan is what matters most, and a style preference never overrides correctness against the spec. Only when both approve does the change land.
+The spec verdict comes first and decides what gets built: a style preference never overrides a choice the plan made. The reviewer fixes small things itself (a misnamed variable, a missed convention) as a separate commit and re-runs the tests. Anything bigger goes back to the worker, and the reviewer then checks only the fix, not the whole change again. After two such rounds, a change that still isn't right is held instead of looping forever.
 
 <Aside type="tip" title="This is why you don't read the diff">
-You don't verify the code by reading it. Two independent reviewers verify it for you, against the plan you already approved. That's the gate. Your job is to read their plain-English summary of what landed.
+You don't verify the code by reading it. The reviewer verifies it for you, against the plan you already approved. That's the gate. Your job is to read its plain-English summary of what landed.
 </Aside>
 
 ## The three drift response paths
@@ -51,13 +51,12 @@ The whole loop, from the PM dispatching a task to the change landing (or stoppin
 flowchart TB
     pm["PM = your session<br/>(never writes code)"] -->|one task at a time| sub["fresh sub-agent<br/>sees only its task + named files"]
     sub --> change["writes the change"]
-    change --> spec["spec reviewer:<br/>matches the plan's task?"]
-    change --> code["code reviewer:<br/>follows repo conventions?"]
-    spec --> verdict{"verdict"}
-    code --> verdict
-    verdict -->|both approve| land["lands & commits on its own"]
-    verdict -->|"they disagree"| specwins["spec reviewer wins"]
-    specwins --> land
+    change --> review["reviewer: spec first,<br/>then quality"]
+    review -->|small issue| selffix["reviewer fixes it,<br/>re-runs the tests"]
+    selffix --> land
+    review -->|bigger issue| refix["worker fixes;<br/>reviewer checks only the fix"]
+    refix --> review
+    review -->|both verdicts approve| land["lands & commits on its own"]
     land --> drift{"drift from the plan?"}
     drift -->|no| pm
     drift -->|yes| stop["STOP and ask you:<br/>fix · mark out of scope · abort"]
@@ -68,15 +67,15 @@ It never auto-deploys your code. It never rewrites history by amending commits. 
 </Aside>
 
 <Quiz
-  question="If the spec reviewer and the code reviewer disagree, which one wins?"
+  question="The reviewer thinks a function the plan prescribed should be written differently. What happens?"
   options={[
-    "The spec reviewer: matching the plan outranks a style preference",
-    "The code reviewer: conventions always win",
-    "Neither: the change is rejected outright",
-    "The PM decides at random"
+    "The change lands as the plan prescribed it, and the concern goes on the end-of-run list for you",
+    "The reviewer rewrites it to its own taste",
+    "The change is rejected outright",
+    "The run stops until you answer"
   ]}
   answer={0}
-  explanation="Spec wins on conflict. The plan is the contract you approved, so a code-convention finding never overturns a change that correctly matches the spec. The finding isn't thrown away, though: it goes on the end-of-run list for you to decide."
+  explanation="Spec comes first. The plan is the contract you approved, so a quality concern never overturns a choice the plan made. The concern isn't thrown away, though: it goes on the end-of-run list for you to decide."
 />
 
 **Exact usage:** see the **[/c-execute reference](/cadence/reference/c-execute/)** for invocation, pre-flight checks, and resume behavior.

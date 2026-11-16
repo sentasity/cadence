@@ -3,7 +3,7 @@
 # never migrated); resolution order is defined in skills/_shared/config-resolution.md.
 # No assumption of obsidian or any specific repo layout.
 
-config_version: 8          # schema version; drives migration detection
+config_version: 9          # schema version; drives migration detection
 
 paths:
   designs: docs/designs
@@ -50,6 +50,8 @@ execute:
   mode: ask                # ask | parallel | inline (pre-flight execution-mode gate for /c-execute)
   max_parallel: 4          # concurrent implementer lanes (= worktrees); reviewers uncapped
   worktree_confirm: true   # one-time pre-flight worktree confirmation
+  review_fix_lines: 20     # largest fix (changed lines) the lane reviewer makes itself, Minor findings only
+  fix_rounds: 2            # implementer fix rounds per lane before it is held as blocked
 
 worktree:
   dir: .cadence/worktrees     # canonical home (relocated from execute.worktree_dir)

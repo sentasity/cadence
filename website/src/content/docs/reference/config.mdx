@@ -45,7 +45,7 @@ A single top-level integer that records which config schema this file was writte
 
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
-| `config_version` | Schema version of this file; used to detect when a migration is needed. | `8` | Integer |
+| `config_version` | Schema version of this file; used to detect when a migration is needed. | `9` | Integer |
 
 ## `paths`
 
@@ -118,6 +118,8 @@ How `/c-execute` drives a plan to implemented code, including the parallel-lane 
 | `execute.mode` | Pre-flight execution-mode gate: `ask` presents parallel lanes (recommended) vs inline sequential, `parallel` runs the lane engine, `inline` runs every task in the PM session itself — no worktrees, no implementer sub-agents (the completion audit stays a sub-agent). | `ask` | `ask` \| `parallel` \| `inline` |
 | `execute.max_parallel` | Maximum concurrent implementer lanes (one worktree per lane). Reviewers are uncapped. | `4` | Positive integer |
 | `execute.worktree_confirm` | Show a one-time pre-flight confirmation before creating worktrees. | `true` | `true` \| `false` |
+| `execute.review_fix_lines` | The largest fix, in changed lines, the lane reviewer makes itself. Only Minor findings inside the lane's files qualify; anything else goes back to the implementer. | `20` | Non-negative integer (`0` turns reviewer fixes off) |
+| `execute.fix_rounds` | Implementer fix rounds per lane before a lane whose findings are still open is held as blocked. | `2` | Positive integer |
 
 <Aside type="note" title="Relocated in config_version 4">
 `execute.worktree_dir` and `execute.integrate` moved to [`worktree.dir` and `worktree.integrate`](#worktree). For one release, commands fall back to the legacy `execute.*` keys when the new ones are absent, so configs that haven't migrated keep working. The migration carries customized values into the new keys and never deletes the legacy ones; remove them by hand once migrated.

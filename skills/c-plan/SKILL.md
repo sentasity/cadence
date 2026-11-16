@@ -217,7 +217,7 @@ Every plan carries a `## Review Focus` section in the overview: up to five input
 | `true` | A test in the owning task's test step (a new test function, or new assertions in its existing test), with the expected behavior as its assertion, run by the task's RED and GREEN steps. |
 | `false` | A run step in the owning task with the exact command that exercises the input and the output that means it behaved. |
 
-`/c-execute` passes the section to the spec reviewer, which checks that each owning task's diff carries its pin.
+`/c-execute` passes the section to the reviewer, which checks that each owning task's diff carries its pin.
 
 ## Codebase verification (mandatory)
 

@@ -70,7 +70,7 @@ Browsers refuse to follow a `file://` link clicked from a web page, Notion inclu
 Changes:
 
 - Designs, plans, and stubs live as Notion pages, not markdown folders. They lose git diff, blame, and PR review of the artifacts themselves; Notion's page history substitutes.
-- `/c-execute` writes plan progress to Notion. The PM (your main session) is the sole writer, ticking each task's to-do block and setting status and `base_sha` after the two-stage review. Notion mode requires network access (the MCP for reads and properties, Notion's REST API for doc bodies); there is no offline path.
+- `/c-execute` writes plan progress to Notion. The PM (your main session) is the sole writer, ticking each task's to-do block and setting status and `base_sha` after the lane's review. Notion mode requires network access (the MCP for reads and properties, Notion's REST API for doc bodies); there is no offline path.
 
 Does not change:
 

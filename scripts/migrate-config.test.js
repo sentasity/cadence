@@ -768,3 +768,23 @@ test('never-insert: main() bumps the version and adds other keys but never write
   assert.strictEqual(logs.length, 1);
   assert.doesNotMatch(logs[0], /plan\.style/);
 });
+
+// ---- v8 -> v9 execute.review_fix_lines + execute.fix_rounds (additive nested-key append) ----
+
+test('v8->v9: the real shipped defaults append exactly the reviewer keys for a v8 full copy', () => {
+  const defText = fs.readFileSync(path.join(__dirname, '..', 'defaults', 'config.default.yaml'), 'utf8');
+  const projText = defText
+    .replace(/^config_version: \d+/m, 'config_version: 8')
+    .split('\n')
+    .filter((line) => !/^  (review_fix_lines|fix_rounds):/.test(line))
+    .join('\n');
+  const missing = detectMissingKeys(projText, defText);
+  assert.deepStrictEqual(missing.missingBlocks, []);
+  assert.deepStrictEqual(missing.missingNested, [
+    { block: 'execute', key: 'review_fix_lines' },
+    { block: 'execute', key: 'fix_rounds' },
+  ]);
+  const merged = mergeMissing(projText, defText, missing);
+  assert.match(merged, /^  review_fix_lines: 20/m);
+  assert.match(merged, /^  fix_rounds: 2/m);
+});
