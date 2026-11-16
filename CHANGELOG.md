@@ -2,6 +2,20 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.26.0 (2026-11-16)
+
+The completion audit's mechanical checks run as one script instead of one sub-agent each.
+
+### Changed
+
+- **`scripts/audit-checks.js`.** `checkbox-completeness`, `code-behind-checkbox`, `deferred-comment-scan`, `file-map-honesty`, and `merge-integrity` run in one deterministic script call that prints JSON with `file:line` citations. It reads a plan folder on disk, so it works the same on a Notion plan through the `notion-read.js` export.
+- **One sub-agent per audit run.** The auditor runs the build command and the three light document checks (`oos-justification`, `design-plan-consistency`, `validation-doc-presence`) itself; `branch-review` (opus) is the only built-in sub-agent. Audit names, lethality, and config are unchanged.
+- **Stray-commit check is concrete.** `merge-integrity` treats a commit as stray when it has no `Cadence-Task:` trailer, isn't a `fix(review)` commit, and touches a file no task lists.
+
+### Why
+
+An audit started about ten fresh sub-agents, five of them doing work a script does faster and the same way every time.
+
 ## v0.25.0 (2026-11-16)
 
 Runs that don't stop for drift, lanes sized by a word budget, resume at the last committed task, and review that overlaps the next lane's build.

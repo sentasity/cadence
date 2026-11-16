@@ -5,7 +5,7 @@ description: Use when the user wants a Cadence plan's implementation audited aga
 
 # `/c-audit`
 
-You verify a plan was actually implemented. You delegate the heavy lifting to the `cadence-completion-auditor` agent (which orchestrates per-audit sub-agents); your job is pre-flight, invocation, and surfacing the agent's report to the user.
+You verify a plan was actually implemented. You delegate the heavy lifting to the `cadence-completion-auditor` agent (which runs the mechanical checks as a script and one branch-review sub-agent); your job is pre-flight, invocation, and surfacing the agent's report to the user.
 
 ## Architecture: standalone wrapper around the auditor agent
 
@@ -40,22 +40,23 @@ Dispatch the `cadence-completion-auditor` agent (via `Task` tool) with:
 - Mode: `standalone` (this skill ALWAYS passes `standalone`; the `gating` mode is for `/c-execute`'s direct-dispatch path).
 - Diff range (`base_sha`..HEAD).
 
-The agent fans out per-audit sub-agents in parallel and returns a synthesized report. The full audit roster, lethality, and prompt library all live in the agent (see `agents/cadence-completion-auditor.md`).
+The agent runs the mechanical audits in one call to `scripts/audit-checks.js`, runs the build and document checks itself, dispatches one opus branch review, and returns a synthesized report. The full roster, lethality, and prompts live in the agent (see `agents/cadence-completion-auditor.md`).
 
 ## Default audit roster
 
-Built-in (ships with Cadence — blocking unless noted):
+Built-in (ships with Cadence — blocking unless noted). Checks marked *script* run in `scripts/audit-checks.js`, not a sub-agent:
 
-- **checkbox-completeness** — every `- [ ]` is `- [x]`
+- **checkbox-completeness** *(script)* — every task step is `- [x]`
 - **oos-justification** — every plan-side 99-OOS entry has rationale + wikilink
-- **deferred-comment-scan** — no new TODO/FIXME/XXX/// will/// later/# stub in diff unjustified by 99-OOS
-- **code-behind-checkbox** — every `- [x]` step claiming to add a function/symbol has that symbol in the diff
+- **deferred-comment-scan** *(script)* — no new TODO/FIXME/XXX/// will/// later/# stub in diff unjustified by 99-OOS
+- **code-behind-checkbox** *(script)* — every `- [x]` step claiming to add a function/symbol has that symbol in the diff
 - **branch-review**: one opus sub-agent reads the design, the plan, and the whole branch diff, and judges design intent, spec-silent behavior (what a reasonable user would expect), and cross-task problems. Only a Critical finding blocks; Important and Minor findings go to the report's For your decision section. `design-intent-alignment` in a roster is an alias for it.
 - **build-validator** — runs `audits.build_validator.command` (e.g. `make ci`); zero exit required. **Refuses (blocking error) if `command: null`** — fresh-install default forces explicit configuration.
+- **merge-integrity** *(script)* — no leftover lane worktrees or branches, no conflict markers, no uncommitted code, no stray commits
 
 Warning-only (surfaced but don't block):
 
-- **file-map-honesty** — every File Map entry in diff; nothing outside File Map modified
+- **file-map-honesty** *(script)* — every File Map entry in diff; nothing outside File Map modified
 - **design-plan-consistency** — plan still links design; decisions log reflected in File Map
 - **validation-doc-presence** — 96-validation.md (or 98 for vault-shaped) has all three categories
 
