@@ -50,7 +50,7 @@ flowchart TB
     guard -->|yes| run["run as parallel lanes<br/>≤ execute.max_parallel"]
     guard -->|"no — files overlap"| wait["serialize:<br/>later lane waits its turn"]
     run --> wt["each lane in its own<br/>git worktree (isolated copy)"]
-    wt --> review["lane passes two-stage review"]
+    wt --> review["lane passes review (spec, then quality)"]
     review --> merge["merge back per worktree.integrate<br/>(default rebase-ff)"]
     merge --> tip(["tip advances;<br/>next ready lanes dispatch"])
     wait -.->|blocker landed| dag

@@ -5,7 +5,7 @@ description: Use when the user wants to implement a Cadence plan, or resume one 
 
 # `/c-execute`
 
-You are the PM. You drive a plan to completion via fresh sub-agents per task, two-stage review, and a completion-time audit gate. You never inherit sub-agent context. You never read the whole repo.
+You are the PM. You drive a plan to completion via fresh implementer sub-agents per lane, one reviewer per lane, and a completion-time audit gate. You never inherit sub-agent context. You never read the whole repo.
 
 ## Invocation
 
@@ -17,7 +17,7 @@ Optional: `/c-execute --restart <plan-path>` — wipe checkboxes and start over 
 
 Before scheduling, detect the plan format per-plan:
 - **New format** (tasks carry `Touches:`) → run the lane engine below, or the inline path when the execution-mode gate selects `inline`.
-- **Legacy format** (tasks carry `Files:`/`Parallel:`, no `Touches:`) → run the legacy sequential path (walk phase files in order, one implementer per task, sequential two-stage review, no worktrees) and print once: *"This plan uses the legacy format; running sequentially. Re-plan with `/c-plan` to enable parallel execution."* A single plan is never run half-parallel, half-sequential.
+- **Legacy format** (tasks carry `Files:`/`Parallel:`, no `Touches:`) → run the legacy sequential path (walk phase files in order, one implementer and one reviewer per task, no worktrees) and print once: *"This plan uses the legacy format; running sequentially. Re-plan with `/c-plan` to enable parallel execution."* A single plan is never run half-parallel, half-sequential.
 - **`execute.parallel: false`** → run the legacy sequential path regardless of plan format (the user has opted out of worktree parallelism). Takes precedence over `execute.mode`; the execution-mode gate is skipped.
 
 ## Pre-flight checks (in order; any failure surfaces — no auto-resolution)
@@ -33,7 +33,7 @@ Before scheduling, detect the plan format per-plan:
    - **`parallel`** — run the lane engine. Keep today's worktree confirmation: unless `execute.worktree_confirm: false`, print the worktree plan and ask once via `AskUserQuestion`: *"This plan runs up to `<max_parallel>` parallel lanes in git worktrees under `.cadence/worktrees/` (auto-created, auto-removed; the completion gate blocks if any remain). Proceed?"* On confirm, worktree management is fully automatic for the rest of the run — no per-lane prompts. On decline, do not start.
    - **`inline`** — run the Inline mode path (below). No worktree question; nothing worktree-related happens all run.
    - **`ask`** (default) — ask once via `AskUserQuestion` (this mode question subsumes the worktree confirmation; `execute.worktree_confirm: false` does not suppress it):
-     - **Parallel lanes in worktrees `(Recommended)`** — up to `<max_parallel>` lanes under `.cadence/worktrees/` (auto-created, auto-removed), `Touches:` guard, two-stage sub-agent review per lane.
+     - **Parallel lanes in worktrees `(Recommended)`** — up to `<max_parallel>` lanes under `.cadence/worktrees/` (auto-created, auto-removed), `Touches:` guard, one reviewer sub-agent per lane.
      - **Inline sequential** — the PM session implements every task itself in the main worktree, in dependency order; no worktrees, no implementer sub-agents; reviews are performed inline by the PM (reduced independence), and the completion audit still runs as a real sub-agent.
      - **Don't start** — nothing is dispatched; re-run `/c-execute` when ready.
    Legacy-format plans skip this gate entirely (no worktrees, no mode choice).
@@ -50,7 +50,7 @@ SHA-based pinning is robust against rebases, merges, and unrelated commits that 
 2. Build an internal task list — every `### Task N.M` becomes a tracked item with its `Depends:` edges, `Reads:` block, `Touches:` list, and full step block extracted.
 3. Build the dependency DAG from each task's `Depends:` edges and form lanes per the scheduling loop in "Lane model and DAG scheduling".
 4. Dispatch lanes concurrently up to `execute.max_parallel`, respecting `Touches:` disjointness.
-5. **After each task lands** (spec ✓ + code ✓ + Invariant 3 clean), record the lane's progress by ticking every `- [ ]` step under `### Task N.M` per `skills/_shared/storage-resolution.md` (tick). See [Marking task complete](#marking-task-complete-mandatory--required-for-resume).
+5. **After each lane lands** (review ✓ + Invariant 3 clean), record the lane's progress by ticking every `- [ ]` step under `### Task N.M` per `skills/_shared/storage-resolution.md` (tick). See [Marking task complete](#marking-task-complete-mandatory--required-for-resume).
 6. Surface blockers to user — never work around silently.
 7. Run audit gate at the end, then the end-of-run walk over the Review decisions table; set status to `implemented` per `skills/_shared/storage-resolution.md` (set_status) only when the audit passes and no row is `pending`. Committing accumulated plan-file changes in one commit is the filesystem backend's mechanism only; in Notion mode every tick and status write already landed live, so there is no plan file to commit.
 
@@ -103,7 +103,7 @@ Selected by `execute.mode: inline` or the `ask` gate. The PM session implements 
 
 - **Order:** topological over `Depends:` edges (the same DAG; acyclicity check unchanged), walking phase files in numeric order and task order within a file as the tie-break. `Touches:` overlaps are irrelevant — nothing runs concurrently.
 - **Per task, unchanged from the lane engine's per-task contract:** follow the task's steps exactly (TDD shape included), commit per task with the task's commit step, run the Invariant 3 grep on the task's diff, and tick the task's checkboxes per `skills/_shared/storage-resolution.md` (tick) the moment it lands. The progress-checkpoint rule holds: never carry landed-but-unmarked work through a pause.
-- **Review:** the PM self-reviews each task's diff against the task spec and repo conventions before ticking, applying the spec reviewer's style-aware rules (`agents/cadence-spec-reviewer.md`: exact match for full-code plans, the decisions for decision plans), the plan's Global Constraints, and any Review Focus pins the task owns. It records the task's `Tests:` evidence before ticking, and when a run doesn't match its Expected line it follows the implementer's root-cause-first rule (`agents/cadence-implementer.md`). This is a real trade-off — the author is the reviewer — and is exactly what the user opts into by picking inline; do not silently dispatch reviewer sub-agents anyway. The self-review also applies the spec reviewer's check 9 (spec-silent behavior): a clear violation is fixed before ticking, and a case it would decline, or a repo convention that conflicts with what the task prescribes, is recorded as a `pending` Review decisions row with source `inline self-review` when the task is ticked.
+- **Review:** the PM self-reviews each task's diff against the task spec and repo conventions before ticking, giving both verdicts of `agents/cadence-reviewer.md` (spec first: exact match for full-code plans, the decisions for decision plans; then quality), the plan's Global Constraints, and any Review Focus pins the task owns. It records the task's `Tests:` evidence before ticking, and when a run doesn't match its Expected line it follows the implementer's root-cause-first rule (`agents/cadence-implementer.md`). This is a real trade-off — the author is the reviewer — and is exactly what the user opts into by picking inline; do not silently dispatch reviewer sub-agents anyway. The self-review also applies the reviewer's check 9 (spec-silent behavior): a clear violation is fixed before ticking, and a case it would decline, or a repo convention that conflicts with what the task prescribes, is recorded as a `pending` Review decisions row with source `inline self-review` when the task is ticked.
 - **No worktree machinery:** no lane branches, no `git worktree add`, no merge-on-land, and no merge-lock acquisition (commits land directly on the working branch; there is nothing to integrate). The completion-time worktree-cleanup sweep still runs and should trivially find nothing.
 - **Drift and blockers:** the drift `AskUserQuestion` table applies unchanged; quiesce is trivial (nothing else is in flight). Implementer status handling and NEEDS_CONTEXT routing don't apply — there is no implementer to route.
 - **Completion gate: unchanged in every mode.** The `cadence-completion-auditor` dispatch stays a real sub-agent — its value is independence from the author, which matters MORE when the author also reviewed. Never run the audit inline.
@@ -118,7 +118,7 @@ Lane isolation and integration follow `skills/_shared/worktree-lifecycle.md`.
   - `ACQUIRED` (exit 0): integrate (next bullet), run the per-lane clean-merge check, then `bash ${CLAUDE_PLUGIN_ROOT}/scripts/merge-lock.sh release`. Release before surfacing any conflict decision; never sit on the lock while waiting on the user.
   - `WAITING holder=<branch> age=<s>` (exit 3): an external holder, still fresh. Poll autonomously by re-invoking `acquire` (its internal 540s wait budget returns under the 600s Bash tool cap). No user prompt.
   - `STALE holder=<branch> age=<s>` (exit 2): held past the threshold. Quiesce per [Quiesce-on-block](#quiesce-on-block) (no new dispatch, in-flight lanes finish and land, landed checkboxes flushed per `skills/_shared/progress-checkpoint.md`), then surface the **Stale merge lock** row of the drift `AskUserQuestion` table. Read `holder.json` inside `<git-common-dir>/worktree-merge.lock/` and put the holder branch, holder worktree path, and age in the question text: the holder may be a live `/c-worktree` merge in another session. Never auto-steal.
-- **Merge-on-land:** when a lane's implementer returns DONE and both reviewers approve the cumulative lane diff, the PM integrates per `worktree.integrate` (for one release, fall back to the legacy `execute.integrate` when the new key is absent) — default `rebase-ff` (**rebase the lane branch onto the current working tip and fast-forward**; linear history, per-task commits preserved), or `merge-commit` (`--no-ff` per lane) for repos that forbid history rewriting.
+- **Merge-on-land:** when a lane's reviewer approves both verdicts, the PM integrates per `worktree.integrate` (for one release, fall back to the legacy `execute.integrate` when the new key is absent) — default `rebase-ff` (**rebase the lane branch onto the current working tip and fast-forward**; linear history, per-task commits preserved), or `merge-commit` (`--no-ff` per lane) for repos that forbid history rewriting.
 - **Per-lane clean-merge check (mandatory):** the rebase must report no conflict, the lane commits must be present, and there must be no conflict residue. A conflict here means a `Touches:` declaration was wrong — STOP and surface; never auto-resolve (release the lock first).
 - **Remove** the worktree + lane branch on land. **Preserve** it on block.
 
@@ -139,13 +139,10 @@ Use the `Task` tool with one of these named agents:
 
 | Agent | When | What PM passes |
 |---|---|---|
-| `cadence-implementer` | Per task | Task block + linked files extracted from task's `Reads:` block + `Touches:` list + CLAUDE.md excerpt + resolved-config slice (from the resolver's JSON output; see `skills/_shared/config-resolution.md`) + plan style + Global Constraints |
-| `cadence-spec-reviewer` | After implementer DONE | Task spec + diff + plan style + Global Constraints + the Review Focus entries pinned in this lane's tasks + the implementer's `Tests:` evidence |
-| `cadence-code-reviewer` | After implementer DONE, concurrently with spec review (legacy sequential path: after spec-review ✓) | Diff + repo conventions + Global Constraints |
+| `cadence-implementer` | Per lane, and per fix round | The lane's task blocks + the files their `Reads:` blocks name + CLAUDE.md excerpt + resolved-config slice (see `skills/_shared/config-resolution.md`) + plan style + Global Constraints; on a fix round, the reviewer's open findings |
+| `cadence-reviewer` | After implementer DONE, and after each fix round | The lane's task blocks and `Touches:` + worktree path + review range + plan style + Global Constraints + the lane's Review Focus pins + the implementer's `Tests:` evidence + CLAUDE.md excerpt + `execute.review_fix_lines`; on a re-review, its previous findings |
 
 Sub-agents are generic — they don't know any specific repo. PM passes only what they need.
-
-Global Constraints go to the code reviewer so it doesn't flag a constraint-mandated choice as a style problem; checking the diff against them is the spec reviewer's job.
 
 ## Required report format (PM enforces; sub-agents return this natively)
 
@@ -162,15 +159,15 @@ Evidence:
 
 A return without a plain-English lead is malformed — re-dispatch the sub-agent with a reminder.
 
-Reviewer returns may end with a `Declined to judge:` section (`agents/cadence-spec-reviewer.md`, `agents/cadence-code-reviewer.md`); an Approve that carries one is still an Approve. Collect its entries for the Review decisions table.
+Reviewer returns carry a `Spec:` and a `Quality:` verdict line, and may end with `Fixed:` and `Declined to judge:` sections (`agents/cadence-reviewer.md`); Declined items never block. Collect them for the Review decisions table.
 
-Implementer returns that ran any step command also carry a `Tests:` block right after the plain-English lead: for each run step in the task, the command and the decisive output lines quoted from the real run (the RED failure and the GREEN pass; for a `plan.tdd: false` task, each run step's output). A missing or paraphrased `Tests:` block is malformed the same way: re-dispatch with a reminder. Pass the block to the spec reviewer, which checks it against each step's Expected line instead of re-running the suite.
+Implementer returns that ran any step command also carry a `Tests:` block right after the plain-English lead: for each run step in each task, the command and the decisive output lines quoted from the real run. A missing or paraphrased `Tests:` block is malformed the same way: re-dispatch with a reminder. Pass the block to the reviewer, which checks it against each step's Expected line instead of re-running the suite.
 
 ## Implementer status handling
 
 | Status | PM response |
 |---|---|
-| **DONE** | Proceed to spec review. |
+| **DONE** | Proceed to review. |
 | **DONE_WITH_CONCERNS** | Read concerns. If correctness/scope, fix before review. If observational, note and proceed. |
 | **NEEDS_CONTEXT** | Route per scope (see below). |
 | **BLOCKED** | Assess: context problem → more context + re-dispatch; reasoning problem → escalate model; task too large → split; plan wrong (the implementer labels it plan ambiguity) → route to the **Plan ambiguity** row of the drift table. Never retry with same model + same context. |
@@ -183,24 +180,19 @@ Implementer returns that ran any step command also carry a `Tests:` block right 
 | **Adjacent** — directory or "all callers of X" | grep for references (typically 3-8 files); fetch; re-dispatch. |
 | **Broad** — "whole module" or "all callers across codebase" | STOP. Surface to user. Usually indicates plan defect. User picks: edit the task's `Reads:` list + retry, split task, or escalate to more capable model. Never auto-fetch the whole repo. |
 
-## Review loops (two-stage, run in parallel)
+## Review loop (one reviewer, two verdicts)
 
-When a lane's implementer returns DONE, dispatch **both** reviewers concurrently against the cumulative lane diff:
+When a lane's implementer returns DONE, dispatch one `cadence-reviewer` on the whole lane range. It gives the Spec verdict first, then Quality, and fixes Minor findings itself when they fit `execute.review_fix_lines` and the lane's `Touches:` (its `fix(review)` commits are part of the lane).
 
-1. `cadence-spec-reviewer` — does the diff match the task specs? Anything missing/extra?
-2. `cadence-code-reviewer` — does it match repo conventions (naming, errors, tests)?
-
-They run at the same time (no ordering barrier). Resolve the two reports:
-
-- Both approve → lane lands.
-- Spec finds gaps → implementer fixes in the same worktree → **both** re-run.
-- Code finds issues (spec approved) → implementer fixes → both re-run.
-- **Conflict: the spec decides the run, the user decides the conflict.** A code finding that contradicts a spec approval is not a gap: move it to the run's Declined list (see Review decisions below), never drop it. Code review never overturns spec during the run.
-- **Declined items** from either reviewer's `Declined to judge:` section are recorded as `pending` rows in the plan's Review decisions table when the lane lands. They never block a lane from landing and never trigger a fix round.
+- **Both verdicts Approve** → the lane lands.
+- **Findings remain** → a fix round: dispatch the implementer with the open findings in the same worktree, then re-dispatch the reviewer on only the fix range (`<last-reviewed-sha>..HEAD`) with its previous findings. It never re-reads the rest of the lane.
+- **Cap:** at most `execute.fix_rounds` implementer fix rounds per lane. Findings still open after the last round make the lane BLOCKED (see Drift handling); its worktree is preserved.
+- **Spec decides the run.** A quality concern about something a task or Global Constraint prescribes is a Declined item, never a fix.
+- **Declined items** become `pending` rows in the plan's Review decisions table when the lane lands. They never block a lane and never start a fix round.
 
 ## Marking task complete (mandatory — required for resume)
 
-The unit of completion is the **lane**, not the individual task. After a lane lands (spec ✓ + code ✓ + clean-merge ✓ + Invariant 3 grep clean for the full lane diff), the PM **must** edit the plan's phase file:
+The unit of completion is the **lane**, not the individual task. After a lane lands (review ✓ + clean-merge ✓ + Invariant 3 grep clean for the full lane diff), the PM **must** edit the plan's phase file:
 
 1. For each `### Task N.M` in the just-landed lane, tick every `- [ ]` step per `skills/_shared/storage-resolution.md` (tick). All of the lane's task checkboxes tick together on land.
 2. On the filesystem backend a tick rewrites `- [ ]` to `- [x]` in the phase file (held uncommitted); on the notion backend it checks the to-do block live. **Do NOT commit the plan-file edit per task or per lane** (filesystem backend only; the notion backend has no plan file).
@@ -258,7 +250,7 @@ Each option's `description` is the corresponding "What happens next" cell (one s
 |---|---|---|
 | **Plan ambiguity** — implementer can't execute as written | Clarify | User answers → PM edits plan inline → re-dispatches with clarified task. |
 | | Abort | Status stays `in-progress`. User resumes later. |
-| **Design contradiction** — spec reviewer flags contradiction | Update plan only (default) | PM edits plan to match design → re-dispatches. Design untouched. |
+| **Design contradiction** — the reviewer flags a contradiction | Update plan only (default) | PM edits plan to match design → re-dispatches. Design untouched. |
 | | Update plan + design | PM offers both edits; user reviews. Both docs internally consistent before re-dispatch. |
 | | Abort | Plan stays `in-progress`. |
 | **Scope overflow** — work exceeds task | Fix (expand task in place) | PM adds steps inline → re-dispatches. |
@@ -271,15 +263,15 @@ Each option's `description` is the corresponding "What happens next" cell (one s
 
 ## Review decisions (the end-of-run list)
 
-Items the user decides at the end of the run, never mid-way: reviewer `Declined to judge:` entries, code findings that contradict a spec approval, inline self-review's declined cases and convention conflicts, and the completion audit's For your decision items (the branch review's Important and Minor findings and its own declined items). Lane gaps are not list items (they are fixed in the lane loop), and neither is a Critical branch-review finding (it fails the audit).
+Items the user decides at the end of the run, never mid-way: reviewer `Declined to judge:` entries, inline self-review's declined cases and convention conflicts, and the completion audit's For your decision items (the branch review's Important and Minor findings and its own declined items). Lane gaps are not list items (they are fixed in the lane loop), and neither is a Critical branch-review finding (it fails the audit).
 
 **The table.** The plan overview carries a `## Review decisions` section, created the first time an item arrives (a plan with no items has none), holding one table:
 
 | ID | Source | Where | Item | Decision |
 |---|---|---|---|---|
-| R1 | spec reviewer | Task 1.3, `app/auth.py:42` | An API key sent with trailing whitespace is rejected as unknown. Unclear whether keys should be trimmed. | pending |
+| R1 | reviewer | Task 1.3, `app/auth.py:42` | An API key sent with trailing whitespace is rejected as unknown. Unclear whether keys should be trimmed. | pending |
 
-IDs run R1, R2, and so on in arrival order and never change. Source is `spec reviewer`, `code reviewer`, `inline self-review`, `branch review (Important)`, `branch review (Minor)`, or `branch review (Declined)`. Decision starts `pending` and ends `accepted`, `fixed (<short sha>)`, or `out of scope`. Rows are table cells, not to-do blocks, so the checkbox audit never reads them.
+IDs run R1, R2, and so on in arrival order and never change. Source is `reviewer`, `inline self-review`, `branch review (Important)`, `branch review (Minor)`, or `branch review (Declined)`. Decision starts `pending` and ends `accepted`, `fixed (<short sha>)`, or `out of scope`. Rows are table cells, not to-do blocks, so the checkbox audit never reads them.
 
 **Recording.** Write new rows when the lane they came from lands (parallel) or when their task is ticked (inline), and always before yielding control, per `skills/_shared/progress-checkpoint.md`. Write them by rewriting the overview with write_doc per `skills/_shared/storage-resolution.md`: on the notion backend `scripts/notion-write.js` keeps the overview's sub-pages through the rewrite; on the filesystem backend the edit to `00-overview.md` stays uncommitted and rides the end-of-execution plan-file commit.
 
@@ -302,7 +294,7 @@ Mark exactly one option `(Recommended)` per row, from the item itself: Fix for w
 
 Once every task in every phase file is complete:
 
-1. Verify: every step `- [x]` + both reviews ✓ + commit visible in `git log`.
+1. Verify: every step `- [x]` + review ✓ + commit visible in `git log`.
 2. **Worktree-cleanup sweep (pre-dispatch):** run `git worktree list` and confirm no `cadence/lane-*` worktrees remain; run `git branch --list 'cadence/lane-*'` and confirm no lane branches remain. If any do, remove them (`git worktree remove <path>`, then `git branch -d <branch>`) before dispatching the auditor. Never pass `--force` or `-D` here: a leftover lane that still holds work is a plan-execution defect, and deleting that work silently hides it. If `git worktree remove` refuses, show the user `git -C <path> status --porcelain -uall`; if `git branch -d` refuses, show `git log --oneline HEAD..<branch>`. Ask whether to keep, commit, or discard that work before retrying.
 3. Dispatch the `cadence-completion-auditor` agent **directly** (via the `Task` tool) — same agent the standalone `/c-audit` skill dispatches, same parameters: plan path, linked design folder (from `linked_design:` frontmatter), resolved config content (the resolver's JSON output; see `skills/_shared/config-resolution.md`), diff range (`git diff <base_sha>..HEAD`), mode: `gating`, the plan slug (on the notion backend the auditor exports the plan and design with `scripts/notion-read.js`), and the plan's Review decisions table when it has one (the branch review skips decided rows). The default audit roster includes `merge-integrity` (verifies each task's commit landed cleanly and the lane history is linear). Do NOT route through the `/c-audit` skill — skill-calls-skill is not a documented Claude Code mechanism. The audit logic is in the agent; the skill is a thin user-facing wrapper around the same agent.
 4. Read the agent's report.
@@ -324,5 +316,5 @@ Once every task in every phase file is complete:
 
 ## References
 
-- Companion agents: `cadence-implementer`, `cadence-spec-reviewer`, `cadence-code-reviewer`, `cadence-completion-auditor`.
+- Companion agents: `cadence-implementer`, `cadence-reviewer`, `cadence-completion-auditor`.
 - Standalone audit skill: `/c-audit` (a thin user-facing wrapper around `cadence-completion-auditor`).

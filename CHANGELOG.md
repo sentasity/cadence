@@ -2,6 +2,26 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.24.0 (2026-11-16)
+
+One reviewer per lane instead of two, a re-review that reads only the fix, and small findings fixed by the reviewer itself.
+
+### Changed
+
+- **One reviewer, two verdicts.** `cadence-reviewer` replaces `cadence-spec-reviewer` and `cadence-code-reviewer`. It judges a lane's diff for spec first (nothing missing, nothing extra, the plan's decisions honored, the reasonable-user check) and then for code quality. The spec verdict still decides what gets built; a quality concern about something the plan prescribed goes on the end-of-run list.
+- **Re-review reads only the fix.** After the implementer fixes findings, the reviewer reviews `<last-reviewed-sha>..HEAD` with its previous findings, instead of both reviewers re-reading the whole lane.
+- **The implementer describes a lane.** `agents/cadence-implementer.md` said "exactly one plan task per dispatch" while `/c-execute` dispatched a whole phase file; it now describes a lane (tasks in `Depends:` order, one commit each) and a fix dispatch.
+
+### Added
+
+- **Reviewer fixes.** The reviewer fixes a Minor finding itself when the fix stays inside the lane's `Touches:` files, changes nothing the plan decided, and is at most `execute.review_fix_lines` changed lines (default 20). It commits the fix separately as `fix(review): …` after re-running the owning task's tests.
+- **Fix-round cap.** `execute.fix_rounds` (default 2) implementer fix rounds per lane; a lane still failing review after that is held as blocked.
+- Config schema v9: `execute.review_fix_lines` and `execute.fix_rounds`, appended to existing configs by the session-start migration.
+
+### Why
+
+Superpowers made the same merge and reported reviews roughly twice as fast on about half the tokens. Two reviewers re-reading everything after every fix, with no cap, was the largest share of a run's time.
+
 ## v0.23.1 (2026-10-12)
 
 Two small `notion-read.js` fixes found while building it.

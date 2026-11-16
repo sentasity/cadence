@@ -16,14 +16,14 @@ This is the payoff lesson. You turn the plan into real, working code, let Cadenc
 `/c-execute` drives the plan to implemented code. You stay in the driver's seat as the **PM** (project manager); Cadence spins up a fresh helper for each task, and every change is reviewed twice before it lands. You never read the diff yourself.
 
 <Aside type="note" title="The PM-and-sub-agent model, in plain English">
-Your session is the manager. For each task in the plan, Cadence dispatches a fresh worker that sees only that task and the files it needs, never the whole repo. When the worker is done, **two** reviewers check the change at the same time: one asks "does this match what the plan asked for?" and the other asks "does this follow the repo's conventions?". If they disagree, the spec reviewer wins. Only then does the change land.
+Your session is the manager. For each task in the plan, Cadence dispatches a fresh worker that sees only that task and the files it needs, never the whole repo. When the worker is done, **one** reviewer checks the change twice: first "does this match what the plan asked for?", then "does this follow the repo's conventions?". What the plan asked for always wins. It fixes small slips itself; anything bigger goes back to the worker, and only the fix is checked again. Only then does the change land.
 </Aside>
 
 <Walkthrough title="Execute the plan">
   <Fragment slot="step-1-title">Run /c-execute with the plan path</Fragment>
   <Fragment slot="step-1-body">`/c-execute docs/plans/2026-01-15-hello-cadence`. Cadence checks the working tree is clean and confirms before it begins.</Fragment>
   <Fragment slot="step-2-title">Watch tasks land, reviewed twice</Fragment>
-  <Fragment slot="step-2-body">Each task runs in isolation, gets the two-stage review, and commits on its own. You see plain-English summaries of what landed, not diffs.</Fragment>
+  <Fragment slot="step-2-body">Each task runs in isolation, gets one review (spec first, then code quality), and commits on its own. You see plain-English summaries of what landed, not diffs.</Fragment>
   <Fragment slot="step-3-title">Trust the gates, not the code</Fragment>
   <Fragment slot="step-3-body">If anything drifts from the plan, Cadence stops and offers you three choices (fix it, mark it out of scope, or abort) and waits for you. It never works around a problem silently, never auto-deploys, and never skips safety checks.</Fragment>
 </Walkthrough>
