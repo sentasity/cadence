@@ -14,6 +14,8 @@ Audit is the stage that proves the work is really done: not "the workers said so
 
 When execution finishes, Cadence dispatches a **completion auditor**, a separate checker from the ones that wrote the code. That independence is the whole point: it's a genuine second opinion, not the builder grading its own homework.
 
+The mechanical checks (is every step ticked, is the code behind each claim there, any new TODOs, any leftover worktrees or stray commits) run as a script, which is fast and gives the same answer every time. One reviewer on the most capable model then reads the design, the plan, and the whole branch for what a script can't judge.
+
 The audit runs automatically at the end of `/c-execute`, and you can also run it yourself any time with `/c-audit` for a standalone spot-check. Both paths run the exact same checks, so the results are identical.
 
 <Aside type="note" title="Standalone audits never change anything">

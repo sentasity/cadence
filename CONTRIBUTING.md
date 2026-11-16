@@ -22,7 +22,7 @@ Cadence is a phase-aware system; the contribution flow follows the same phases.
 - A skill's `description:` says only when to use it: start with "Use when", stay under 250 characters, and leave the workflow to the body.
 - JSON for plugin manifests (matches Claude Code's expectations).
 - Skill/agent text must route config reads through `scripts/resolve-config.js` — never instruct a direct read of `.cadence/config.yaml`, `.cadence/config.local.yaml`, or `defaults/config.default.yaml`. See `skills/_shared/config-resolution.md`.
-- Mostly documentation and prompts. The exception is `scripts/`: small Node and bash helpers for the jobs prose can't do reliably (config resolution and migration, Notion writes, the merge lock). If you want to add a helper script, ask in the issue first; often the right answer is still "the skill prompt should handle it."
+- Mostly documentation and prompts. The exception is `scripts/`: small Node and bash helpers for the jobs prose can't do reliably (config resolution and migration, Notion writes, the merge lock, the completion audit's mechanical checks). If you want to add a helper script, ask in the issue first; often the right answer is still "the skill prompt should handle it."
 
 ## Tests
 
