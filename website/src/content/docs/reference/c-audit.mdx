@@ -20,7 +20,7 @@ Use `/c-audit` to double-check an implemented plan: after `/c-execute` finished,
 
 ## Inputs & preconditions
 
-A plan folder with `00-overview.md`, a linked design that exists at `status: approved` or later, and a `base_sha:` recorded on the plan's overview (set by `/c-execute` on its first run). If `base_sha` is missing or the diff range can't be computed, it aborts with a pointer to fix it rather than guessing.
+A plan folder with `00-overview.md`, a linked design that exists at `status: approved` or later (or, for a `/c-plan --from` plan, its source files), and a `base_sha:` recorded on the plan's overview (set by `/c-execute` on its first run). If `base_sha` is missing or the diff range can't be computed, it aborts with a pointer to fix it rather than guessing.
 
 ## What it produces
 

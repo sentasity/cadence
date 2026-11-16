@@ -2,6 +2,25 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.28.0 (2026-11-16)
+
+Plan from any source, and decision plans by default with a real size gate.
+
+### Added
+
+- **`/c-plan --from <file or folder>`.** Plans from hand notes, a spec, or HTML mockups plus a decisions list, with no Cadence design. A light intake check replaces the approved-design gate: the source must state its goal, its decisions, the behavior or visuals, and its open questions; anything missing, and every open question, is asked in one grouped question and recorded under `## Intake answers`. The plan records its source in a `**Source:**` line (`linked_design: null`), and source mockups reach the tasks that touch their surfaces through `Reads:`.
+- **Plans without a design run end to end.** `/c-execute`'s pre-flight, `/c-audit`'s pre-flight and branch review, the `design-plan-consistency` audit, and `/c-validate`'s completion step all read the Source line where they would read a linked design.
+- **`plan.max_code_share`** (default 0.3). `/c-plan`'s proportion check is now a gate for decision plans: a phase doc with more of its lines in code blocks fails self-review and is cut back to signatures and test assertions.
+
+### Changed
+
+- **Decision plans are the shipped default.** `plan.style` now defaults to `decisions`, and `ask` recommends it. `plan.style` was never written into project configs, so every repo that hasn't set it gets the new default; plans already written keep the style their overview records, and full-code plans still execute.
+- Config schema v12: `plan.max_code_share`; `plan.parallel_grain`, which nothing read, is retired.
+
+### Why
+
+Measured plans ran 211,264 and 241,229 words, 76% and 84% of it code. Superpowers reports decision plans at about a quarter of the time and a third of the tokens. And work that already had a spec and mockups couldn't be planned without first writing a Cadence design.
+
 ## v0.27.0 (2026-11-16)
 
 A design is one lean document by default, for the person who approves it, with no implementation in it.

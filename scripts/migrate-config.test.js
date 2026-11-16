@@ -737,7 +737,7 @@ test('never-insert: an explicitly set plan.style is left untouched', () => {
 
 test('never-insert: the real shipped defaults carry plan.style and never report it missing', () => {
   const defText = fs.readFileSync(path.join(__dirname, '..', 'defaults', 'config.default.yaml'), 'utf8');
-  assert.match(defText, /^  style: full-code/m);
+  assert.match(defText, /^  style: decisions/m);
   const projText = defText
     .split('\n')
     .filter((line) => !/^  style:/.test(line))
@@ -857,4 +857,27 @@ test('main: a v10 config loses retired keys, gains design, and the notice says s
   assert.strictEqual(after, 'config_version: 11\npaths:\n  designs: docs/designs\n\ndesign:\n  word_target: 1500\n');
   assert.match(logs[0], /added design/);
   assert.match(logs[0], /Removed plain_english, paths\.config, which nothing reads/);
+});
+
+// ---- v11 -> v12 plan.max_code_share added; plan.style default flips to decisions (never inserted) ----
+
+test('v11->v12: a v11 full copy gains plan.max_code_share and never gains plan.style', () => {
+  const defText = fs.readFileSync(path.join(__dirname, '..', 'defaults', 'config.default.yaml'), 'utf8');
+  const projText = defText
+    .replace(/^config_version: \d+/m, 'config_version: 11')
+    .split('\n')
+    .filter((line) => !/^  (max_code_share|style):/.test(line))
+    .join('\n');
+  const missing = detectMissingKeys(projText, defText);
+  assert.deepStrictEqual(missing, { missingBlocks: [], missingNested: [{ block: 'plan', key: 'max_code_share' }] });
+  const merged = mergeMissing(projText, defText, missing);
+  assert.match(merged, /^  max_code_share: 0\.3/m);
+  assert.doesNotMatch(merged, /^  style:/m);
+});
+
+test('v11->v12: plan.parallel_grain is retired', () => {
+  const proj = 'config_version: 11\nplan:\n  tdd: true\n  parallel_grain: in-file\n  commit_cadence: per-task\n';
+  const { text, removed } = removeRetired(proj);
+  assert.deepStrictEqual(removed, ['plan.parallel_grain']);
+  assert.strictEqual(text, 'config_version: 11\nplan:\n  tdd: true\n  commit_cadence: per-task\n');
 });

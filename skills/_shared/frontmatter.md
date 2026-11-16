@@ -34,7 +34,7 @@ created: <ISO date>
 updated: <ISO date>
 status: draft | in-progress | implemented | completed | superseded | on-hold
 tags: [plan, ...]
-linked_design: <YYYY-MM-DD-SLUG>   # the design's folder name
+linked_design: <YYYY-MM-DD-SLUG>   # the design's folder name; null for a /c-plan --from plan (its overview's Source line names the source)
 base_sha: null                       # set by /c-execute on first invocation; never re-anchored
 ---
 ```

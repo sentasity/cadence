@@ -34,7 +34,7 @@ The design in `00-overview.md`, of about `design.word_target` words (default 1,5
 
 A design with significant user-facing UI/UX work can opt into `95-visual-contract`, a reserved slot that names the surfaces the mockups govern, indexes every mockup version, declares the design system that is the source of truth, and carries the contract prose an implementer follows when code and mockup disagree.
 
-The offer is as-needed, never a default. When the overview describes significant UI/UX work and the doc index lacks the slot, `/c-design` raises it in the opening confirmation, alongside any topic documents; when significance is genuinely unclear it asks. A mostly-backend design with an incidental UI touch is never offered it. A stub that already lists the slot counts as the opt-in taken.
+The offer is as-needed, never a default. When the overview describes significant UI/UX work and doesn't already list the slot, `/c-design` raises it in the opening confirmation, alongside any topic documents; when significance is genuinely unclear it asks. A mostly-backend design with an incidental UI touch is never offered it. A stub that already lists the slot counts as the opt-in taken.
 
 Mockups themselves are **single self-contained HTML files** with no build step: CSS and JS inlined, no CDN, the one sanctioned external channel being a web-font stylesheet with a declared fallback stack. Self-containment is what makes a mockup a durable contract, since an implementer has to open it weeks later, offline, on another machine.
 

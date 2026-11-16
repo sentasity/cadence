@@ -24,7 +24,7 @@ A plan at status `implemented` (it runs the walk) or `completed` (it re-validate
 
 ## What it produces
 
-Each validation item checked off as it passes (written to disk before any pause), and, on a full clean pass, the plan's overview status flipped to `completed`. In the same step it reads the plan's `linked_design:` and flips that design to `completed` too, with no prompt, and the completion message says so. Only an `approved` design flips: one already `completed` (a re-validation) is left as is, and any other status, or a `linked_design:` that doesn't resolve, is reported as a warning rather than skipped.
+Each validation item checked off as it passes (written to disk before any pause), and, on a full clean pass, the plan's overview status flipped to `completed`. In the same step it reads the plan's `linked_design:` and flips that design to `completed` too, with no prompt, and the completion message says so. Only an `approved` design flips: one already `completed` (a re-validation) is left as is, and any other status, or a `linked_design:` that doesn't resolve, is reported as a warning rather than skipped. A plan written with `/c-plan --from` has no linked design; only the plan flips.
 
 ## Gates & guarantees
 

@@ -54,9 +54,9 @@ Status NEVER advances to `completed` with any unchecked 96 item. No silent passe
 ## On full pass
 
 1. Set this plan's overview status to `completed` per `skills/_shared/storage-resolution.md` (set_status), which bumps `updated:`.
-2. Find the parent design through the design↔plan link: the plan overview already read via `skills/_shared/storage-resolution.md` (read_artifact) carries the link, and the design is then resolved via (resolve) — never by reading a raw `linked_design:` frontmatter line.
-3. Flip the design to `completed` in the same step, via `skills/_shared/storage-resolution.md` (set_status). No prompt: a full pass closes the plan and its design together. Only an `approved` design flips (the transition in `skills/_shared/frontmatter.md`). A design already `completed` (a re-validation) is left as is; any other status is surfaced as a warning and left unchanged.
-4. Print: *"Validation walked clean. `<N>` automated, `<M>` manual workflows, `<P>` prereqs confirmed. Plan and design `[[...]]` flipped to `completed`."* When step 3 didn't flip the design, replace the last sentence with what happened instead (plan flipped; design already `completed`, left at `<status>`, or not found).
+2. Find the parent design, if any, through the design↔plan link (a plan written with `/c-plan --from` has none; skip to step 4): the plan overview already read via `skills/_shared/storage-resolution.md` (read_artifact) carries the link, and the design is then resolved via (resolve) — never by reading a raw `linked_design:` frontmatter line.
+3. When the plan links a design, flip it to `completed` in the same step, via `skills/_shared/storage-resolution.md` (set_status). No prompt: a full pass closes the plan and its design together. Only an `approved` design flips (the transition in `skills/_shared/frontmatter.md`). A design already `completed` (a re-validation) is left as is; any other status is surfaced as a warning and left unchanged.
+4. Print: *"Validation walked clean. `<N>` automated, `<M>` manual workflows, `<P>` prereqs confirmed. Plan and design `[[...]]` flipped to `completed`."* When step 3 didn't flip the design, replace the last sentence with what happened instead (plan flipped; design already `completed`, left at `<status>`, not found, or none: a `/c-plan --from` plan has a source, not a design).
 
 **Linkage discipline:**
 - If `linked_design:` points to a design that doesn't exist, surface as a warning — don't silently drop.

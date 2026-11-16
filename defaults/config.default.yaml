@@ -3,7 +3,7 @@
 # never migrated); resolution order is defined in skills/_shared/config-resolution.md.
 # No assumption of obsidian or any specific repo layout.
 
-config_version: 11         # schema version; drives migration detection
+config_version: 12         # schema version; drives migration detection
 
 paths:
   designs: docs/designs
@@ -41,7 +41,8 @@ design:
 
 plan:
   tdd: true
-  style: full-code         # full-code | decisions | ask; never written into project configs (migrate-config.js NEVER_INSERT)
+  style: decisions         # decisions | full-code | ask; never written into project configs (migrate-config.js NEVER_INSERT)
+  max_code_share: 0.3      # decision plans: most a phase doc's lines may sit in code blocks before /c-plan's self-review fails it
   commit_cadence: per-task
   # No split_thresholds: split decisions are judgment-based in /c-plan,
   # not threshold-based.

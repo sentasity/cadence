@@ -45,7 +45,7 @@ A single top-level integer that records which config schema this file was writte
 
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
-| `config_version` | Schema version of this file; used to detect when a migration is needed. | `11` | Integer |
+| `config_version` | Schema version of this file; used to detect when a migration is needed. | `12` | Integer |
 
 ## `paths`
 
@@ -111,11 +111,11 @@ How `/c-plan` shapes the plan it writes.
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
 | `plan.tdd` | Whether plans bake in a test-driven workflow (write the test, then the code). | `true` | `true` \| `false` |
-| `plan.style` | What a plan's steps contain. `full-code` writes out every code step's code; `decisions` records only what the implementer can't decide alone (exact signatures, test assertions, the design's values) and leaves the code to them; `ask` asks once per plan. Each plan records its own style, so changing this never affects a plan already written. Never written into your config, by a migration or by `/c-brainstorm`'s first-run setup, so a future change to the default reaches you unless you set the key yourself. | `full-code` | `full-code` \| `decisions` \| `ask` |
+| `plan.style` | What a plan's steps contain. `decisions` records only what the implementer can't decide alone (exact signatures, test assertions, the design's values) and leaves the code to them; `full-code` writes out every code step's code; `ask` asks once per plan. Each plan records its own style, so changing this never affects a plan already written. Never written into your config, by a migration or by `/c-brainstorm`'s first-run setup, so a change to the default reaches you unless you set the key yourself. | `decisions` | `decisions` \| `full-code` \| `ask` |
+| `plan.max_code_share` | For decision plans: the largest share of a phase doc's lines that may sit in code blocks. `/c-plan`'s self-review fails a doc over it and cuts spelled-out bodies back to signatures and test assertions. | `0.3` | Number between 0 and 1 |
 | `plan.commit_cadence` | How often the plan commits during execution. | `per-task` | `per-task` (other cadences are judgment-based) |
-| `plan.parallel_grain` | The finest granularity at which tasks within one plan may run in parallel. `per-file` keeps each file to one lane; `in-file` allows lanes to split work within a single file. Not set in the defaults file. Add it under `plan` to opt in. | unset (`per-file` behaviour) | `per-file` \| `in-file` |
 
-There are deliberately no split thresholds. Whether and where to split a plan into phase docs is a judgment call `/c-plan` makes, not a number you tune. See [Parallelism and worktrees](/cadence/concepts/parallelism-and-worktrees/) for how grain relates to execution lanes.
+There are deliberately no split thresholds: phase docs group tasks by topic for readers, and `/c-execute` sizes lanes by `execute.bundle_words`. `plan.parallel_grain` was removed in `config_version: 12`; nothing read it.
 
 ## `execute`
 
@@ -259,44 +259,34 @@ Defaults for `/c-find-bugs`.
 
 ## A realistic config
 
-This repo dogfoods Cadence, and its own `.cadence/config.yaml` is a good example of the "override only what differs" pattern. It keeps the default paths and audits, bumps `execute.max_parallel` to `5`, and opts into `plan.parallel_grain: in-file`. The trimmed shape below shows the blocks that have arrived over the last few schema bumps: `worktree:` (relocated out of `execute:` in `config_version: 4`), `storage:` (new in `5`), `execute.mode` (new in `7`), and `mockups:` (new in `8`). Each of those bumps is additive, so `scripts/migrate-config.js` appends the new block or key verbatim and leaves your values and comments alone:
+This repo dogfoods Cadence, and its own `.cadence/config.yaml` is a good example of the "override only what differs" pattern. It points its designs and plans at a notes vault outside the repo, bumps `execute.max_parallel` to `5`, and sets a build command for the audit. The trimmed shape below shows the keys that arrived in the last few schema bumps: `execute.review_fix_lines` and `execute.fix_rounds` (new in `config_version: 9`), `execute.bundle_words` (`10`), `design.word_target` (`11`), and `plan.max_code_share` (`12`). Additions are appended verbatim, leaving your values and comments alone; keys nothing reads any more are removed, and the migration notice names both:
 
 ```yaml
-config_version: 8
+config_version: 12
 paths:
-  designs: docs/designs
-  plans:   docs/plans
-  future:  docs/future
-  config:  .cadence
+  designs: "/Users/you/Notes/cadence/designs"
+  plans:   "/Users/you/Notes/cadence/plans"
+  future:  "/Users/you/Notes/cadence/future"
 
 plan:
   tdd: true
   commit_cadence: per-task
-  parallel_grain: in-file
+  max_code_share: 0.3
 
 execute:
   max_parallel: 5
   parallel: true
   worktree_confirm: true
   mode: ask
+  review_fix_lines: 20
+  fix_rounds: 2
+  bundle_words: 5000
 
-worktree:
-  dir: .cadence/worktrees
-  integrate: rebase-ff
-  merge_lock: true
-  lock_stale_threshold: 600
+audits:
+  build_validator:
+    command: node --test 'scripts/*.test.js'
+    expect_zero_exit: true
 
-advisors:
-  enabled: false
-  roster: []
-
-storage:
-  backend: filesystem
-  notion:
-    root_page:  ""
-    designs_db: ""
-    plans_db:   ""
-
-mockups:
-  dir: null        # filesystem backend: the design's own mockups/ subfolder
+design:
+  word_target: 1500
 ```
