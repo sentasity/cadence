@@ -15,7 +15,7 @@ linked_plan: null         # populated by /c-plan; the one plan's slug (one desig
 ---
 ```
 
-## Design child doc (any non-overview file in the folder)
+## Design topic doc (any non-overview file in the folder)
 
 ```yaml
 ---

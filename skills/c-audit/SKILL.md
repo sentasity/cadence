@@ -57,7 +57,7 @@ Built-in (ships with Cadence — blocking unless noted). Checks marked *script* 
 Warning-only (surfaced but don't block):
 
 - **file-map-honesty** *(script)* — every File Map entry in diff; nothing outside File Map modified
-- **design-plan-consistency** — plan still links design; decisions log reflected in File Map
+- **design-plan-consistency** — plan still links design; the design's decisions reflected in the plan
 - **validation-doc-presence** — 96-validation.md (or 98 for vault-shaped) has all three categories
 
 Repo-configurable add-ons (declared in `.cadence/config.yaml` → `audits.optional`):

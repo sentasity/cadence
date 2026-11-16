@@ -45,7 +45,7 @@ A single top-level integer that records which config schema this file was writte
 
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
-| `config_version` | Schema version of this file; used to detect when a migration is needed. | `10` | Integer |
+| `config_version` | Schema version of this file; used to detect when a migration is needed. | `11` | Integer |
 
 ## `paths`
 
@@ -56,7 +56,6 @@ Where Cadence reads and writes documents. Paths are relative to the repo root. C
 | `paths.designs` | Folder that holds design folders. | `docs/designs` | Repo-relative path |
 | `paths.plans` | Folder that holds plan folders. | `docs/plans` | Repo-relative path |
 | `paths.future` | Folder for "future" / parking-lot notes (e.g. thought-partner `/c-brainstorm` notes). | `docs/future` | Repo-relative path |
-| `paths.config` | Folder that holds this config and Cadence's working state. | `.cadence` | Repo-relative path |
 
 ## `storage`
 
@@ -94,6 +93,16 @@ How `null` resolves depends on the backend:
 <Aside title="Unlike `worktree.dir`, this is not team policy">
 `mockups.dir` is usually an absolute, machine-specific path, so a `.cadence/config.local.yaml` override is the intended use and raises no divergence notice. On the notion backend there is no design folder to fall back on, which is why a `null` value is the one case that prompts: `/c-design` asks before authoring version `01` and offers to persist your answer, with the local overlay the usual home for it. Writing it to the committed `.cadence/config.yaml` is offered too, for a team that has agreed on a repo-relative location.
 </Aside>
+
+## `design`
+
+How long a design runs. Designs carry no implementation (no schemas, signatures, file lists, or code), so the length is all intent.
+
+| Key | Controls | Default | Allowed values |
+| --- | --- | --- | --- |
+| `design.word_target` | Target words per design document. `/c-design` trims a document more than a fifth over it, then offers topic documents. | `1500` | Positive integer |
+
+`plain_english.*`, `paths.config`, and `naming.slug_case` were removed in `config_version: 11`: nothing read them. The session-start migration deletes them from your config and says so.
 
 ## `plan`
 
@@ -168,7 +177,7 @@ How doc-generator agents run when `/c-design` materializes a design folder. Thes
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
 | `authoring.max_parallel` | Maximum concurrent doc-generator agents. | `6` | Positive integer |
-| `authoring.design_mode` | Standing default for how `/c-design` writes child docs: `ask` prompts you, `all-at-once` generates in parallel, `one-by-one` writes sequentially with a review per doc, `inline` writes every doc in the main session with no sub-agents or pauses. | `ask` | `ask` \| `all-at-once` \| `one-by-one` \| `inline` |
+| `authoring.design_mode` | Standing default for how `/c-design` writes opted-in topic documents (a one-document design is always written inline): `ask` prompts you, `all-at-once` generates in parallel, `one-by-one` writes sequentially with a review per doc, `inline` writes every doc in the main session with no sub-agents or pauses. | `ask` | `ask` \| `all-at-once` \| `one-by-one` \| `inline` |
 | `authoring.plan_mode` | Standing default for how `/c-plan` writes plan docs: `ask` prompts you, `all-at-once` generates in parallel, `inline` writes every doc in the main session. | `ask` | `ask` \| `all-at-once` \| `inline` |
 
 ## `advisors`
@@ -189,7 +198,6 @@ Conventions for naming design/plan folders.
 | Key | Controls | Default | Allowed values |
 | --- | --- | --- | --- |
 | `naming.date_format` | Date stamp used in folder slugs. | `YYYY-MM-DD` | Date format string |
-| `naming.slug_case` | Casing for the slug portion of folder names. | `kebab` | `kebab` (and similar case styles) |
 
 ## `status`
 
@@ -219,16 +227,6 @@ Which checks `/c-audit` (and the completion auditor) run, split into blocking ch
 | `audits.optional` | Checks available but off by default. | `[]` (empty) | List of audit names |
 | `audits.build_validator.command` | Shell command the `build-validator` audit runs. `null` means no build command is run. | `null` | Shell command string or `null` |
 | `audits.build_validator.expect_zero_exit` | Treat a non-zero exit from the build command as a failure. | `true` | `true` \| `false` |
-
-## `plain_english`
-
-How Cadence writes the plain-English narrative that accompanies designs.
-
-| Key | Controls | Default | Allowed values |
-| --- | --- | --- | --- |
-| `plain_english.section_callout` | Add a callout marking the plain-English section. | `true` | `true` \| `false` |
-| `plain_english.always_write_00a` | Always write the `00a` plain-English companion doc. | `true` | `true` \| `false` |
-| `plain_english.length_target` | Target word-count range for the narrative. | `"400-700"` | Range string |
 
 ## `oos`
 

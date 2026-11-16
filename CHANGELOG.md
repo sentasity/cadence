@@ -2,6 +2,27 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.27.0 (2026-11-16)
+
+A design is one lean document by default, for the person who approves it, with no implementation in it.
+
+### Changed
+
+- **One document.** `/c-design` writes the design into `00-overview`: why, what it does in plain English, examples and wording, visuals where needed, one numbered Decisions list (`D1`, `D2`, … that plans cite), and out of scope. Topic documents (`01-…`), `97`, and `98` are opt-in; the generation-mode question and the consistency sweep apply only when topic documents exist.
+- **No implementation in a design.** No schemas, signatures, file lists, or code (mermaid excepted); self-review moves such detail out. The `[!todo] Build:` notes are gone; deciding how to build is the plan's job.
+- **Word target.** `design.word_target` (default 1500) per document: trim first, split into topic documents only when the feature genuinely has separate areas.
+- **The brainstorm stub** uses the same shape (Why, What it does, Decisions, Out of scope, and Docs only when opted in).
+- The worked example (`examples/hello-cadence`) is now a one-document design.
+
+### Removed
+
+- `00a-plain-english.md`, the per-heading `[!summary] Plain English` callout, and the design-side `99-out-of-scope.md` (out of scope is a section of the design). Older designs that carry them are still read.
+- Config keys nothing read: `plain_english.*` (`always_write_00a` never turned anything off), `paths.config`, and `naming.slug_case`. Config schema v11 adds `design.word_target`, and the session-start migration now removes retired keys from project configs and says so.
+
+### Why
+
+The savings-engine design ran to 70,558 words over 13 files, with 72 Build notes carrying file paths, signatures, and schemas, and plain English written twice. A design that close to a plan is slow to write and hard to approve.
+
 ## v0.26.0 (2026-11-16)
 
 The completion audit's mechanical checks run as one script instead of one sub-agent each.

@@ -4,7 +4,7 @@ title: <DESIGN_TITLE> — Architecture Diagrams
 
 # Architecture Diagrams
 
-Dense technical diagrams. Lighter narrative diagrams live in [[00a-plain-english]].
+Dense diagrams for an opt-in reader. Diagrams that decide something a reviewer must see live inline in [[00-overview#Visuals]].
 
 ## <Diagram name 1>
 

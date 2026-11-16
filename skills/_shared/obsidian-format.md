@@ -6,14 +6,11 @@ Authoritative reference for the obsidian-flavored markdown conventions Cadence's
 
 | Callout | Use |
 |---|---|
-| `> [!summary] Plain English` | First block of every H2 in a technical child design doc. 2-4 sentences explaining what the section covers in non-technical terms. |
-| `> [!success] Decision` | A resolved design question. Include rationale. |
 | `> [!warning]` | A constraint, risk, or tradeoff the reader needs to know. |
 | `> [!note]` | Context or explanation that doesn't fit elsewhere. |
 | `> [!bug] Fix:` | An existing issue surfaced during design. Implies plan work. |
-| `> [!todo] Build:` | Implementation work the plan will need to schedule. |
 
-If a sentence doesn't earn a callout, it's just prose. No `> [!info]` flooding.
+If a sentence doesn't earn a callout, it's just prose. No `> [!info]` flooding. Decisions live in the design's Decisions list, not in callouts. Designs written before v0.27 also carry `[!summary] Plain English`, `[!success] Decision`, and `[!todo] Build:` callouts: read them, never author them.
 
 **Backend rule (which syntax to author).** The callout *set* above is backend-neutral; the `> [!type]` syntax is the **filesystem (obsidian) authoring form only**. When the resolved `storage.backend` is `notion`, author each callout directly as its Notion-flavored `<callout icon="…" color="…">` block, using the type-to-icon/color table in `skills/_shared/notion-translation.md`. Never emit `> [!type]` in content bound for Notion: the MCP escapes it into literal text (`> \[!summary\]`) and it renders as a broken quote block, not a callout. Everywhere this doc or a skill shows `> [!type]` syntax, read it as "this callout type, in the current backend's authoring form."
 
@@ -32,9 +29,9 @@ Beyond callouts and tables, four constructs earn their place when they say somet
 | Construct | Use when | Filesystem (obsidian) form | Notion form |
 |---|---|---|---|
 | **Equation block** | A definition has multiple terms, a sum/product over a set, or conditional branches that prose forces into a run-on sentence (rate formulas, aggregations, thresholds). | `$$ … $$` LaTeX (obsidian renders MathJax) | Same `$$ … $$` — see `notion-translation.md` for inline form and `$` caveats |
-| **Mermaid diagram** | A section describes a flow, algorithm, state machine, sequence, or decision tree step-by-step in prose. Inline in the child doc where the reader needs it — the `98-architecture-diagrams` slot is for cross-cutting architecture, not a quarantine for every diagram. | ` ```mermaid ` fence | Same fence; label-quoting rules in `notion-translation.md` |
+| **Mermaid diagram** | A section describes a flow, algorithm, state machine, sequence, or decision tree step-by-step in prose. Inline in the doc where the reader needs it — the `98-architecture-diagrams` slot is for cross-cutting architecture, not a quarantine for every diagram. | ` ```mermaid ` fence | Same fence; label-quoting rules in `notion-translation.md` |
 | **Collapsible detail** | A complete-but-long support section the main narrative doesn't need on screen: edge-case matrices, rejected alternatives, verbose examples, raw payload samples. The summary line must say what's inside — a reader should know whether to open it. | Folded callout: `> [!note]- Title` | `<details>` toggle or `{toggle="true"}` heading — see `notion-translation.md` |
-| **Table of contents** | A child doc long enough that H2 navigation helps (roughly 5+ H2s). Top of doc, once. | Skip — obsidian has an outline pane | `<table_of_contents/>` |
+| **Table of contents** | A doc long enough that H2 navigation helps (roughly 5+ H2s). Top of doc, once. | Skip — obsidian has an outline pane | `<table_of_contents/>` |
 
 Anti-flooding rule, same spirit as callouts: one construct per job. A section with an equation, a diagram, a toggle, AND colored text is noise. Collapsible detail must still obey the doc's own compression rules — a toggle is not a place to park content that should be deleted.
 
@@ -42,7 +39,7 @@ Column layouts (`<columns>`, notion-only) are allowed for short side-by-side com
 
 ## Reserved file slots
 
-**Design folder:** `00-overview`, `00a-plain-english`, `95-visual-contract` (opt-in), `97-infrastructure-inventory`, `98-architecture-diagrams`, `99-out-of-scope`. A design taking the 95 slot also stores mockup HTML files (`NN-{kebab-slug}.html`, zero-padded, append-only) in its resolved mockup directory: the design's own `mockups/` subfolder by default on the filesystem backend, or wherever `mockups.dir` points. Mockups are local files on every backend; see `skills/_shared/storage-resolution.md` § Mockup directory resolution.
+**Design folder:** `00-overview`, `95-visual-contract` (opt-in), `97-infrastructure-inventory` (opt-in), `98-architecture-diagrams` (opt-in). Older designs may also hold `00a-plain-english` and `99-out-of-scope`. A design taking the 95 slot also stores mockup HTML files (`NN-{kebab-slug}.html`, zero-padded, append-only) in its resolved mockup directory: the design's own `mockups/` subfolder by default on the filesystem backend, or wherever `mockups.dir` points. Mockups are local files on every backend; see `skills/_shared/storage-resolution.md` § Mockup directory resolution.
 
 **Plan folder:** `00-overview`, `96-validation`, `97-infrastructure-inventory` (shell), `98-architecture-diagrams` (shell), `99-out-of-scope`.
 
@@ -52,12 +49,6 @@ Skills refuse to scaffold conflicting names.
 
 - **Folder:** `yyyy-mm-dd-{kebab-slug}/`. Date format from `config.naming.date_format`.
 - **Children:** `NN-{kebab-slug}.md`, zero-padded NN.
-
-## Plain-English layering
-
-- Every H2 section in a technical child doc opens with the `[!summary] Plain English` callout (2-4 sentences), authored in the backend's form per the Callouts section above.
-- Subsections (H3/H4) stay pure technical. No callout flooding at lower heading levels.
-- The full plain-English narrative lives in `00a-plain-english.md` (written last in `/c-design`'s flow).
 
 ## Plan task fields (shared by /c-plan, /c-execute)
 

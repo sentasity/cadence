@@ -9,7 +9,7 @@ You translate an approved design into an execution-ordered plan folder. Plans ar
 
 ## Entry contract
 
-**Requires:** the design artifact for `{yyyy-mm-dd-slug}` with `status: approved`. Read the entire design (overview + every child + 99-OOS) via `skills/_shared/storage-resolution.md` (read_artifact) before drafting; do not assume a `<paths.designs>/…` folder path. When the design carries a `95-visual-contract` slot, the read includes it, and the planner also fetches the frozen mockup via `skills/_shared/storage-resolution.md` (read_mockup).
+**Requires:** the design artifact for `{yyyy-mm-dd-slug}` with `status: approved`. Read the entire design (overview and every topic doc, including `00a`/`99` docs in older designs) via `skills/_shared/storage-resolution.md` (read_artifact) before drafting; do not assume a `<paths.designs>/…` folder path. When the design carries a `95-visual-contract` slot, the read includes it, and the planner also fetches the frozen mockup via `skills/_shared/storage-resolution.md` (read_mockup).
 
 **Refuses when:** design status is `draft` or `in-review` (tell user to finish/approve the design first); or when the design's `95-visual-contract` freeze record still reads `frozen: none` (malformed approved design; point the user back to `/c-design`'s approval step); or when a plan artifact with the same slug already exists at non-draft status — check via `skills/_shared/storage-resolution.md` (artifact_exists) — which would overwrite.
 
@@ -182,7 +182,7 @@ Every plan, whatever its style, carries a `## Global Constraints` section in the
 
 **What qualifies:** language and runtime version floors, platform requirements, dependency limits (no new dependencies, or an allowed set), naming and user-facing copy rules, exact values the design pins globally (limits, timeouts, units), and repo rules from `CLAUDE.md` that bind code. A rule that binds one task belongs in that task's steps, not here.
 
-**Sources:** while reading the design (writing-flow step 1), collect candidates from the approved design (every doc, including decisions-log entries that state a global rule), the repo's `CLAUDE.md`, and the repo's manifests where present (`package.json` `engines`, `.nvmrc`, `pyproject.toml` `requires-python`, `.python-version`, `go.mod` `go` directive, `Cargo.toml` `rust-version`, and the like), ground-truthed like any other cited path. Each line ends with a short source parenthetical: `(design 03)`, `(CLAUDE.md)`, `(package.json engines)`.
+**Sources:** while reading the design (writing-flow step 1), collect candidates from the approved design (every doc, including decisions-log entries that state a global rule), the repo's `CLAUDE.md`, and the repo's manifests where present (`package.json` `engines`, `.nvmrc`, `pyproject.toml` `requires-python`, `.python-version`, `go.mod` `go` directive, `Cargo.toml` `rust-version`, and the like), ground-truthed like any other cited path. Each line ends with a short source parenthetical: `(design D3)`, `(CLAUDE.md)`, `(package.json engines)`.
 
 **Confirmation:** show the list in writing-flow step 2, in the same exchange as the phase-decomposition confirmation, via `AskUserQuestion` with **Looks right** `(Recommended)` and **Edit the list**. An edit loops once through the list and back.
 
@@ -243,7 +243,7 @@ Each is a single `[!note] Reference shell` callout (authored in the backend's fo
 
 ## `99-out-of-scope.md` (plan-side)
 
-Initial content is a shell — wikilink to design's 99-OOS and "(No entries yet.)" Entries land when `/c-plan` Q&A surfaces a cut OR `/c-execute` mark-out-of-scope is invoked.
+Initial content is a shell — a wikilink to the design's Out of scope and "(No entries yet.)" Entries land when `/c-plan` Q&A surfaces a cut OR `/c-execute` mark-out-of-scope is invoked.
 
 ## Writing flow
 
@@ -281,7 +281,7 @@ Inline mode replaces items 2-3: the main session writes each remaining doc itsel
 7. **Wikilink integrity** — every `[[…]]` resolves.
 8. **Callout-form check (notion backend only)** — scan the read-back for escaped callout remnants (`\[!` or a quote block starting `> [!`): either means a callout reached Notion in obsidian syntax and rendered as literal text. Rewrite that callout as a native `<callout>` block per `skills/_shared/notion-translation.md`.
 9. **Visual-citation check (95 designs only)** — every task whose `Touches:` intersects the Surface map carries both visual citations in `Reads:`; no task outside the intersection carries a `mockup:NN` citation (the contract doc may be cited freely where useful).
-10. **Proportion (decision plans, advisory)** — report the plan's total word count against the design's (overview plus every child doc) and the share of each phase doc's lines inside code blocks. These are signals, not gates: a plan with many tasks can outgrow a terse design while holding no code at all. Act only on what they point to, a step carrying a function body the signature and tests already determine (item 3); replace it with the signature, test names, and assertions.
+10. **Proportion (decision plans, advisory)** — report the plan's total word count against the design's (every design doc) and the share of each phase doc's lines inside code blocks. These are signals, not gates: a plan with many tasks can outgrow a terse design while holding no code at all. Act only on what they point to, a step carrying a function body the signature and tests already determine (item 3); replace it with the signature, test names, and assertions.
 11. **Interface closure (decision plans)** — every task has an Interfaces block; every `Consumes:` entry is produced by a task in the consumer's `Depends:` closure or verified to exist in the codebase; every `Produces:` name a later task uses matches exactly.
 12. **Global Constraints sourced (every plan)** — the section exists; every line has a source parenthetical that resolves (a design doc, `CLAUDE.md`, or a manifest the plan cites).
 13. **Review Focus closure (every plan)** — the section exists with at most five entries; every entry names a real task id; that task carries the pin (a test assertion when `plan.tdd` is true, a run step with expected output when false).

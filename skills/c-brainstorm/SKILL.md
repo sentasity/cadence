@@ -10,7 +10,7 @@ You drive an interactive brainstorming Q&A. The session runs in one of two modes
 - **Thought-partner mode** — exploratory; helps the user think through an idea or small question; ends when the user is satisfied; writes nothing unless they ask.
 - **Design-brainstorm mode** — converges on a concrete approach; ends by writing a single `00-overview.md` stub.
 
-You never write child docs, plans, or code. You never auto-promote into `/c-design`.
+You never write the design, plans, or code. You never auto-promote into `/c-design`.
 
 ## Hard gate: every `AskUserQuestion` (no exceptions)
 
@@ -107,18 +107,19 @@ When Q&A converges, confirm: *"I have enough — writing `00-overview.md`. Proce
 Stub structure — create the design artifact for slug `{yyyy-mm-dd-slug}` per `skills/_shared/storage-resolution.md` (create_artifact), which writes the `00-overview` overview with the frontmatter and sections below; do not compute a `<paths.designs>/…` path:
 
 - Frontmatter per `skills/_shared/frontmatter.md` (design overview shape, `linked_plan: null`).
-- **What we're building** — 2-4 sentences, plain English.
 - **Why** — 1-2 sentences naming the motivating problem.
-- **Approach** — the picked option from step 6, summarized.
-- **Doc index** — proposed child docs, one wikilink + one-line description each. Mark 97/98 as `opt-in` if Q&A decided to include them; otherwise omit.
-- **Decisions log** — every `[!success] Decision` callout from Q&A, with rationale (authored in the backend's form per `skills/_shared/obsidian-format.md`'s backend rule: obsidian `> [!success]` on the filesystem, native `<callout>` per `skills/_shared/notion-translation.md` on notion).
-- **Out of scope** — wikilink to `99-out-of-scope.md` (canonical list lives there once /c-design materializes it).
+- **What it does** — 2-4 sentences, plain English; the approach picked in step 6 is decision D1.
+- **Decisions** — one numbered list, `D<n> — <decision>. Why: <rationale>.`, every decision from the Q&A.
+- **Out of scope** — every cut from the Q&A, each with its rationale and the decision it came from.
+- **Docs** — only when the Q&A decided on topic documents, `95-visual-contract`, `97`, or `98`: one wikilink and one line each.
 
-Handoff: *"Stub written to `<path>/00-overview.md`. Run `/c-design` to write the child docs."* No auto-chain.
+No schemas, signatures, file lists, or code: `/c-design` keeps the same rule (see `skills/c-design/SKILL.md`).
+
+Handoff: *"Stub written to `<path>/00-overview.md`. Run `/c-design` to write the design."* No auto-chain.
 
 ## What `/c-brainstorm` doesn't do
 
-- Doesn't write child docs (that's `/c-design`).
+- Doesn't write the design (that's `/c-design`).
 - Doesn't write plans.
 - Doesn't write code.
 - Doesn't decide approval — that's a user gate after `/c-design`.

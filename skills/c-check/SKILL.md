@@ -42,8 +42,8 @@ Adds these additional checks (each as its own sub-agent):
 - Frontmatter completeness (required fields per `frontmatter.required` in config).
 - Folder layout matches design or plan conventions (right files present, right naming, reserved slots correct).
 - Callout vocabulary stays within the approved set (see `skills/_shared/obsidian-format.md`).
-- Plain-English callouts present at every H2 in technical child docs.
-- OOS entries have rationale + wikilink per config.
+- Designs carry no implementation detail (schemas, signatures, file lists, non-mermaid code) and each doc stays within `design.word_target` plus a fifth.
+- OOS entries have rationale + wikilink, per `oos.require_rationale` and `oos.require_wikilink`.
 - All wikilinks resolve.
 
 These duplicate what `/c-design` and `/c-plan` already run in their self-review passes. `--format` is for artifacts coming from outside Cadence or hand-edited after a status flip.

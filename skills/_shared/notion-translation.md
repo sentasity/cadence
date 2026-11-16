@@ -16,23 +16,23 @@ Each semantic callout type maps to one `<callout>` block. Pick icon and backgrou
 
 | Obsidian callout | icon | color |
 |---|---|---|
-| `> [!summary] Plain English` | 💡 | `gray_bg` |
-| `> [!success] Decision` | ✅ | `green_bg` |
+| `> [!summary]` | 💡 | `gray_bg` |
+| `> [!success]` | ✅ | `green_bg` |
 | `> [!warning]` | ⚠️ | `yellow_bg` |
 | `> [!note]` | 📝 | `blue_bg` |
 | `> [!bug] Fix:` | 🐛 | `red_bg` |
-| `> [!todo] Build:` | ☑️ | `purple_bg` |
+| `> [!todo]` | ☑️ | `purple_bg` |
 
 Rules:
 
-- The label after `[!type]` (`Plain English`, `Decision`, `Fix:`, `Build:`, and so on), when present, becomes the callout's first child line in bold (`**Plain English**`). A callout with no label (a bare `> [!warning]`) has no label line.
+- The label after `[!type]` (`Fix:`, a custom title, and so on), when present, becomes the callout's first child line in bold (`**Fix:**`). A callout with no label (a bare `> [!warning]`) has no label line.
 - Every body line (each continuation `>` line) becomes a child line of the callout, indented one literal tab. Multi-line bodies stay inside the one callout; never split them into separate blocks.
 - An unknown `[!type]` with no table entry still becomes a `<callout>`, with a default icon (💬) and no color, never escaped text.
 
 Example. This obsidian callout:
 
 ```
-> [!summary] Plain English
+> [!warning] Ordering
 > The gate lives in the prepare step.
 > Skipped children never reach the DistributedMap.
 ```
@@ -40,8 +40,8 @@ Example. This obsidian callout:
 translates to (each indent is a literal tab):
 
 ```
-<callout icon="💡" color="gray_bg">
-	**Plain English**
+<callout icon="⚠️" color="yellow_bg">
+	**Ordering**
 	The gate lives in the prepare step.
 	Skipped children never reach the DistributedMap.
 </callout>

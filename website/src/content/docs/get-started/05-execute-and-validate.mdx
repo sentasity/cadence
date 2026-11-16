@@ -50,7 +50,7 @@ After you deploy, `/c-validate` walks the plan's validation checklist to confirm
 </Walkthrough>
 
 <Aside type="caution" title="The hello-cadence example has no validation doc">
-The worked example folder contains `00-overview.md`, `00a-plain-english.md`, `01-implementation.md`, and `99-out-of-scope.md`, but no validation file, because the toy feature isn't deployed anywhere. On a real feature, `/c-plan` writes a `96-validation.md` and `/c-validate` walks it. Here, you've still seen the full design → plan → execute → audit shape.
+The worked example's plan contains `00-overview.md`, `01-implementation.md`, `96-validation.md`, and `99-out-of-scope.md`; its validation walk is a reading exercise, because the toy feature isn't deployed anywhere. On a real feature, `/c-plan` writes a `96-validation.md` and `/c-validate` walks it. Here, you've still seen the full design → plan → execute → audit shape.
 </Aside>
 
 ## Did you get it right? Compare to the worked example
@@ -60,18 +60,19 @@ Now the comparison that makes the quickstart worth doing. Open the finished exam
 <Tabs>
   <TabItem label="The known-good folder">
 ```text
-examples/hello-cadence/designs/2026-01-15-hello-cadence/
-├── 00-overview.md          # what, why, approach, decisions log
-├── 00a-plain-english.md    # the narrative tour
-├── 01-implementation.md    # current_time_iso() signature, behavior, one test
-└── 99-out-of-scope.md      # what it deliberately skips
+examples/hello-cadence/
+├── designs/2026-01-15-hello-cadence/
+│   └── 00-overview.md          # the whole design: why, what, examples, decisions
+└── plans/2026-01-15-hello-cadence/
+    ├── 00-overview.md          # goal, file map
+    └── 01-implementation.md    # current_time_iso() and its one test
 ```
   </TabItem>
   <TabItem label="What to check">
     <ul>
-      <li>Your design folder has the same shape: an overview, a plain-English narrative, an implementation child doc, and an out-of-scope doc.</li>
-      <li>Your implementation matches <code>01-implementation.md</code>: a <code>current_time_iso()</code> function returning an ISO-8601 string ending in <code>Z</code>, plus a single shape-asserting test.</li>
-      <li>Your decisions log captured <em>why</em> each choice was made.</li>
+      <li>Your design has the same shape: one document with why, what it does, examples, a numbered decisions list, and out of scope, and no code.</li>
+      <li>Your implementation matches the plan's <code>01-implementation.md</code>: a <code>current_time_iso()</code> function returning an ISO-8601 string ending in <code>Z</code>, plus a single shape-asserting test.</li>
+      <li>Your decisions list captured <em>why</em> each choice was made.</li>
     </ul>
   </TabItem>
 </Tabs>

@@ -11,6 +11,7 @@ const {
   mergeMissing,
   bumpOrInsertVersion,
   relocationsFor,
+  removeRetired,
   main,
 } = require('./migrate-config.js');
 
@@ -802,4 +803,58 @@ test('v9->v10: the real shipped defaults append exactly execute.bundle_words for
   assert.deepStrictEqual(missing.missingBlocks, []);
   assert.deepStrictEqual(missing.missingNested, [{ block: 'execute', key: 'bundle_words' }]);
   assert.match(mergeMissing(projText, defText, missing), /^  bundle_words: 5000/m);
+});
+
+// ---- v10 -> v11 design.word_target added; plain_english, paths.config, naming.slug_case retired ----
+
+test('removeRetired: drops a whole retired block and retired nested keys, nothing else', () => {
+  const proj = [
+    'config_version: 10',
+    'paths:',
+    '  designs: docs/designs',
+    '  config:  .cadence',
+    'naming:',
+    '  date_format: "YYYY-MM-DD"',
+    '  slug_case: kebab',
+    '',
+    'plain_english:',
+    '  section_callout: true',
+    '  always_write_00a: true',
+    '',
+    'oos:',
+    '  require_rationale: true',
+  ].join('\n') + '\n';
+  const { text, removed } = removeRetired(proj);
+  assert.deepStrictEqual(removed, ['plain_english', 'paths.config', 'naming.slug_case']);
+  assert.doesNotMatch(text, /plain_english|section_callout|config:  \.cadence|slug_case/);
+  assert.match(text, /^paths:\n  designs: docs\/designs\nnaming:\n  date_format: "YYYY-MM-DD"\n\noos:\n  require_rationale: true\n$/m);
+});
+
+test('removeRetired: a config without retired keys comes back byte-identical', () => {
+  const proj = 'config_version: 10\npaths:\n  designs: docs/designs\n\n\n\noos:\n  require_rationale: true\n';
+  assert.deepStrictEqual(removeRetired(proj), { text: proj, removed: [] });
+});
+
+test('v10->v11: the real shipped defaults have no retired keys and add design.word_target', () => {
+  const defText = fs.readFileSync(path.join(__dirname, '..', 'defaults', 'config.default.yaml'), 'utf8');
+  assert.deepStrictEqual(removeRetired(defText).removed, []);
+  const projText = defText
+    .replace(/^config_version: \d+/m, 'config_version: 10')
+    .replace(/^design:\n  word_target:.*\n\n/m, '');
+  const missing = detectMissingKeys(projText, defText);
+  assert.deepStrictEqual(missing, { missingBlocks: ['design'], missingNested: [] });
+  assert.match(mergeMissing(projText, defText, missing), /^design:\n  word_target: 1500/m);
+});
+
+test('main: a v10 config loses retired keys, gains design, and the notice says so', () => {
+  const proj = 'config_version: 10\npaths:\n  designs: docs/designs\n  config:  .cadence\nplain_english:\n  always_write_00a: true\n';
+  const { projectDir, pluginRoot } = setupTemp(proj);
+  fs.writeFileSync(path.join(pluginRoot, 'defaults', 'config.default.yaml'),
+    'config_version: 11\npaths:\n  designs: docs/designs\ndesign:\n  word_target: 1500\n');
+  const { logs, warns } = runMain(projectDir, pluginRoot);
+  const after = fs.readFileSync(path.join(projectDir, '.cadence', 'config.yaml'), 'utf8');
+  assert.deepStrictEqual(warns, []);
+  assert.strictEqual(after, 'config_version: 11\npaths:\n  designs: docs/designs\n\ndesign:\n  word_target: 1500\n');
+  assert.match(logs[0], /added design/);
+  assert.match(logs[0], /Removed plain_english, paths\.config, which nothing reads/);
 });

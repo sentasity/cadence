@@ -10,7 +10,7 @@ Source of truth: `skills/c-design/SKILL.md`. For the *why* behind this stage, re
 
 ## Purpose
 
-Takes the `00-overview.md` stub from `/c-brainstorm` and fills out the whole design folder (the child docs, the plain-English narrative, and the out-of-scope list), written for a human to read and approve.
+Takes the `00-overview.md` stub from `/c-brainstorm` and turns it into the design: by default one document (why, what it does in plain English, examples and wording, visuals where needed, one decisions list, and out of scope), written for a human to read and approve.
 
 ## When to use it
 
@@ -18,23 +18,23 @@ Use `/c-design` once you have an approved-shape stub and want the full, reviewab
 
 ## Invocation forms
 
-- `/c-design`: materializes the design folder from the existing `00-overview.md` stub in the current design slug.
+- `/c-design`: writes the design from the existing `00-overview.md` stub in the current design slug.
 
-After confirming the doc index, it asks one question: generate the child docs **all-at-once** (the default, parallel sub-agents), **one-by-one** (write, pause for your review, repeat), or **inline** (the main session writes every doc itself — no sub-agents, no pauses). A concrete `authoring.design_mode` value skips the question.
+When the feature genuinely has separate areas, it offers **topic documents** (`01-…`, `02-…`); only then does it ask how to write them: **all-at-once** (the default, parallel sub-agents plus a consistency sweep), **one-by-one** (write, pause for your review, repeat), or **inline** (the main session writes every doc itself). A concrete `authoring.design_mode` value skips the question.
 
 ## Inputs & preconditions
 
-A `00-overview.md` with `status: draft` and a populated doc index. It refuses to run if the overview is missing, its status is not `draft`, the doc index is empty, or the stub still carries an "Open questions" block (a sign the stub was written too early).
+A `00-overview.md` with `status: draft`. It refuses to run if the overview is missing, its status is not `draft`, or the stub still carries an "Open questions" block (a sign the stub was written too early).
 
 ## What it produces
 
-A full design folder: `00-overview.md`, `00a-plain-english.md`, the numbered child docs (`01-…`, `02-…`), optional `95-visual-contract.md`, `97-infrastructure-inventory.md` and `98-architecture-diagrams.md` when the doc index calls for them, and a `99-out-of-scope.md`. A design that takes the `95` slot also produces the mockup HTML files it indexes. After a self-review pass it flips the overview's status to `in-review`.
+The design in `00-overview.md`, of about `design.word_target` words (default 1,500), with no schemas, signatures, file lists, or code. Opt-in extras: topic documents, `95-visual-contract.md`, `97-infrastructure-inventory.md`, and `98-architecture-diagrams.md`. A design that takes the `95` slot also produces the mockup HTML files it indexes. After a self-review pass it flips the overview's status to `in-review`.
 
 ## The visual contract and mockups
 
 A design with significant user-facing UI/UX work can opt into `95-visual-contract`, a reserved slot that names the surfaces the mockups govern, indexes every mockup version, declares the design system that is the source of truth, and carries the contract prose an implementer follows when code and mockup disagree.
 
-The offer is as-needed, never a default. When the overview describes significant UI/UX work and the doc index lacks the slot, `/c-design` raises it in the same doc-index confirmation that surfaces the `97`/`98` opt-ins; when significance is genuinely unclear it asks. A mostly-backend design with an incidental UI touch is never offered it. A stub that already carries the slot in its doc index counts as the opt-in taken.
+The offer is as-needed, never a default. When the overview describes significant UI/UX work and the doc index lacks the slot, `/c-design` raises it in the opening confirmation, alongside any topic documents; when significance is genuinely unclear it asks. A mostly-backend design with an incidental UI touch is never offered it. A stub that already lists the slot counts as the opt-in taken.
 
 Mockups themselves are **single self-contained HTML files** with no build step: CSS and JS inlined, no CDN, the one sanctioned external channel being a web-font stylesheet with a declared fallback stack. Self-containment is what makes a mockup a durable contract, since an implementer has to open it weeks later, offline, on another machine.
 
@@ -46,14 +46,14 @@ There is no upload, no attachment, and no embedded preview, in Notion mode inclu
 
 ## Gates & guarantees
 
-- A self-review pass (placeholder scan, wikilink integrity, decisions consistency, out-of-scope integrity, open-questions audit) runs before the status flips to `in-review`. A design carrying the `95` slot adds four mockup checks: self-containment, content scope, version-index integrity, and `95` structure.
+- A self-review pass (placeholder scan, no implementation detail, word target, decisions consistency, out-of-scope integrity, open-questions audit, wikilink integrity) runs before the status flips to `in-review`. A design carrying the `95` slot adds four mockup checks: self-containment, content scope, version-index integrity, and `95` structure.
 - Status only advances to `approved` when you say so, never automatically.
 - Approving a design that has a `95` slot stamps the freeze record in the same gesture, so an approved design always names a frozen mockup version. Changing a mockup after that is design drift under the normal drift rules, never a quiet new version.
 - `write_mockup` refuses to overwrite an existing version, so the version history can only ever grow.
-- It never writes or modifies code, never writes plans, and never writes a child doc that isn't in the doc index (it loops back to update the overview first).
+- It never writes or modifies code, never writes plans, and never writes a topic document the overview doesn't list (it adds it to the overview first).
 
 ## Related commands
 
 - **Previous:** [`/c-brainstorm`](/cadence/reference/c-brainstorm/) produced the stub this command expands.
 - **Next:** [`/c-plan`](/cadence/reference/c-plan/) turns the approved design into an exact plan.
-- **Deep dive:** [The Design stage](/cadence/design/) for the artifact, the narrative, and the self-review gate.
+- **Deep dive:** [The Design stage](/cadence/design/) for the artifact, the no-implementation rule, and the self-review gate.
