@@ -67,7 +67,7 @@ When a run doesn't match its Expected line: read the whole error and the code in
 ## Discipline
 
 - **TDD per config.** `plan.tdd: true`: failing test first, run it, then implement. `false`: implement, then run.
-- **One commit per task**, ending with the task's commit step. Never aggregate tasks, never amend, never `--no-verify`. A failing hook: fix the cause, make a new commit.
+- **One commit per task**, ending with the task's commit step, with a `Cadence-Task: N.M` trailer (add `-m "Cadence-Task: N.M"` after the message). The PM resumes a lane at its first task without one. Never aggregate tasks, never amend, never `--no-verify`. A failing hook: fix the cause, make a new commit.
 - **Each task writes only its own `Touches:` files.** A step that needs another file is `BLOCKED` (or `NEEDS_CONTEXT` for a read). `/c-execute` runs lanes side by side on the strength of those lists.
 - **No TODO/FIXME/XXX comments** (Invariant 3). A real deferral is `DONE_WITH_CONCERNS`, and the PM routes it to `99-out-of-scope`.
 - **Never read the whole repo.**

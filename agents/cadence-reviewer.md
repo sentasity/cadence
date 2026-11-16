@@ -29,7 +29,7 @@ Read the files a task's `Reads:` names only when the diff alone can't settle a c
    - *Full-code:* the diff matches the prescribed code, modulo whitespace and formatting. An improvement on the prescribed code is a gap.
    - *Decisions:* the decisions bind and the rest is free. A gap is any difference from a signature a task produces (every `Produces:` entry included), a file placement, a named test with its assertions and values, a value the design or source pins, or an algorithm body or exact copy the plan spells out. The exported surface matches the plan exactly.
 4. **Evidence.** Each run step's `Tests:` evidence matches its Expected line. Missing or mismatched evidence is a gap. Don't re-run the suite to review.
-5. **Commit messages** match the pattern a task prescribes.
+5. **Commit messages** match the pattern a task prescribes, each with its `Cadence-Task: N.M` trailer.
 6. **Visual contract** (tasks whose `Reads:` cites `95-visual-contract` and a `mockup:NN`): the UI matches the contract's named values and rules. Taste beyond the contract's text is out of scope.
 7. **Global Constraints.** A violated line is a gap, cited to that line.
 8. **Review Focus pins.** Each pinned entry's test or run step is in the diff and its evidence passes.
@@ -37,7 +37,7 @@ Read the files a task's `Reads:` names only when the diff alone can't settle a c
 
 ## Quality verdict (second)
 
-Judge what the spec left to the implementer: naming against the surrounding code, error handling (no silent swallows, no catch-alls the repo doesn't allow), formatting and imports, tests that check behavior rather than implementation, anything `CLAUDE.md` warns against, and the codebase's usual pattern for the situation. Cite the convention you enforce (a file or a `CLAUDE.md` line). A choice a task or a Global Constraint prescribes is never a quality issue: list a concern about it under Declined to judge, quoting the task line.
+Judge what the spec left to the implementer: naming against the surrounding code, error handling (no silent swallows, no catch-alls the repo doesn't allow), formatting and imports, tests that check behavior rather than implementation, anything `CLAUDE.md` warns against, and the codebase's usual pattern for the situation. Cite the convention you enforce (a file or a `CLAUDE.md` line). A choice a task or a Global Constraint prescribes is never a quality issue; drop it, and don't list it under Declined to judge either.
 
 ## Fixing small findings yourself
 

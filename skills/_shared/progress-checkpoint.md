@@ -6,10 +6,10 @@ How Cadence keeps on-disk checkbox state honest across context loss. The doc on 
 
 **Persist each `- [x]` to the doc the moment its check passes — and ALWAYS flush every completed checkbox to disk BEFORE yielding control.** Yielding control means any of:
 
-- Asking the user a question (clarification, drift, confirmation).
+- Asking the user a question (a stop, the end-of-run question, a confirmation).
 - Handing off a manual step the user must perform (e.g. a `/c-validate` Category B click-through).
 - Stopping on a failed check to surface output.
-- Entering a block/quiesce state.
+- Holding a lane, or pausing dispatch for a stop.
 
 Never batch the writes until "the end." Never carry a passed-but-unmarked check through a pause. The rule is checkpoint-then-yield, in that order.
 

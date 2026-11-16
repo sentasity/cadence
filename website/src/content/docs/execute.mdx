@@ -12,15 +12,15 @@ Execute is the stage that most needs to earn your trust: it's where the plan bec
 
 ## The PM-and-sub-agent model
 
-When you run `/c-execute`, your own session becomes the **PM**, the project manager. The PM doesn't write code and never reads the whole repository. Instead, for each task in the plan, it dispatches a **fresh sub-agent**: a worker that sees only that one task and the specific files it needs.
+When you run `/c-execute`, your own session becomes the **PM**, the project manager. The PM doesn't write code and never reads the whole repository. Instead, for each bundle of tasks (a **lane**), it dispatches a **fresh sub-agent**: a worker that sees only those tasks and the specific files they name.
 
-<Aside type="note" title="Why fresh workers per task">
-Each worker starts clean, with just its task and the files named in that task. It can't be confused by context from earlier work, and it physically can't wander off and change unrelated parts of the codebase. The PM coordinates; the workers do focused, bounded work.
+<Aside type="note" title="Why fresh workers per lane">
+Each worker starts clean, with just its tasks and the files they name. It can't be confused by context from earlier work, and it physically can't wander off and change unrelated parts of the codebase. The PM coordinates; the workers do focused, bounded work.
 </Aside>
 
 ## Parallel lanes and the touches-conflict guard
 
-The PM reads the plan's dependency information and runs independent work in parallel **lanes**: each phase file becomes a lane running in its own isolated workspace. To keep two parallel lanes from colliding, Cadence uses a **touches-conflict guard**: every task declares exactly which files it writes, and two lanes are allowed to run at the same time only if they touch entirely different files. If they'd overlap, the later one simply waits its turn. It never tries to merge two simultaneous edits to the same file.
+The PM reads the plan's dependency information and runs independent work in parallel **lanes**: bundles of ready tasks, filled up to a word budget, each running in its own isolated workspace. While one lane is being reviewed, the next independent one is already being built. To keep two parallel lanes from colliding, Cadence uses a **touches-conflict guard**: every task declares exactly which files it writes, and two lanes are allowed to run at the same time only if they touch entirely different files. If they'd overlap, the later one simply waits its turn. It never tries to merge two simultaneous edits to the same file.
 
 ## One reviewer, two verdicts
 
@@ -35,21 +35,21 @@ The spec verdict comes first and decides what gets built: a style preference nev
 You don't verify the code by reading it. The reviewer verifies it for you, against the plan you already approved. That's the gate. Your job is to read its plain-English summary of what landed.
 </Aside>
 
-## The three drift response paths
+## Drift doesn't stop the run
 
-If a change starts to drift from the plan (the work doesn't fit, the spec is ambiguous, something contradicts the design), Cadence **stops** and surfaces the problem to you with three choices:
+When work drifts from the plan (a task is ambiguous, the work outgrows its task, something contradicts the design), Cadence doesn't stop and wait. It makes a **ruling**: the reading that best fits the design, a task expanded in place, or a piece marked out of scope with a reason. It writes the ruling into the plan and keeps going. A lane that truly can't finish is **held**, with its work kept, and everything that doesn't depend on it keeps running.
 
-- **Fix**: adjust the task or expand it in place, then continue.
-- **Mark out of scope**: explicitly record that this won't be done now, with a reason.
-- **Abort**: pause the whole run; pick it up later from exactly where it stopped.
+At the end of the run you get **one question** covering every ruling, held lane, and open review item, each with a recommendation. Apply them all, name the few you'd change, or stop and come back later. Nothing the plan already prescribed shows up there.
 
-It never silently picks one. The decision is always yours.
+<Aside type="caution" title="When it does stop">
+Cadence still stops and asks right away before anything destructive (deleting data, rewriting shared history), security-sensitive (credentials, permissions), or outside the workspace (another repository, a deploy, someone else's merge lock).
+</Aside>
 
-The whole loop, from the PM dispatching a task to the change landing (or stopping for you on drift):
+The whole loop, from the PM dispatching a lane to the change landing:
 
 ```mermaid
 flowchart TB
-    pm["PM = your session<br/>(never writes code)"] -->|one task at a time| sub["fresh sub-agent<br/>sees only its task + named files"]
+    pm["PM = your session<br/>(never writes code)"] -->|one lane per worker| sub["fresh sub-agent<br/>sees only its tasks + named files"]
     sub --> change["writes the change"]
     change --> review["reviewer: spec first,<br/>then quality"]
     review -->|small issue| selffix["reviewer fixes it,<br/>re-runs the tests"]
@@ -57,9 +57,9 @@ flowchart TB
     review -->|bigger issue| refix["worker fixes;<br/>reviewer checks only the fix"]
     refix --> review
     review -->|both verdicts approve| land["lands & commits on its own"]
-    land --> drift{"drift from the plan?"}
-    drift -->|no| pm
-    drift -->|yes| stop["STOP and ask you:<br/>fix · mark out of scope · abort"]
+    land --> pm
+    sub -.->|"drift"| ruling["ruling recorded in the plan;<br/>run continues"]
+    ruling -.-> end1["one question for you<br/>at the end of the run"]
 ```
 
 <Aside type="caution" title="What execute never does">

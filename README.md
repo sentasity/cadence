@@ -85,9 +85,9 @@ The two tools coexist. Install both, pick per task. Cadence doesn't deprecate or
 
 Cadence is built for large repos (200k+ LOC, multi-language). The PM stays in your session; fresh sub-agents read only their task blocks + linked files (never the whole repo). Built-in safeguards:
 
-- **Judgment-based plan splitting** — `/c-plan` asks one question; large plans are treated as an upstream scoping failure, not a tunable knob.
-- **`execute.max_parallel`** caps concurrent implementer lanes, one git worktree each (default 4).
-- **Resume protocol**: a long plan can execute across multiple sessions; status `in-progress` is resumable.
+- **One plan per design** — a design always becomes one plan. Phase files group its tasks by topic for readers; how they run is `/c-execute`'s job.
+- **`execute.max_parallel`** caps running implementers (default 4); **`execute.bundle_words`** sizes each lane by word budget (default 5,000).
+- **Resume protocol**: a long plan can execute across multiple sessions; status `in-progress` is resumable, and an interrupted lane picks up at its first uncommitted task.
 - **`NEEDS_CONTEXT` escalation**: when an implementer hits a gap, it asks the PM for specific files; PM fetches and re-dispatches. Prevents the "hallucinate to fill the void" failure mode.
 
 ## License

@@ -17,11 +17,7 @@ Every task in a plan can declare what it depends on, via a `Depends:` line. Task
 
 ## Step two: group ready work into lanes
 
-The unit of parallel work is a **lane**. A lane is one **phase file**. Here "phase" correctly means a subdivision of the plan, the `01-…md`, `02-…md` files that break a big plan into chunks. Each ready phase file becomes one lane, run by one implementer agent.
-
-<Aside type="note" title="One word, two meanings, and this is the right one">
-Across Cadence, the six-step pipeline is made of **stages** (brainstorm, design, plan, execute, audit, validate). "Phase" is reserved for *plan subdivisions*: the numbered phase files inside a single plan. On this page, lanes map to those phase files, so "phase" is being used in its correct, narrow sense.
-</Aside>
+The unit of parallel work is a **lane**: a bundle of ready tasks run by one implementer agent, reviewed once, and merged once. `/c-execute` fills each lane with ready tasks in plan order until it reaches a word budget (`execute.bundle_words`, default 5,000 words of task text), so a lane is big enough to be worth a worktree and a review but small enough that the last task still gets full attention. A lane can take tasks from more than one phase file (the numbered `01-…md`, `02-…md` files a plan is split into).
 
 ## Step three: the touches-conflict guard
 
@@ -29,7 +25,7 @@ Running things in parallel is only safe if they don't step on each other. Each t
 
 > Two lanes run concurrently **only if their `Touches:` file sets are disjoint** (no file in common).
 
-If two ready lanes both want to touch the same file, they don't run together. The later one waits until the first has landed and merged. This **touches-conflict guard** is never overridden and never auto-resolved. If the file sets overlap, the lanes are serialized, full stop. (A conflict that slips through means a `Touches:` list was wrong, and `/c-execute` stops and tells you rather than guessing.)
+If two ready lanes both want to touch the same file, they don't run together. The later one waits until the first has landed and merged. This **touches-conflict guard** is never overridden and never auto-resolved. If the file sets overlap, the lanes are serialized, full stop. (A conflict that slips through means a `Touches:` list was wrong: `/c-execute` holds that lane rather than guessing, keeps the rest of the run going, and lists the held lane for you at the end.)
 
 ## Step four: each lane gets its own worktree
 
@@ -47,7 +43,7 @@ Putting the four steps together: the plan's tasks become a dependency map, the r
 flowchart TB
     plan["Plan tasks<br/>each with Depends: / Touches:"] --> dag{{"dependency DAG:<br/>which tasks are ready now?"}}
     dag --> guard{"ready lanes'<br/>Touches: sets disjoint?"}
-    guard -->|yes| run["run as parallel lanes<br/>≤ execute.max_parallel"]
+    guard -->|yes| run["bundle ready tasks into lanes<br/>(word budget); run ≤ execute.max_parallel"]
     guard -->|"no — files overlap"| wait["serialize:<br/>later lane waits its turn"]
     run --> wt["each lane in its own<br/>git worktree (isolated copy)"]
     wt --> review["lane passes review (spec, then quality)"]
@@ -58,10 +54,10 @@ flowchart TB
 
 ## How many at once, and how they merge
 
-- **Cap.** At most `execute.max_parallel` lanes run concurrently (default **4**). If more work is ready than slots are free, the extra lanes wait their turn.
+- **Cap.** At most `execute.max_parallel` implementers run at once (default **4**). A lane hands back its slot the moment its implementer finishes, so the next independent lane starts while the first is still being reviewed. If more work is ready than slots are free, the extra lanes wait their turn.
 - **Merge.** When a lane finishes and passes review, it's integrated per `worktree.integrate`. The default is **`rebase-ff`**: the lane's branch is rebased onto the current tip and fast-forwarded in, keeping a clean linear history with each task's commits preserved. Repos that forbid history rewriting can set `merge-commit` instead.
 
-A single phase file can even become two or three lanes over a run: if only part of it is ready now, the ready part dispatches immediately and the rest forms a follow-up lane once its blockers clear.
+If a session ends mid-lane, the lane's finished tasks are already committed on its branch. The next `/c-execute` picks the lane up at its first unfinished task instead of starting it over.
 
 <Aside type="caution" title="Opting out">
 Set `execute.parallel: false` in your config and `/c-execute` runs everything sequentially with no worktrees at all. Older plans that predate the `Touches:` format also fall back to sequential automatically.

@@ -2,6 +2,27 @@
 
 All notable changes to Cadence are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 
+## v0.25.0 (2026-11-16)
+
+Runs that don't stop for drift, lanes sized by a word budget, resume at the last committed task, and review that overlaps the next lane's build.
+
+### Changed
+
+- **Rulings instead of stops.** Plan ambiguity, a design contradiction, scope overflow, an oversized task, or a new deferral comment no longer pauses the run with a question. The PM rules (the reading that best fits the design, a task expanded or split, an out-of-scope entry), records the ruling as a Review decisions row, and keeps going. `/c-execute` stops mid-run only before a destructive, security-sensitive, or outside-the-worktree action (a stale merge lock included).
+- **Held lanes, not a frozen run.** A lane that can't finish (fix-round cap, BLOCKED with every route tried, a broad context request, a merge conflict on land) is held with its worktree kept; only its dependents wait.
+- **One grouped question at the end.** The per-row walk is replaced by one question over every pending row, each with a recommendation: apply them all, name overrides, or stop. The table gains a Recommended column. Concerns about behavior the plan prescribes no longer become rows, from the lane reviewer or the branch review.
+- **Lanes by word budget.** A lane is no longer one phase file: ready tasks bundle in plan order, across phase files, up to `execute.bundle_words` words of task text. `/c-plan` drops the lane-driven phase-file sizing rules and its fragmented-file and mixed-topic detectors; phase files are topics for readers.
+- **Pipelined review.** `execute.max_parallel` now caps running implementers. A lane frees its slot when its implementer returns DONE, so the next independent lane is built while the previous one is reviewed.
+
+### Added
+
+- **Resume at the last committed task.** Every task commit carries a `Cadence-Task: N.M` trailer. A lane interrupted by a lost session, BLOCKED, or NEEDS_CONTEXT keeps its committed tasks and continues at the first uncommitted one; resume no longer discards lane branches that hold work.
+- Config schema v10: `execute.bundle_words` (default 5000).
+
+### Why
+
+The savings-engine run asked 22 end-of-run questions, 12 about behavior the plan itself prescribed, and one blocked lane froze all new dispatch. Lanes tied to phase files left bundle size to plan authors, who worked around it by hand.
+
 ## v0.24.0 (2026-11-16)
 
 One reviewer per lane instead of two, a re-review that reads only the fix, and small findings fixed by the reviewer itself.

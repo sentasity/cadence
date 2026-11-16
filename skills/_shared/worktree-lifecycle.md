@@ -73,7 +73,7 @@ Full execution contract (exported env vars, working directory, stdout semantics,
 
 ## Resume and cleanup
 
-- **On resume** (a re-invoked `/c-execute` session): run `git worktree prune`, then remove any leftover `cadence/lane-*` worktrees and branches from a dead session. Their unmerged work is discarded; the affected lanes re-enter the ready set.
+- **On resume** (a re-invoked `/c-execute` session): run `git worktree prune`, then for each leftover `cadence/lane-*` branch keep the task commits it carries (`Cadence-Task:` trailers) and re-open a worktree on it so the lane continues at its first uncommitted task; remove a lane branch with no task commits.
 - **Completion sweep:** before flipping a plan to `implemented`, confirm no `cadence/lane-*` worktrees or branches remain — `git worktree list` shows none and `git branch --list 'cadence/lane-*'` is empty. This is asserted by the `merge-integrity` audit.
 - **Prune scoping (load-bearing):** the resume prune and the completion sweep must NEVER touch a worktree or branch outside the `cadence/lane-*` pattern. Interactive `/c-worktree` worktrees share `<worktree.dir>`; a sibling directory may be a user's live work. Select removal candidates by the `cadence/lane-*` branch name and `lane-<id>` path pattern, never by "everything under `<worktree.dir>`".
 
