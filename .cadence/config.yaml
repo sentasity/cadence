@@ -1,23 +1,25 @@
 # Cadence config for the Cadence plugin source repo (dogfooding).
 # Overrides only what differs from defaults/config.default.yaml.
 
-config_version: 8
+config_version: 12
 paths:
   designs: "/Users/erikloyd/Personal GDrive/Obsidian Notes/cadence/designs"
   plans:   "/Users/erikloyd/Personal GDrive/Obsidian Notes/cadence/plans"
   future:  "/Users/erikloyd/Personal GDrive/Obsidian Notes/cadence/future"
-  config:  .cadence
 
 plan:
   tdd: true
   commit_cadence: per-task
-  parallel_grain: in-file
+  max_code_share: 0.3      # decision plans: most a phase doc's lines may sit in code blocks before /c-plan's self-review fails it
 
 execute:
   max_parallel: 5
   parallel: true           # master switch; false => sequential, no worktrees
   worktree_confirm: true   # one-time pre-flight worktree confirmation
   mode: ask                # ask | parallel | inline (pre-flight execution-mode gate for /c-execute)
+  review_fix_lines: 20     # largest fix (changed lines) the lane reviewer makes itself, Minor findings only
+  fix_rounds: 2            # implementer fix rounds per lane before it is held as blocked
+  bundle_words: 5000       # word budget of task text per lane; ready tasks bundle in plan order up to it
 
 worktree:
   dir: .cadence/worktrees     # canonical home (relocated from execute.worktree_dir)
@@ -37,7 +39,6 @@ advisors:
 
 naming:
   date_format: "YYYY-MM-DD"
-  slug_case: kebab
 
 status:
   design: [draft, in-review, approved, completed, superseded, on-hold]
@@ -69,11 +70,6 @@ audits:
     command: node --test 'scripts/*.test.js'
     expect_zero_exit: true
 
-plain_english:
-  section_callout: true
-  always_write_00a: true
-  length_target: "400-700"
-
 oos:
   require_rationale: true
   require_wikilink: true
@@ -103,3 +99,6 @@ mockups:
   #                                    answer here (config.local.yaml is the usual home,
   #                                    since the path is machine-specific).
   dir: null
+
+design:
+  word_target: 1500        # words per design document; /c-design trims, then splits into topic docs, past it

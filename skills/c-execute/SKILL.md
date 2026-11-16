@@ -25,7 +25,7 @@ Before scheduling, detect the plan format per-plan:
 1. Resolve config by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` and use its JSON `config` for every `execute.*` and `worktree.*` read this run; follow the notice/gitignore/hard-stop contract in `skills/_shared/config-resolution.md`; never read config files directly.
 2. Path resolves to a plan folder with `00-overview.md`.
 3. Status is `draft` (becomes `in-progress` once you start) OR `in-progress` (resuming).
-4. Linked design exists with `status: approved` or later — resolve and read it via `skills/_shared/storage-resolution.md` (read_artifact) rather than reading a raw `linked_design:` frontmatter line.
+4. The plan's basis exists: a linked design at `status: approved` or later, resolved and read via `skills/_shared/storage-resolution.md` (read_artifact) rather than a raw `linked_design:` line; or, for a plan written with `/c-plan --from`, every file on the overview's `**Source:**` line. Below, "the design" means whichever the plan has.
 5. Plan style is valid: the plan overview's `**Plan style:**` line is absent (meaning `full-code`) or reads `full-code` or `decisions`. Any other value is a malformed plan: stop and surface it here, before the execution-mode gate and before any status or `base_sha` write.
 6. Working tree is clean (no unstaged or uncommitted changes).
 7. Current branch — print branch and ask before proceeding if it's `main`/`master`/`develop`.
@@ -225,7 +225,7 @@ Once every task is ticked:
 
 1. Verify every step `- [x]` and each task's commit is in `git log`.
 2. **Worktree-cleanup sweep:** confirm `git worktree list` shows no `cadence/lane-*` worktree and `git branch --list 'cadence/lane-*'` is empty. Remove leftovers with `git worktree remove <path>` and `git branch -d <branch>`, never `--force` or `-D`: a leftover lane that still holds work is a defect, and deleting it silently hides it. If either refuses, show the user `git -C <path> status --porcelain -uall` or `git log --oneline HEAD..<branch>` and ask whether to keep, commit, or discard that work.
-3. Dispatch `cadence-completion-auditor` **directly** via the `Task` tool, with the same parameters `/c-audit` passes: plan path, linked design (from `linked_design:`), resolved config JSON, diff range (`git diff <base_sha>..HEAD`), mode `gating`, the plan slug (the auditor exports Notion plans with `scripts/notion-read.js`), and the Review decisions table when there is one. Never route through the `/c-audit` skill; the audit logic lives in the agent.
+3. Dispatch `cadence-completion-auditor` **directly** via the `Task` tool, with the same parameters `/c-audit` passes: plan path, linked design (from `linked_design:`) or the source paths, resolved config JSON, diff range (`git diff <base_sha>..HEAD`), mode `gating`, the plan slug (the auditor exports Notion plans with `scripts/notion-read.js`), and the Review decisions table when there is one. Never route through the `/c-audit` skill; the audit logic lives in the agent.
 4. Read the report.
 
 | Auditor result | `/c-execute` response |

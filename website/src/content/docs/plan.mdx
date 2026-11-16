@@ -8,7 +8,7 @@ sidebar:
 import { Aside } from '@astrojs/starlight/components';
 import Quiz from '../../components/Quiz.astro';
 
-Plan is the quiet, technical stage between the design you approved and the code that gets built. `/c-plan` takes your approved design and writes a **plan folder**, and a plan is a very different kind of document from a design.
+Plan is the quiet, technical stage between the design you approved and the code that gets built. `/c-plan` takes your approved design (or any other source you point it at) and writes a **plan folder**, and a plan is a very different kind of document from a design.
 
 ## Exact paths, exact steps, no narrative
 
@@ -18,9 +18,9 @@ A design explains *why*. A plan states *what and in what order*, and nothing els
 The plan is for the machine. You'll skim it to confirm it covers what the design promised, but the document you truly review and approve is the *design*. The plan is downstream of an approval you already gave.
 </Aside>
 
-## Two plan styles: full code or decisions
+## Two plan styles: decisions or full code
 
-`plan.style` picks what a plan's steps contain. A **full-code** plan (the default) writes out the code for every step, and the implementing agent puts it in place. A **decision** plan writes down only what the agent can't work out alone (which file, each function's exact name, inputs, and return type, which tests prove it and what they check, and the exact values the design fixes) and lets the agent write the code. Decision plans should be much shorter and cheaper to write, and they keep the planner from building the whole feature while it plans.
+`plan.style` picks what a plan's steps contain. A **decision** plan (the default) writes down only what the agent can't work out alone (which file, each function's exact name, inputs, and return type, which tests prove it and what they check, and the exact values the design fixes) and lets the agent write the code. A **full-code** plan writes out the code for every step, and the agent puts it in place. Decision plans are much shorter and cheaper to write, and they keep the planner from building the whole feature while it plans.
 
 A decision-plan task looks like this:
 
@@ -42,7 +42,7 @@ A decision-plan task looks like this:
   `pytest tests/config/test_retry.py -v` → Expected: FAIL, `ImportError: cannot import name 'retry_budget'`
 
 - [ ] **Step 3: Implement `retry_budget(cfg: dict) -> RetryBudget` and the `RetryBudget` dataclass in `src/config/retry.py`**
-  Defaults 3 and 0.5 come from the design's retry section.
+  Defaults 3 and 0.5 (design D4).
 
 - [ ] **Step 4: Run, expect PASS**
   `pytest tests/config/test_retry.py -v` → Expected: 2 passed
@@ -53,9 +53,13 @@ A decision-plan task looks like this:
 
 Every plan, of either style, also carries two short sections: **Global Constraints** (rules every task must follow, like a minimum runtime version or "no new dependencies") and **Review Focus** (up to five risky inputs the design implies but no test covers, each with a check added to the task that owns the code).
 
-<Aside type="note" title="Decision plans are opt-in for now">
-The default stays `full-code` until a head-to-head trial shows decision plans are at least a third cheaper to write and no worse in the results. Each plan records its own style, so switching the setting never changes a plan you've already written.
+<Aside type="note" title="Kept short on purpose">
+A decision plan that starts carrying whole function bodies is turning back into a full-code plan. `/c-plan`'s self-review fails any phase doc with more than `plan.max_code_share` (default 30%) of its lines in code blocks and cuts it back to signatures and test assertions. Each plan records its own style, so switching the setting never changes a plan you've already written.
 </Aside>
+
+## Planning from any source
+
+You don't need a Cadence design to get a plan. `/c-plan --from <file or folder>` plans from whatever you have: hand notes, a spec, or HTML mockups plus a list of decisions. Instead of requiring an approved design, it runs a light **intake check**: does the source state the goal, the decisions made, the behavior (or show it in mockups), and its open questions? Anything missing, and every open question, comes back to you as one grouped question before it plans. The plan records its source files where it would otherwise link a design, and execute, audit, and validate work from those.
 
 ## One design becomes one plan
 

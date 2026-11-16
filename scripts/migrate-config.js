@@ -251,7 +251,7 @@ const NEVER_INSERT = new Set(['plan.style']);
  * config (a whole top-level block, or one direct-child key and any lines
  * nested under it) so a dead setting never looks like it does something.
  */
-const RETIRED = ['plain_english', 'paths.config', 'naming.slug_case'];
+const RETIRED = ['plain_english', 'paths.config', 'naming.slug_case', 'plan.parallel_grain'];
 
 /**
  * Remove RETIRED blocks and keys from `text`. Returns the new text and the

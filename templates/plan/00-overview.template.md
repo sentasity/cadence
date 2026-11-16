@@ -4,7 +4,7 @@ created: <ISO_DATE>
 updated: <ISO_DATE>
 status: draft
 tags: [plan]
-linked_design: <YYYY-MM-DD-SLUG>
+linked_design: <YYYY-MM-DD-SLUG>   # null for a /c-plan --from plan
 base_sha: null
 ---
 
@@ -18,13 +18,18 @@ base_sha: null
 
 **Tech Stack:** <One line — key technologies.>
 
-**Plan style:** <full-code | decisions>
+**Plan style:** <decisions | full-code>
 
 **Design:** [[../../designs/<YYYY-MM-DD-SLUG>/00-overview]]
+<or, for a /c-plan --from plan:>
+**Source:** `<absolute path of each source file>`
+
+<## Intake answers — /c-plan --from only, when the intake check asked anything:
+- <question> → <the user's answer>>
 
 ## Global Constraints
 
-- <One rule that binds every task, with its exact value.> (<source: design D<n> | CLAUDE.md | manifest>)
+- <One rule that binds every task, with its exact value.> (<source: design D<n> | source <file> | CLAUDE.md | manifest>)
 
 ## Review Focus
 

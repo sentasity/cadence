@@ -23,7 +23,7 @@ Your session is the manager. For each task in the plan, Cadence dispatches a fre
   <Fragment slot="step-1-title">Run /c-execute with the plan path</Fragment>
   <Fragment slot="step-1-body">`/c-execute docs/plans/2026-01-15-hello-cadence`. Cadence checks the working tree is clean and confirms before it begins.</Fragment>
   <Fragment slot="step-2-title">Watch tasks land, each one reviewed</Fragment>
-  <Fragment slot="step-2-body">Each task runs in isolation, gets one review (spec first, then code quality), and commits on its own. You see plain-English summaries of what landed, not diffs.</Fragment>
+  <Fragment slot="step-2-body">Tasks run in isolated lanes, each lane gets one review (spec first, then code quality), and commits on its own. You see plain-English summaries of what landed, not diffs.</Fragment>
   <Fragment slot="step-3-title">Trust the gates, not the code</Fragment>
   <Fragment slot="step-3-body">If something drifts from the plan, Cadence makes a ruling, records it, and keeps going; at the end it asks you one question covering every ruling and open item, each with its recommendation. It stops mid-run only before something destructive, security-sensitive, or outside the workspace. It never works around a problem silently, never auto-deploys, and never skips safety checks.</Fragment>
 </Walkthrough>
