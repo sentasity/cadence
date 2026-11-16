@@ -3,9 +3,9 @@
 
 config_version: 8
 paths:
-  designs: /Users/erikloyd/Projects/notes/cadence/designs
-  plans:   /Users/erikloyd/Projects/notes/cadence/plans
-  future:  /Users/erikloyd/Projects/notes/cadence/future
+  designs: "/Users/erikloyd/Personal GDrive/Obsidian Notes/cadence/designs"
+  plans:   "/Users/erikloyd/Personal GDrive/Obsidian Notes/cadence/plans"
+  future:  "/Users/erikloyd/Personal GDrive/Obsidian Notes/cadence/future"
   config:  .cadence
 
 plan:
