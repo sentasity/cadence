@@ -5,113 +5,100 @@ description: Use when a Cadence design stub (00-overview.md from /c-brainstorm) 
 
 # `/c-design`
 
-You materialize a design folder from the `00-overview.md` stub. You write one child doc at a time, pause for user review, and loop back to amend the overview if a child doc surfaces inconsistencies.
+You turn the `00-overview` stub into the design: by default **one document**, for a person who decides what gets built and won't read code. It says why, what the feature does, and what was decided. How it gets built is the plan's job.
 
 ## Entry contract
 
-**Requires:** the design artifact for `{yyyy-mm-dd-slug}` exists — check via `skills/_shared/storage-resolution.md` (artifact_exists) — and its `00-overview`, read via read_artifact, carries `status: draft` and a populated Doc index; do not assume a `<paths.designs>/…/00-overview.md` file path.
+**Requires:** the design artifact for `{yyyy-mm-dd-slug}` exists — check via `skills/_shared/storage-resolution.md` (artifact_exists) — and its `00-overview`, read via read_artifact, carries `status: draft`; do not assume a `<paths.designs>/…/00-overview.md` file path.
 
-**Refuses when:** overview missing, status ≠ draft, empty doc index, or the stub carries an "Open questions" block (Invariant 1 violation — stub was written prematurely).
+**Refuses when:** the overview is missing, status ≠ draft, or the stub carries an "Open questions" block (Invariant 1 violation: the stub was written prematurely).
 
-## Folder layout (every design)
+## The design document (`00-overview`)
 
-```
-<paths.designs>/
-  {yyyy-mm-dd-slug}/
-    00-overview.md
-    00a-plain-english.md
-    01-<topic>.md, 02-…
-    95-visual-contract.md            # opt-in
-    mockups/01-<slug>.html, 02-…     # with 95; default location, see mockups.dir
-    97-infrastructure-inventory.md   # opt-in
-    98-architecture-diagrams.md      # opt-in
-    99-out-of-scope.md
-```
+Sections, in order:
 
-Reserved slots: 00-overview, 00a-plain-english, 95-visual-contract, 97-infrastructure-inventory, 98-architecture-diagrams, 99-out-of-scope. Refuse to scaffold conflicting names (a conflicting `95-*` name included). Each slot is materialized per `skills/_shared/storage-resolution.md` (write_doc), which the layer maps to a `<slot>.md` file on the filesystem backend and to a titled sub-page on the notion backend; the folder layout above is the filesystem view only.
+1. **Why** — the problem and who has it, in a few sentences.
+2. **What it does** — the behavior in plain English, from the point of view of whoever the feature serves (a person in a UI, an API caller, an operator): the normal path, what they see, what happens when things go wrong.
+3. **Examples and wording** — concrete inputs and outcomes, and the exact user-facing copy (labels, messages, errors) where wording matters.
+4. **Visuals** — only where a picture decides something: a mermaid flow or state diagram inline, or the `95-visual-contract` slot for significant UI (see below).
+5. **Decisions** — one numbered list, each entry `D<n> — <the decision>. Why: <rationale>.` IDs never change; plans cite them as `(design D3)`.
+6. **Out of scope** — each entry: what is cut, why, and the decision or section where it surfaced (`D<n>`, or a link to the section). No speculative entries.
+
+**The rule: no implementation in a design.** No schemas, signatures, file or module lists, or code blocks (mermaid excepted). Name things the way a user or operator would. A value the design must pin (a limit, a timeout, a price) is stated as behavior: "a key is rejected after 3 failed attempts", not a constant's name.
+
+**Word target:** `design.word_target` per document (default 1500). It is a target for the writer, not a cap for the reader: a design over it by more than a fifth gets cut back first (plan content is the usual excess), and only then split into topic documents.
+
+**Topic documents are opt-in.** When the feature genuinely has separate areas that each need their own behavior and examples, offer topic documents (`01-<topic>`, `02-…`) in the step 1 confirmation. Each follows the same rules and word target; the overview keeps Why, the Decisions list, and Out of scope for the whole design and lists the topic documents under a `## Docs` section. `97-infrastructure-inventory` (services and resources this touches, one line each) and `98-architecture-diagrams` (dense mermaid) are opt-in topic documents too.
+
+Reserved slots: `00-overview`, `95-visual-contract`, `97-infrastructure-inventory`, `98-architecture-diagrams`. Refuse to scaffold a conflicting name. Each slot is written per `skills/_shared/storage-resolution.md` (write_doc): a `<slot>.md` file on the filesystem backend, a titled sub-page on notion. Designs written before v0.27 may also carry `00a-plain-english` and `99-out-of-scope`; read them as part of the design, never create them.
 
 ## Frontmatter
 
-See `skills/_shared/frontmatter.md`. Design overview carries lifecycle; child docs carry only `title:`.
+See `skills/_shared/frontmatter.md`. The overview carries lifecycle; topic documents carry only `title:`.
 
 ## Writing flow
 
-1. **Read the stub** via `skills/_shared/storage-resolution.md` (read_artifact). List the proposed doc index. When the overview describes significant user-facing UI/UX work and the doc index lacks `95-visual-contract`, offer the slot in the same confirmation (see Visual contract and mockups); when significance is genuinely unclear, ask; a mostly-backend design with an incidental UI touch gets no offer. Confirm with user: *"Write `00a-plain-english.md` next, then `01-<x>`, `02-<y>`. Sound right?"* Then ask the generation-mode question (see Generation mode). Config values (`authoring.*`) come from running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (contract in `skills/_shared/config-resolution.md`; never read config files directly).
-2. **Write child docs per chosen mode.** Each doc is written to its reserved slot per `skills/_shared/storage-resolution.md` (write_doc); do not open or path-compute a `<paths.designs>/…/<slot>.md` file.
-   - **All-at-once:** dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`). Every generator prompt names the resolved storage backend and the matching syntax reference: `skills/_shared/obsidian-format.md` always, **plus `skills/_shared/notion-translation.md` when the backend is notion** (so generators author callouts as native `<callout>` blocks, not obsidian syntax). After all complete, dispatch `cadence-doc-consistency` once over the set for a consistency sweep (see Generation mode). Then generate `00a-plain-english.md` last.
-   - **One-by-one:** write one child doc, then proceed to step 3.
-   - **Inline:** the main session writes every technical child doc itself, sequentially, via write_doc — no generator sub-agents, no per-doc pause, no `cadence-doc-consistency` sweep (a single author holds the whole context; Invariant 2 still applies in full). Then generate `00a-plain-english.md` last and continue at step 8.
-3. **Pause after each doc (one-by-one mode only).** *"`<filename>` written. Review and tell me to continue, revise, or stop."* Never auto-write the next file in this mode. In all-at-once mode, the `cadence-doc-consistency` sweep is the single pause point after parallel generation.
-4. **Invariant 2 — consistency re-litigation.** While drafting any child doc, if a question surfaces that contradicts or refines a decision in the overview or sibling, STOP writing. Surface the conflict. Ask the user to resolve. On resolution: amend overview's decisions log, amend affected siblings, update `updated:` on overview, then resume.
-5. **OOS additions during design.** Any decision-not-to-do lands in `99-out-of-scope.md` immediately with rationale + wikilink. Never deferred.
-6. **`00a-plain-english.md` is written last.** Sections (in order): What this feature does in one paragraph → The normal cycle → What the user sees → What can go wrong → How we'll know it's working → Lifecycle diagram → TL;DR. Length target: 400-700 lines for complex designs.
-7. **97 / 98.** Filled when the doc index includes them. 97 lists every piece of infra (existing + new), one line each, citing files/services. 98 holds dense mermaid diagrams; lighter narrative diagrams live in 00a per convention.
-8. **Resolve cross-references.** After every doc in the artifact exists, call `skills/_shared/storage-resolution.md` (resolve_links) once over the artifact to turn `[[…]]` wikilinks into Notion page mentions. Backend-neutral: a no-op on the filesystem backend, the mention second pass on notion (see `skills/_shared/notion-translation.md`).
-9. **Self-review pass** (see below). Read the written docs back via `skills/_shared/storage-resolution.md` (read_artifact) and run a final pass over the whole artifact.
-10. **Flip status to `in-review`** per `skills/_shared/storage-resolution.md` (set_status), which also bumps `updated:`. Print: *"Design ready for review. Walk through it and tell me when to mark it `approved`."*
-11. **Status `approved`.** User-driven only. User says "approved" → flip status per `skills/_shared/storage-resolution.md` (set_status); when the design has a `95-visual-contract` slot, rewrite its freeze record from `frozen: none` to `frozen: NN` (the latest version) via write_doc in the same moment: an approved design with a 95 slot always names a frozen version, the invariant `/c-plan` relies on. Post-approval mockup changes are design drift under the existing drift rules, never a silent new version. Then print: *"Run `/c-plan` to write the implementation plan."*
+1. **Read the stub** via read_artifact. Resolve config by running `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-config.js"` (`design.word_target`, `authoring.*`; contract in `skills/_shared/config-resolution.md`; never read config files directly). Confirm the shape in one exchange: *"One design document, ~`<word_target>` words."* Offer topic documents only when the stub's scope calls for them, and offer `95-visual-contract` when the feature has significant user-facing UI (see Visual contract and mockups); a mostly-backend design with an incidental UI touch gets no offer.
+2. **Write.** One document: write it yourself, inline. With topic documents, resolve `authoring.design_mode` (see Generation mode).
+3. **Invariant 2 — consistency.** If a question surfaces that contradicts or refines a decision, STOP writing, surface the conflict, and ask the user. On resolution, amend the Decisions list and every section it touches, then resume.
+4. **Out of scope immediately.** A decision not to do something lands in Out of scope the moment it's made, with its rationale and link.
+5. **Resolve cross-references.** Once every document exists, call `skills/_shared/storage-resolution.md` (resolve_links) once over the artifact: a no-op on the filesystem backend, the mention second pass on notion (see `skills/_shared/notion-translation.md`).
+6. **Self-review** (below), over the design read back via read_artifact.
+7. **Flip status to `in-review`** per `skills/_shared/storage-resolution.md` (set_status), which bumps `updated:`. Print: *"Design ready for review. Walk through it and tell me when to mark it `approved`."*
+8. **Status `approved`** is user-driven only. On "approved", flip status (set_status); when the design has a `95-visual-contract` slot, rewrite its freeze record from `frozen: none` to `frozen: NN` (the latest version) via write_doc in the same moment, the invariant `/c-plan` relies on. Post-approval mockup changes are design drift, never a silent new version. Print: *"Run `/c-plan` to write the implementation plan."*
+
+## Generation mode (topic documents only)
+
+With no topic documents there is nothing to choose: you write the one document. With topic documents, resolve `authoring.design_mode`; a concrete value is used without asking, and `ask` asks via `AskUserQuestion` (default `(Recommended)` = all-at-once):
+
+- **All-at-once:** you write the overview, then dispatch one generator agent per topic document in parallel (up to `authoring.max_parallel`), each prompt naming the storage backend, its syntax reference (`skills/_shared/obsidian-format.md`, plus `skills/_shared/notion-translation.md` on notion), these rules, and the word target. Then dispatch `cadence-doc-consistency` once over the set; it reconciles trivial wording and surfaces contradictions via `AskUserQuestion`.
+- **One-by-one:** write one document, pause (*"`<doc>` written. Review and tell me to continue, revise, or stop."*), loop.
+- **Inline:** you write every document in turn, no pauses, no sweep.
 
 ## Visual contract and mockups (the 95 slot)
 
-`95-visual-contract` is an opt-in reserved slot for designs with significant user-facing UI/UX work: it declares the governed surfaces, indexes every mockup version, and carries the visual contract prose. Mockups are single self-contained HTML files with no build step (CSS/JS inlined; the only sanctioned external channel is a web-font stylesheet with a declared fallback stack), authored at the surface's expected final width, stored via `skills/_shared/storage-resolution.md` (write_mockup) and read back via read_mockup. Self-containment is what makes a mockup a durable contract: it has to render the same when an implementer opens it weeks later, offline, on another machine, long after any CDN has moved on.
+`95-visual-contract` is opt-in for designs with significant user-facing UI: it declares the governed surfaces, indexes every mockup version, and carries the visual contract. Mockups are single self-contained HTML files with no build step (CSS/JS inlined; the only allowed external resource is a web-font stylesheet with a fallback stack), authored at the surface's final width, stored via `skills/_shared/storage-resolution.md` (write_mockup) and read back via read_mockup. Self-containment is what makes a mockup a durable contract: it must render the same weeks later, offline, on another machine.
 
-Mockups are **local files on every storage backend**, including notion. There is no upload, no attachment, and no embedded preview; the 95 version index records each version's `file://` URL, and the reviewer opens it in a real browser. Where the files land is `mockups.dir` (see `skills/_shared/storage-resolution.md` § Mockup directory resolution): on the filesystem backend it defaults to the design's own `mockups/` subfolder, and on the notion backend, where there is no design folder, `/c-design` asks once before authoring version `01` and offers to persist the answer to `.cadence/config.local.yaml`.
+Mockups are **local files on every backend**, notion included: no upload, no embed. The 95 version index records each version's `file://` URL. Where files land is `mockups.dir` (`skills/_shared/storage-resolution.md` § Mockup directory resolution): the design's `mockups/` subfolder by default on the filesystem backend; on notion `/c-design` asks once before version `01` and offers to save the answer to `.cadence/config.local.yaml`.
 
-**Opt-in trigger.** As-needed, never default. During writing-flow step 1, when the overview describes significant user-facing UI/UX work and the doc index lacks `95-visual-contract`, offer it in the doc-index confirmation, the same way 97/98 opt-ins surface. Significance is the bar: a mostly-backend design with an incidental UI touch gets no offer; when the call is genuinely unclear, ask the user rather than deciding either way. A yes adds `[[95-visual-contract]]` to the doc index; a no leaves the design mockup-free with no further prompts. A brainstorm stub arriving with the slot already in its doc index counts as the opt-in taken.
+A brainstorm stub that already lists `95-visual-contract` counts as the opt-in taken; a no leaves the design mockup-free with no further prompts.
 
-**Iteration loop** (runs alongside doc writing; conversational, not gated; the 95 doc itself is written via write_doc like any slot):
+**Iteration loop** (alongside writing; the 95 doc itself goes through write_doc):
 
-1. **Author a version.** Write the HTML (self-contained, mockup content only — no rationale, decisions, vocabulary, or open-questions sections) and store it via write_mockup as the next `NN` (zero-padded, starting `01`). Version `01` may adopt a brainstorm-phase sketch (see Brainstorm boundary).
-2. **Add the index row.** Record the version in 95's version index: date, what changed, what drove it, and the version's `file://` URL. Same on both backends.
-3. **Present for feedback.** Point the user at the file, by path and by `file://` URL, so they can open it in a browser. Note that a browser will refuse to follow a `file://` link clicked from a web page (Notion's included), so the URL is there to be copied when clicking does nothing.
-4. **Iterate or settle.** Substantive feedback produces a new `NN` (append-only: a version shown to a reviewer is never edited in place). Visual agreements land in 95's contract sections; decisions with rationale land in the overview's decisions log.
+1. **Author a version** — mockup content only, no rationale or decisions — and store it via write_mockup as the next `NN` (zero-padded from `01`). Version `01` may adopt a brainstorm sketch: brainstorming stays artifact-free, and `/c-design` is the only skill that calls write_mockup.
+2. **Add the index row:** date, what changed, what drove it, and the `file://` URL.
+3. **Present it** by path and `file://` URL (a browser won't follow a `file://` link clicked from a web page, Notion's included, so the URL is there to copy).
+4. **Iterate or settle.** Feedback makes a new `NN` (append-only: a version shown to a reviewer is never edited). Visual agreements go in 95's contract sections; decisions go in the Decisions list.
 
-**Design-system detection.** Before authoring version `01`, resolve 95's source-of-truth declaration. Detect candidates: design token files, a Tailwind config, CSS custom-property sheets, a shared component library (grep-and-look heuristics, not a fixed manifest). One candidate: use it and author the mockup against its tokens. Ambiguous or none found: ask via `AskUserQuestion` (options: each candidate found, or `none`); with `none`, the mockup's own concrete values become the contract and 95's table names only the load-bearing ones.
+**Design-system detection.** Before version `01`, look for design token files, a Tailwind config, CSS custom-property sheets, or a shared component library. One candidate: author against its tokens. Several or none: ask via `AskUserQuestion` (each candidate, or `none`); with `none`, the mockup's own values become the contract and 95 names only the load-bearing ones.
 
-**Brainstorm boundary.** `/c-brainstorm` stays artifact-free: a sketch produced during brainstorming is scratch (untracked, unnumbered) until this skill adopts it as version `01` via write_mockup. `/c-design` is the only skill that calls write_mockup.
+## Callouts and readability
 
-## Generation mode
-
-After confirming the doc index, resolve `authoring.design_mode`; when it names a concrete mode (`all-at-once`, `one-by-one`, `inline`) use it without asking. When it is `ask`, ask via `AskUserQuestion` (default `(Recommended)` = all-at-once):
-
-- **All-at-once** (default): dispatch one fresh generator agent per technical child doc in parallel (up to `authoring.max_parallel`), each prompt carrying the resolved storage backend and its syntax reference (see step 2), then dispatch `cadence-doc-consistency` once over the set. The sweep reconciles trivial wording and surfaces substantive contradictions via `AskUserQuestion`. Then generate `00a-plain-english.md` last (from the settled docs). No per-doc pause; the sweep is the single consistency gate.
-- **One-by-one**: today's behavior — write one child doc, pause for review, loop; Invariant 2 re-litigation runs incrementally.
-- **Inline** (label: "Inline, no sub-agents"): the main session writes every doc itself, one after another, with no per-doc pause and no consistency sweep — one author holds the whole context. Slowest wall-clock of the three when docs are many; strongest cross-doc consistency for coupled doc sets.
-
-`00a-plain-english.md` is generated last in both modes.
-
-## Callout conventions
-
-See `skills/_shared/obsidian-format.md` for the full set **and the backend rule**. Semantic set: `[!summary] Plain English` (per H2), `[!success] Decision`, `[!warning]`, `[!note]`, `[!bug] Fix:`, `[!todo] Build:`. Syntax is backend-specific: `> [!type]` obsidian form on the filesystem backend; native `<callout>` blocks per `skills/_shared/notion-translation.md` on the notion backend — never author `> [!type]` in content bound for Notion. No invented callouts. No `[!info]` flooding.
-
-Beyond callouts, generators should reach for the readability constructs (equation blocks for multi-term formulas, inline mermaid for flows/algorithms, collapsible detail for long support material, TOC on long docs) per `skills/_shared/obsidian-format.md` § Readability constructs — judgment-based, never decorative.
+The callout set and backend rule are in `skills/_shared/obsidian-format.md`; on notion, author native `<callout>` blocks per `skills/_shared/notion-translation.md`, never `> [!type]`. Reach for a mermaid diagram, equation block, or collapsible detail only when it says something more clearly than prose (§ Readability constructs).
 
 ## Self-review pass (before flipping to in-review)
 
-1. **Placeholder scan** — no `TBD`, `TODO`, `(fill in)`, empty H2s, `TBC` anywhere.
-2. **Wikilink integrity** — every `[[…]]` resolves.
-3. **Decisions consistency** — every overview decisions-log entry is reflected in dependent children; no contradictions.
-4. **OOS integrity** — every 99-OOS entry has rationale + wikilink.
-5. **Invariant 1 audit** — no callouts that read like open questions ("should we…", "we might…", "TBD"). Sharpen wording if ambiguous.
-6. **Ambiguity check** — could any decision be read two ways? Sharpen inline.
-6a. **Readability-construct check** — scan for prose doing a construct's job: a multi-term formula or conditional definition written as a run-on sentence (should be an equation block), a flow/algorithm/state machine narrated step-by-step (should be a mermaid diagram), a long edge-case matrix or rejected-alternatives dump inline in the narrative (should be collapsible detail). Convert per `skills/_shared/obsidian-format.md` § Readability constructs — judgment-based, no decoration.
-7. **Callout-form check (notion backend only)** — scan the read-back for escaped callout remnants (`\[!` or a quote block starting `> [!`): either means a callout reached Notion in obsidian syntax and rendered as literal text. Rewrite that callout as a native `<callout>` block per `skills/_shared/notion-translation.md`.
-8. **Mockup self-containment scan (95 designs only)** — the current mockup HTML has no external `script src` reference, no external image reference, and no external stylesheet other than a web-font link with a declared fallback stack. Rewrite violations by inlining: a CDN-loaded CSS framework is the common case, and the fix is to build the framework's purged stylesheet once and paste it into a `<style>` block. A mockup that still depends on the network is not a contract, because it renders differently the day the dependency changes.
-9. **Mockup content-scope check (95 designs only)** — no decided/vocabulary/explorations/open-questions sections inside the HTML.
-10. **Version-index integrity (95 designs only)** — every `NN` file in the mockup directory has an index row, and every index row names a file that exists on this machine with a `file://` URL that matches its path; rows are append-only ordered.
-11. **95 structure check (95 designs only)** — the 95 doc carries every required section in order: Surfaces (≥1 entry), Source of truth, Version index, Freeze record line, then the contract sections (Layout anchors, Control choices, Interaction idioms, Default states).
+1. **Placeholder scan** — no `TBD`, `TODO`, `(fill in)`, `TBC`, or empty sections.
+2. **No implementation** — no schemas, signatures, file or module paths, or non-mermaid code blocks. Move anything found to the decision it supports, stated as behavior, or drop it (the plan will decide it).
+3. **Word target** — each document within `design.word_target` plus a fifth; trim, then split, as above.
+4. **Decisions** — every decision is in the one Decisions list with a rationale, and every section agrees with it.
+5. **Out of scope** — every entry has a rationale and a link to where it surfaced.
+6. **Invariant 1** — nothing reads like an open question ("should we…", "we might…").
+7. **Ambiguity** — no decision or behavior can be read two ways.
+8. **Wikilinks** resolve.
+9. **Callout form (notion only)** — no escaped callout remnants (`\[!` or a quote starting `> [!`) in the read-back; rewrite as `<callout>` blocks.
+10. **95 designs only:** the current mockup has no external script, image, or stylesheet beyond a web font with a fallback stack (inline a CDN framework's purged CSS); no rationale or decision sections inside the HTML; every `NN` file has an index row and every row names an existing file with a matching `file://` URL, in order; the 95 doc has Surfaces (≥1), Source of truth, Version index, the Freeze record line, then Layout anchors, Control choices, Interaction idioms, and Default states.
 
 Fix inline. No re-review needed.
 
 ## What `/c-design` doesn't do
 
-- Doesn't write or modify code.
-- Doesn't write plans.
-- Doesn't decide approval — user gates that.
-- Doesn't auto-promote drafts. Every status transition explicit.
-- Doesn't write child docs that aren't in the doc index — if missing topic discovered, loop back to update the overview first.
+- Doesn't write code or plans.
+- Doesn't decide approval; the user does.
+- Doesn't auto-promote. Every status change is explicit.
+- Doesn't write a topic document the overview doesn't list: add it to `## Docs` first.
 
 ## References
 
 - Shared frontmatter: `skills/_shared/frontmatter.md`.
-- Shared callout/format conventions: `skills/_shared/obsidian-format.md`.
+- Shared callout and format conventions: `skills/_shared/obsidian-format.md`.

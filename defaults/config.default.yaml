@@ -3,13 +3,12 @@
 # never migrated); resolution order is defined in skills/_shared/config-resolution.md.
 # No assumption of obsidian or any specific repo layout.
 
-config_version: 10         # schema version; drives migration detection
+config_version: 11         # schema version; drives migration detection
 
 paths:
   designs: docs/designs
   plans:   docs/plans
   future:  docs/future
-  config:  .cadence
 
 storage:
   backend: filesystem          # filesystem | notion  (default: filesystem, today's behavior)
@@ -29,7 +28,6 @@ mockups:
 
 naming:
   date_format: "YYYY-MM-DD"
-  slug_case: kebab
 
 status:
   design: [draft, in-review, approved, completed, superseded, on-hold]
@@ -37,6 +35,9 @@ status:
 
 frontmatter:
   required: [title, created, updated, status, tags]
+
+design:
+  word_target: 1500        # words per design document; /c-design trims, then splits into topic docs, past it
 
 plan:
   tdd: true
@@ -69,7 +70,7 @@ worktree:
 
 authoring:
   max_parallel: 6          # concurrent doc-generator agents (no worktrees; cheap)
-  design_mode: ask         # ask | all-at-once | one-by-one | inline (standing default for /c-design)
+  design_mode: ask         # ask | all-at-once | one-by-one | inline (/c-design, topic documents only)
   plan_mode: ask           # ask | all-at-once | inline (standing default for /c-plan)
 
 audits:
@@ -93,11 +94,6 @@ audits:
 advisors:
   enabled: false
   roster: []
-
-plain_english:
-  section_callout: true
-  always_write_00a: true
-  length_target: "400-700"
 
 oos:
   require_rationale: true

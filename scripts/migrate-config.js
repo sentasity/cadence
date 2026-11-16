@@ -247,6 +247,53 @@ const RELOCATIONS = {
 const NEVER_INSERT = new Set(['plan.style']);
 
 /**
+ * Keys no skill reads any more. A migration removes them from the project
+ * config (a whole top-level block, or one direct-child key and any lines
+ * nested under it) so a dead setting never looks like it does something.
+ */
+const RETIRED = ['plain_english', 'paths.config', 'naming.slug_case'];
+
+/**
+ * Remove RETIRED blocks and keys from `text`. Returns the new text and the
+ * retired paths that were actually present.
+ *
+ * @param {string} text
+ * @returns {{ text: string, removed: string[] }}
+ */
+function removeRetired(text) {
+  let lines = splitLines(text);
+  const removed = [];
+  for (const entry of RETIRED) {
+    const [block, key] = entry.split('.');
+    const span = findBlockSpan(lines, block);
+    if (!span) {
+      continue;
+    }
+    if (!key) {
+      lines = lines.slice(0, span.start).concat(lines.slice(span.end));
+      removed.push(entry);
+      continue;
+    }
+    for (let i = span.start + 1; i < span.bodyEnd; i++) {
+      const m = lines[i].match(/^(\s+)([A-Za-z0-9_-]+):/);
+      if (m && m[2] === key) {
+        let end = i + 1;
+        while (end < span.bodyEnd && (lines[end].trim() === '' || lines[end].match(/^(\s*)/)[1].length > m[1].length)) {
+          end += 1;
+        }
+        lines = lines.slice(0, i).concat(lines.slice(end));
+        removed.push(entry);
+        break;
+      }
+    }
+  }
+  if (removed.length === 0) {
+    return { text, removed };
+  }
+  return { text: lines.join('\n').replace(/\n{3,}/g, '\n\n'), removed };
+}
+
+/**
  * Drop NEVER_INSERT direct-child key lines from a defaults block before it is
  * appended whole to a project config.
  *
@@ -515,6 +562,8 @@ module.exports = {
   assertParseable,
   projectValueOf,
   relocationsFor,
+  removeRetired,
+  RETIRED,
   main,
 };
 
@@ -557,9 +606,11 @@ function main() {
   let merged;
   let missing;
   let relocated = [];
+  let retired = [];
   try {
     assertParseable(proj);
-    merged = bumpOrInsertVersion(proj, defVer);
+    ({ text: merged, removed: retired } = removeRetired(proj));
+    merged = bumpOrInsertVersion(merged, defVer);
     missing = detectMissingKeys(merged, def);
     relocated = relocationsFor(merged, missing);
     merged = mergeMissing(merged, def, missing);
@@ -584,7 +635,11 @@ function main() {
   for (const { block, key } of missing.missingNested) {
     added.push(`${block}.${key}`);
   }
-  let notice = `Cadence config migrated to v${defVer}: added ${added.join(', ')} (defaults). Edit .cadence/config.yaml to tune.`;
+  let notice = `Cadence config migrated to v${defVer}: added ${added.length ? added.join(', ') : 'nothing'} (defaults).`;
+  if (retired.length > 0) {
+    notice += ` Removed ${retired.join(', ')}, which nothing reads.`;
+  }
+  notice += ' Edit .cadence/config.yaml to tune.';
   if (relocated.length > 0) {
     notice += ` Carried over ${relocated.join(', ')}. The legacy keys are no longer read now that worktree: carries their values; you can remove them manually.`;
   }

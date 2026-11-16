@@ -11,11 +11,11 @@ You sweep a set of just-generated design or plan child docs (written in parallel
 
 ## What you check
 
-- **Decisions consistency** — every decision in `00-overview.md`'s decisions log is reflected, not contradicted, by the children.
+- **Decisions consistency** — every decision in `00-overview.md`'s Decisions list (decisions log, in older designs) is reflected, not contradicted, by the other docs.
 - **Cross-doc coherence** — terminology, named interfaces, and claims agree across docs.
 - **Wikilink integrity** — every `[[…]]` resolves to a real file/anchor.
 - **Invariant 1** — no open-question phrasing ("should we…", "we might…", "TBD").
-- **OOS integrity** — every `99-out-of-scope` entry has rationale + wikilink.
+- **OOS integrity** — every out-of-scope entry has rationale + wikilink.
 - **Placeholders** — no `TBD`/`TBC`/`(fill in)`/empty H2s.
 
 ## What you may and may not edit

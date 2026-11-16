@@ -9,34 +9,38 @@ linked_plan: null
 
 # <HUMAN_TITLE>
 
-## What we're building
-
-<2-4 plain-English sentences describing what this design produces.>
+<!-- One document, about design.word_target words (default 1500). Plain English for
+     someone who decides what gets built. No schemas, signatures, file lists, or code
+     (mermaid diagrams are fine). -->
 
 ## Why
 
-<1-2 sentences naming the motivating problem.>
+<The problem and who has it, in a few sentences.>
 
-## Approach
+## What it does
 
-<The picked option from /c-brainstorm step 6, summarized.>
+<The behavior from the user's or operator's point of view: the normal path, what they
+ see, what happens when things go wrong.>
 
-## Doc index
+## Examples and wording
 
-- [[00a-plain-english]] — Narrative tour, end-to-end.
-- [[01-<TOPIC>]] — <one-line description>
-- [[99-out-of-scope]] — Explicit OOS items.
+- <Concrete input or situation> → <what happens>.
+- <Exact user-facing copy, where wording matters: "Key rejected: too many attempts.">
 
-<97-infrastructure-inventory and 98-architecture-diagrams are opt-in.
- Add them above 99-out-of-scope only if /c-brainstorm Q&A flagged them.>
+## Visuals
 
-## Decisions log
+<Only where a picture decides something: an inline mermaid flow, or a pointer to
+ [[95-visual-contract]] for significant UI. Delete this section otherwise.>
 
-> [!success] Decision: <decision-name>
-> <The decision in one sentence.> Rationale: <why this and not the alternatives>.
+## Decisions
 
-<Repeat for every resolved decision from /c-brainstorm Q&A.>
+1. D1 — <The decision in one sentence.> Why: <why this and not the alternatives>.
+2. D2 — <…>
 
 ## Out of scope
 
-See [[99-out-of-scope]] for the canonical list with rationale per item.
+- **<What is cut>.** Why: <rationale>. Surfaced in: D<n>.
+
+<## Docs — only when topic documents are opted in:
+- [[01-<TOPIC>]] — <one-line description>
+- [[97-infrastructure-inventory]] / [[98-architecture-diagrams]] — opt-in>

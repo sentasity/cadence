@@ -5,7 +5,7 @@ title: Plan — Out of Scope
 # Out of Scope (Plan)
 
 Plan-side OOS captures work explicitly cut **during planning or execution**.
-Design-side OOS lives in [[../../designs/<YYYY-MM-DD-SLUG>/99-out-of-scope]].
+Design-side OOS lives in [[../../designs/<YYYY-MM-DD-SLUG>/00-overview#Out of scope]].
 
 (No entries yet.)
 

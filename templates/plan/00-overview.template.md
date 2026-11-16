@@ -24,7 +24,7 @@ base_sha: null
 
 ## Global Constraints
 
-- <One rule that binds every task, with its exact value.> (<source: design NN | CLAUDE.md | manifest>)
+- <One rule that binds every task, with its exact value.> (<source: design D<n> | CLAUDE.md | manifest>)
 
 ## Review Focus
 

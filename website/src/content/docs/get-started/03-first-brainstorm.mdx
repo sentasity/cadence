@@ -57,7 +57,7 @@ With the config written, Cadence enters the Q&A loop. Each question leads with a
 
 ## The artifact: a `00-overview.md` stub
 
-The stub is the artifact you'll read. It's short and plain-English: a "What we're building" paragraph, a one-line "Why", the chosen approach, a proposed list of child documents, and a decisions log capturing every choice you made during the Q&A. You can open the finished version of exactly this stub in the worked example:
+The stub is the artifact you'll read. It's short and plain-English: a one-line "Why", a "What it does" paragraph, a numbered decisions list capturing every choice you made during the Q&A (the chosen approach is the first), and what's out of scope. You can open the finished version of exactly this stub in the worked example:
 
 <Tabs>
   <TabItem label="Where it lands">
@@ -67,11 +67,10 @@ docs/designs/2026-01-15-hello-cadence/00-overview.md
   </TabItem>
   <TabItem label="What's inside">
     <ul>
-      <li><strong>What we're building</strong>: a <code>current_time_iso()</code> function returning an ISO-8601 string.</li>
       <li><strong>Why</strong>: the canonical Cadence teaching example.</li>
-      <li><strong>Approach</strong>: one module, one function, one test, run-directly entry.</li>
-      <li><strong>Doc index</strong>: the child docs design will write next.</li>
-      <li><strong>Decisions log</strong>: every Recommended pick you accepted.</li>
+      <li><strong>What it does</strong>: prints the current UTC time, to the second, ending in <code>Z</code>.</li>
+      <li><strong>Decisions</strong>: every Recommended pick you accepted, numbered D1, D2, ….</li>
+      <li><strong>Out of scope</strong>: local time, a configurable format, command-line flags.</li>
     </ul>
   </TabItem>
 </Tabs>

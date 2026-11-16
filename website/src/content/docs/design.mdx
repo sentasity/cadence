@@ -1,6 +1,6 @@
 ---
 title: The Design stage
-description: How a stub becomes a full, human-readable design folder, the artifact you actually approve.
+description: How a stub becomes a lean, human-readable design, the artifact you actually approve.
 sidebar:
   order: 2
 ---
@@ -8,69 +8,57 @@ sidebar:
 import { Aside } from '@astrojs/starlight/components';
 import Quiz from '../../components/Quiz.astro';
 
-Design is the stage that produces the document *you* read and approve. Where brainstorm gave you a short stub, `/c-design` grows it into a full **design folder** written for a human, specifically a human who will never read the code.
+Design is the stage that produces the document *you* read and approve. Where brainstorm gave you a short stub, `/c-design` grows it into the **design**: by default one document, written for a person who decides what gets built and will never read the code.
 
-## The design folder is the artifact
+## One document is the artifact
 
-`/c-design` reads your `00-overview.md` stub and materializes a folder of related documents in reading order. The folder always includes:
+`/c-design` turns your `00-overview.md` stub into a single document, in this order:
 
-- `00-overview.md`: the what/why/approach plus the decisions log.
-- `00a-plain-english.md`: a narrative tour, written last, in plain language.
-- One or more numbered child docs (`01-…`, `02-…`) covering the technical detail.
-- `99-out-of-scope.md`: what this design deliberately won't do, each with a reason.
+- **Why**: the problem and who has it.
+- **What it does**: the behavior in plain English, from the point of view of whoever uses it: the normal path, what they see, what happens when things go wrong.
+- **Examples and wording**: concrete situations and outcomes, and the exact words users will see where wording matters.
+- **Visuals**: a diagram or mockups, only where a picture decides something.
+- **Decisions**: one numbered list (`D1`, `D2`, …), each with its reason, so you can push back on the reasoning and not just the outcome.
+- **Out of scope**: what this design deliberately won't do, each with a reason.
 
-You don't approve code. You approve *this folder*. That's why it's written to be read.
+You don't approve code. You approve *this document*. That's why it's written to be read, and why it aims for about 1,500 words (`design.word_target`).
 
-## The plain-English narrative and the decisions log
+## No implementation in a design
 
-Two parts carry the most weight when you review at the level of intent.
+A design never carries schemas, function signatures, file lists, or code (diagrams are fine). Those are how the thing gets built, and deciding that is the plan's job. A design that carries them turns into a plan nobody asked you to approve, and the parts you should judge get buried. Values the design must fix, like a limit or a timeout, are stated as behavior: "a key is rejected after three failed attempts."
 
-The **plain-English narrative** (`00a-plain-english.md`) is written last, once everything else is settled, and follows a fixed shape: what the feature does in one paragraph, the normal cycle, what you'd see, what can go wrong, how you'll know it's working, and a TL;DR. It's the document you read to decide whether the design is right.
-
-The **decisions log** lives in the overview and records every meaningful choice *with its rationale*. You see not just what was decided but why, so you can push back on the reasoning, not just the outcome.
-
-<Aside type="note" title="A plain-English callout at every section">
-Throughout the technical child docs, each major section opens with a plain-English summary callout. You're never dropped into jargon without a translation alongside it.
+<Aside type="note" title="Bigger features: topic documents">
+When a feature genuinely has separate areas, `/c-design` offers **topic documents** (`01-…`, `02-…`), each following the same rules. The overview keeps the why, the one decisions list, and the out-of-scope list. With topic documents it also asks how to write them: all at once in parallel with a consistency sweep (the default), one at a time with a pause after each, or inline in the main session.
 </Aside>
-
-## Parallel vs sequential generation
-
-When you run `/c-design`, it asks how to write the child docs:
-
-- **All-at-once** (the default): it writes all the technical child docs in parallel, then runs a single consistency sweep across them, then writes the plain-English narrative last. One review pause, at the end.
-- **One-by-one**: it writes a single child doc, pauses for you to review, then continues. More control, more pauses.
-- **Inline**: the main session writes every doc itself. No sub-agents, no pauses, no consistency sweep. Useful when you'd rather watch one session do the whole thing than hand work to parallel agents.
-
-Whichever you pick, the plain-English narrative is generated last, from the settled docs.
 
 ## Mockups, when the work is visual
 
 A design with real user-facing UI/UX work can opt into one more document: `95-visual-contract`. It names the surfaces the mockups govern, indexes every mockup version, and holds the contract an implementer follows when the code and the mockup disagree.
 
-The mockups themselves are self-contained HTML files you open in a browser, and they're versioned append-only: feedback produces a new version rather than editing the one you already looked at, so the visual history is as reviewable as the decisions log. When you approve the design, the version you approved is frozen by name, and that frozen version is what `/c-plan` hands to the implementers.
+The mockups themselves are self-contained HTML files you open in a browser, and they're versioned append-only: feedback produces a new version rather than editing the one you already looked at, so the visual history is as reviewable as the decisions list. When you approve the design, the version you approved is frozen by name, and that frozen version is what `/c-plan` hands to the implementers.
 
 This is offered only when the design is genuinely visual. A mostly-backend design with an incidental UI touch never gets the question.
 
 ## The self-review gate before `in-review`
 
-Before it asks you to look at anything, `/c-design` runs a **self-review pass** over the whole folder: no leftover placeholders, every internal link resolves, decisions are reflected consistently across docs, and nothing reads like an unresolved open question. Only after that does it flip the design to `in-review` and invite you to walk through it.
+Before it asks you to look at anything, `/c-design` runs a **self-review pass**: no leftover placeholders, no implementation detail, within the word target, every decision in the one list and reflected consistently, every link resolving, and nothing that reads like an unresolved open question. Only after that does it flip the design to `in-review` and invite you to walk through it.
 
 <Aside type="caution" title="Approval is yours alone">
 Cadence never marks a design `approved` itself. It flips to `in-review` and waits. *You* say "approved": that explicit word is the gate between design and plan. Nothing auto-promotes.
 </Aside>
 
 <Quiz
-  question="Which document does /c-design always write last?"
+  question="The design says a session expires after 30 minutes. Where does the name of the timeout constant go?"
   options={[
-    "00a-plain-english.md: the narrative tour",
-    "00-overview.md: the stub",
-    "99-out-of-scope.md",
-    "The first technical child doc"
+    "In the plan: a design states the behavior, and names, signatures, and files are the plan's job",
+    "In the design's decisions list",
+    "In a separate plain-English document",
+    "In a Build note under the section"
   ]}
   answer={0}
-  explanation="The plain-English narrative is written last in both modes, once the technical docs are settled, so it accurately reflects the final design."
+  explanation="A design carries no implementation: no schemas, signatures, file lists, or code. It states the behavior you approve (sessions expire after 30 minutes) and leaves how it's built to the plan."
 />
 
-**Exact usage:** see the **[/c-design reference](/cadence/reference/c-design/)** for the entry contract, folder layout, and generation modes.
+**Exact usage:** see the **[/c-design reference](/cadence/reference/c-design/)** for the entry contract, the document's shape, and topic documents.
 
 Next stage: **[The Plan stage](/cadence/plan/)**.
