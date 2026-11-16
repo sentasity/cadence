@@ -788,3 +788,18 @@ test('v8->v9: the real shipped defaults append exactly the reviewer keys for a v
   assert.match(merged, /^  review_fix_lines: 20/m);
   assert.match(merged, /^  fix_rounds: 2/m);
 });
+
+// ---- v9 -> v10 execute.bundle_words (additive nested-key append) ----
+
+test('v9->v10: the real shipped defaults append exactly execute.bundle_words for a v9 full copy', () => {
+  const defText = fs.readFileSync(path.join(__dirname, '..', 'defaults', 'config.default.yaml'), 'utf8');
+  const projText = defText
+    .replace(/^config_version: \d+/m, 'config_version: 9')
+    .split('\n')
+    .filter((line) => !/^  bundle_words:/.test(line))
+    .join('\n');
+  const missing = detectMissingKeys(projText, defText);
+  assert.deepStrictEqual(missing.missingBlocks, []);
+  assert.deepStrictEqual(missing.missingNested, [{ block: 'execute', key: 'bundle_words' }]);
+  assert.match(mergeMissing(projText, defText, missing), /^  bundle_words: 5000/m);
+});

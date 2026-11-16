@@ -22,10 +22,10 @@ Your session is the manager. For each task in the plan, Cadence dispatches a fre
 <Walkthrough title="Execute the plan">
   <Fragment slot="step-1-title">Run /c-execute with the plan path</Fragment>
   <Fragment slot="step-1-body">`/c-execute docs/plans/2026-01-15-hello-cadence`. Cadence checks the working tree is clean and confirms before it begins.</Fragment>
-  <Fragment slot="step-2-title">Watch tasks land, reviewed twice</Fragment>
+  <Fragment slot="step-2-title">Watch tasks land, each one reviewed</Fragment>
   <Fragment slot="step-2-body">Each task runs in isolation, gets one review (spec first, then code quality), and commits on its own. You see plain-English summaries of what landed, not diffs.</Fragment>
   <Fragment slot="step-3-title">Trust the gates, not the code</Fragment>
-  <Fragment slot="step-3-body">If anything drifts from the plan, Cadence stops and offers you three choices (fix it, mark it out of scope, or abort) and waits for you. It never works around a problem silently, never auto-deploys, and never skips safety checks.</Fragment>
+  <Fragment slot="step-3-body">If something drifts from the plan, Cadence makes a ruling, records it, and keeps going; at the end it asks you one question covering every ruling and open item, each with its recommendation. It stops mid-run only before something destructive, security-sensitive, or outside the workspace. It never works around a problem silently, never auto-deploys, and never skips safety checks.</Fragment>
 </Walkthrough>
 
 ## Audit: an independent check proves the match
@@ -81,13 +81,13 @@ If the *shape* matches, you've driven a full Cadence loop correctly. The exact w
 <Quiz
   question="When execute hits something that drifts from the plan, what does Cadence do?"
   options={[
-    "Stops and offers three choices (fix, mark out of scope, or abort) and waits for you",
-    "Silently picks the closest interpretation and continues",
+    "Makes a ruling, records it, keeps going, and asks you about every ruling in one question at the end",
+    "Silently picks the closest interpretation and never mentions it",
     "Deletes the plan and starts over",
     "Deploys anyway and logs a warning"
   ]}
   answer={0}
-  explanation="Cadence never works around drift silently. It surfaces the block and hands you the three response paths: fix, mark out of scope, or abort."
+  explanation="Drift no longer stops the run, but it is never silent: each ruling is recorded in the plan and shown to you at the end, where you can accept or reverse it. Cadence still stops right away before anything destructive, security-sensitive, or outside the workspace."
 />
 
 That's the full loop. The **deep dives** go one stage at a time and explain *why* each stage and gate exists. Start with **[The Brainstorm stage](/cadence/brainstorm/)**, or jump straight to **[The Execute stage](/cadence/execute/)** if that's the part you most want reassurance about.

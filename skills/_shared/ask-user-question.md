@@ -34,7 +34,7 @@ The cost of one extra sentence of context per question is negligible. The cost o
 ## When this rule applies
 
 - Per-finding apply loops (`/c-check`, `/c-find-bugs`).
-- Per-task drift handling (`/c-execute`).
+- Stops and the end-of-run question (`/c-execute`).
 - Audit failure response paths (`/c-audit`).
 - Brainstorm Q&A (`/c-brainstorm`).
 - Triage / exploration menus — "which of these do you want to dig into first?", "which finding next?". These need a recommendation just as much as trade-off decisions: the user is asking for your sequencing judgment.
